@@ -1,0 +1,91 @@
+:root, .dark {
+  /* Dark Mode Backgrounds */
+  --bg-base:          #0e0e11;
+  --bg-surface:       #141419;
+  --bg-elevated:      #1b1b20;
+  --bg-glass:         rgba(27, 27, 32, 0.72);
+  --bg-glass-border:  rgba(255, 255, 255, 0.06);
+  --bg-glass-subtle:  rgba(255, 255, 255, 0.03);
+  --bg-canvas:        #18181c; /* Fixed: now dark instead of white */
+
+  /* Dark Mode Text */
+  --text-primary:     #f0ede8;
+  --text-secondary:   #918d93;
+  --text-tertiary:    #5c5962;
+  --text-on-accent:   #101014;
+  --text-canvas:      #f0ede8; /* Fixed: light text on dark canvas */
+
+  /* Dark Mode Accent */
+  --accent:           #e6a449;
+  --accent-glow:      rgba(230, 164, 73, 0.2);
+  --accent-subtle:    rgba(230, 164, 73, 0.1);
+
+  /* Status */
+  --status-review:    #e8834a;
+  --status-ok:        #4aae8a;
+  --status-error:     #e85a4a;
+
+  /* Borders */
+  --border-subtle:    rgba(255, 255, 255, 0.06);
+  --border-strong:    rgba(255, 255, 255, 0.12);
+
+  /* Radii */
+  --radius-sm: 6px;   --radius-md: 10px;  --radius-lg: 16px;  --radius-xl: 24px;
+}
+
+.light {
+  /* Light Mode Backgrounds */
+  --bg-base:          #ffffff;
+  --bg-surface:       #f5f5f5;
+  --bg-elevated:      #ffffff;
+  --bg-glass:         rgba(255, 255, 255, 0.85);
+  --bg-glass-border:  rgba(0, 0, 0, 0.08);
+  --bg-glass-subtle:  rgba(0, 0, 0, 0.03);
+  --bg-canvas:        #ffffff;
+
+  /* Light Mode Text */
+  --text-primary:     #111111;
+  --text-secondary:   #666666;
+  --text-tertiary:    #888888;
+  --text-on-accent:   #ffffff;
+  --text-canvas:      #111111;
+
+  /* Light Mode Accent */
+  --accent:           #d97706; /* Deeper amber for contrast in light mode */
+  --accent-glow:      rgba(217, 119, 6, 0.2);
+  --accent-subtle:    rgba(217, 119, 6, 0.1);
+
+  /* Status */
+  --status-review:    #d97706;
+  --status-ok:        #059669;
+  --status-error:     #dc2626;
+
+  /* Borders */
+  --border-subtle:    rgba(0, 0, 0, 0.08);
+  --border-strong:    rgba(0, 0, 0, 0.16);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --bg-base:          #ffffff;
+    --bg-surface:       #f5f5f5;
+    --bg-elevated:      #ffffff;
+    --bg-glass:         rgba(255, 255, 255, 0.85);
+    --bg-glass-border:  rgba(0, 0, 0, 0.08);
+    --bg-glass-subtle:  rgba(0, 0, 0, 0.03);
+    --bg-canvas:        #ffffff;
+
+    --text-primary:     #111111;
+    --text-secondary:   #666666;
+    --text-tertiary:    #888888;
+    --text-on-accent:   #ffffff;
+    --text-canvas:      #111111;
+
+    --accent:           #d97706;
+    --accent-glow:      rgba(217, 119, 6, 0.2);
+    --accent-subtle:    rgba(217, 119, 6, 0.1);
+
+    --border-subtle:    rgba(0, 0, 0, 0.08);
+    --border-strong:    rgba(0, 0, 0, 0.16);
+  }
+}

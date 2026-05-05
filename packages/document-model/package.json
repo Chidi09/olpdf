@@ -1,0 +1,14 @@
+{ 
+  "name": "@olpdf/document-model", 
+  "version": "0.1.0", 
+  "private": true,
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "lint": "node -e \"console.log('document-model lint placeholder')\"",
+    "typecheck": "node -e \"console.log('document-model typecheck placeholder')\"",
+    "test": "node -e \"console.log('no tests configured for document-model')\"",
+    "build": "node -e \"console.log('document-model build placeholder')\""
+  },
+  "dependencies": { "zod": "^3.22.4" }
+}

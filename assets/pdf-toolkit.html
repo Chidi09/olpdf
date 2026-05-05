@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OLPDF - PDF Toolkit</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Newsreader:ital,wght@0,400;0,500;0,700;1,400&amp;family=Space+Grotesk:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#39393c",
+                        "on-secondary": "#003828",
+                        "accent-gold": "#e8a84a",
+                        "secondary-fixed": "#93f6ce",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1b1b1e",
+                        "on-surface": "#e5e1e6",
+                        "on-primary-container": "#623f00",
+                        "text-tertiary": "#4a4850",
+                        "surface-container": "#1f1f22",
+                        "primary": "#ffc677",
+                        "bg-elevated": "#1c1c22",
+                        "on-tertiary-fixed-variant": "#8c1710",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#e5e1e6",
+                        "text-secondary": "#8a8790",
+                        "secondary-container": "#017f5e",
+                        "surface-variant": "#353438",
+                        "primary-container": "#e8a84a",
+                        "secondary-fixed-dim": "#76d9b2",
+                        "on-secondary-fixed-variant": "#00513b",
+                        "bg-base": "#0c0c0f",
+                        "tertiary": "#ffc1b8",
+                        "primary-fixed": "#ffddb4",
+                        "on-tertiary-container": "#8b160f",
+                        "on-secondary-container": "#cfffe8",
+                        "tertiary-container": "#ff988a",
+                        "surface-tint": "#fdba5a",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#2a2a2d",
+                        "inverse-on-surface": "#303033",
+                        "bg-surface": "#141418",
+                        "bg-glass": "rgba(28, 28, 34, 0.72)",
+                        "status-ok": "#4aae8a",
+                        "secondary": "#76d9b2",
+                        "surface-container-lowest": "#0e0e11",
+                        "border-subtle": "rgba(255, 255, 255, 0.06)",
+                        "primary-fixed-dim": "#fdba5a",
+                        "inverse-primary": "#835500",
+                        "status-review": "#e8834a",
+                        "on-secondary-fixed": "#002116",
+                        "on-primary-fixed": "#291800",
+                        "tertiary-fixed": "#ffdad5",
+                        "tertiary-fixed-dim": "#ffb4a9",
+                        "on-tertiary": "#690002",
+                        "on-primary-fixed-variant": "#633f00",
+                        "status-error": "#e85a4a",
+                        "border-strong": "rgba(255, 255, 255, 0.12)",
+                        "on-background": "#e5e1e6",
+                        "outline-variant": "#514537",
+                        "surface": "#131316",
+                        "background": "#131316",
+                        "text-primary": "#f0ede8",
+                        "outline": "#9d8e7d",
+                        "on-error": "#690005",
+                        "surface-dim": "#131316",
+                        "on-primary": "#452b00",
+                        "surface-container-highest": "#353438",
+                        "on-surface-variant": "#d5c4b1",
+                        "on-tertiary-fixed": "#410001"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "200px",
+                        "sm": "8px",
+                        "canvas-max-width": "800px",
+                        "2xl": "64px",
+                        "xl": "40px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "mono-technical": ["Space Grotesk"],
+                        "h1": ["Manrope"],
+                        "doc-body": ["Newsreader"],
+                        "display-md": ["Newsreader"],
+                        "doc-heading": ["Newsreader"],
+                        "display-lg": ["Newsreader"],
+                        "h2": ["Manrope"],
+                        "body-ui": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "mono-technical": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "h1": ["28px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "doc-body": ["11pt", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-md": ["40px", { "lineHeight": "1.15", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "doc-heading": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "display-lg": ["56px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h2": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-ui": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-[#0c0c0f] text-[#f0ede8] antialiased min-h-screen font-body-ui text-body-ui">
+<header class="bg-[#0c0c0f]/80 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-white/10 shadow-[0_16px_48px_rgba(0,0,0,0.6)] flex justify-between items-center w-full px-6 py-3">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-serif italic text-[#e8a84a]">OLPDF</span>
+<nav class="hidden md:flex gap-6 font-newsreader font-medium tracking-tight text-[#e8a84a]">
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded-md" href="#">Dashboard</a>
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded-md" href="#">Editor</a>
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded-md" href="#">Book Maker</a>
+<a class="text-[#e8a84a] border-b-2 border-[#e8a84a] pb-1 px-3 py-1" href="#">PDF Toolkit</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-[#e8a84a] text-[#0c0c0f] px-4 py-1.5 rounded text-sm font-semibold hover:bg-white/5 transition-all duration-300 active:scale-[0.98] transition-transform duration-200">Create New</button>
+<div class="flex gap-3 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined cursor-pointer hover:bg-white/5 transition-all duration-300 rounded-full p-1 active:scale-[0.98] transition-transform duration-200">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-white/5 transition-all duration-300 rounded-full p-1 active:scale-[0.98] transition-transform duration-200">account_circle</span>
+</div>
+</div>
+</header>
+<aside class="bg-[#141418] h-screen w-64 fixed left-0 top-0 z-40 border-r border-white/5 shadow-2xl shadow-black flex flex-col pt-20 pb-6 hidden md:flex font-newsreader antialiased text-[#e8a84a]">
+<div class="px-6 mb-8">
+<h2 class="text-lg font-bold text-[#e8a84a]">Studio Workspace</h2>
+<p class="text-slate-500 text-sm">Pro Edition</p>
+<button class="mt-4 w-full bg-white/5 border border-white/10 text-white py-2 rounded-md hover:bg-white/10 transition-colors text-sm">New Collection</button>
+</div>
+<nav class="flex-1 overflow-y-auto">
+<ul class="flex flex-col space-y-1">
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">history</span>
+<span>Recent Documents</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span>Project Library</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span>Book Architect</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 bg-[#1c1c22] border-l-4 border-[#e8a84a] text-white py-3 px-4 shadow-[inset_0_0_20px_rgba(232,168,74,0.05)] ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">ink_eraser</span>
+<span>Redaction Tool</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Asset Manager</span>
+</a>
+</li>
+</ul>
+</nav>
+<div class="mt-auto border-t border-white/5 pt-4">
+<ul class="flex flex-col space-y-1">
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span>Documentation</span>
+</a>
+</li>
+</ul>
+</div>
+</aside>
+<main class="md:ml-64 pt-8 pb-2xl px-8 flex-1 flex flex-col items-center">
+<div class="w-full max-w-5xl mb-xl text-center">
+<h1 class="font-display-md text-display-md text-text-primary mb-4">Document Operations</h1>
+<p class="font-body-ui text-body-ui text-text-secondary max-w-2xl mx-auto">Precision tools designed to manipulate, secure, and refine your digital documents with uncompromising quality.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">layers</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Merge</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Combine multiple PDFs into a single, cohesive document sequence.</p>
+</div>
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">splitscreen</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Split</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Extract specific pages or divide a large archive into targeted files.</p>
+</div>
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">compress</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Compress</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Optimize file weight while maintaining pristine typographic fidelity.</p>
+</div>
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">rotate_right</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Rotate</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Adjust page orientation to correct scanning or layout discrepancies.</p>
+</div>
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">branding_watermark</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Watermark</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Embed proprietary marks to secure your intellectual property context.</p>
+</div>
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">shield_lock</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Protect</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Apply cryptographic encryption and govern access permissions.</p>
+</div>
+<div class="bg-bg-elevated border-2 border-accent-gold rounded-xl p-6 relative overflow-hidden shadow-[0_0_30px_rgba(232,168,74,0.15)] flex flex-col items-start cursor-pointer">
+<div class="absolute inset-0 bg-gradient-to-br from-accent-gold/5 to-transparent pointer-events-none"></div>
+<div class="h-12 w-12 rounded-lg bg-accent-gold/20 flex items-center justify-center mb-5 text-accent-gold shadow-[0_0_15px_rgba(232,168,74,0.3)]">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">ink_eraser</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Redact</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Permanently obscure sensitive data streams with surgical precision.</p>
+</div>
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">document_scanner</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">OCR Scan</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Translate raster imagery into selectable, machine-readable text.</p>
+</div>
+<div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 cursor-pointer flex flex-col items-start hover:border-border-strong shadow-lg shadow-black/20">
+<div class="h-12 w-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-5 group-hover:bg-accent-gold/10 transition-colors text-text-secondary group-hover:text-accent-gold">
+<span class="material-symbols-outlined text-2xl">image</span>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-2">Extract Images</h3>
+<p class="font-body-ui text-body-ui text-text-secondary leading-relaxed">Isolate and export all embedded graphical assets at source resolution.</p>
+</div>
+</div>
+</main>
+<footer class="md:ml-64 bg-[#0c0c0f] w-full py-12 border-t border-white/10 flat">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-8 gap-6 font-newsreader text-xs tracking-widest uppercase text-[#e8a84a]">
+<p class="text-slate-600">© 2024 OLPDF. Precision Document Operating System.</p>
+<div class="flex gap-6">
+<a class="text-slate-600 hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="text-slate-600 hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">Service Terms</a>
+<a class="text-slate-600 hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">API Reference</a>
+<a class="text-slate-600 hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

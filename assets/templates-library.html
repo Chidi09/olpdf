@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OLPDF - Templates Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,700;1,6..72,400&amp;family=Space+Grotesk:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "status-review": "#e8834a",
+                      "on-secondary-fixed": "#002116",
+                      "inverse-primary": "#835500",
+                      "primary-fixed-dim": "#fdba5a",
+                      "on-primary-fixed": "#291800",
+                      "tertiary-fixed-dim": "#ffb4a9",
+                      "on-tertiary": "#690002",
+                      "tertiary-fixed": "#ffdad5",
+                      "on-background": "#e5e1e6",
+                      "status-error": "#e85a4a",
+                      "border-strong": "rgba(255, 255, 255, 0.12)",
+                      "on-primary-fixed-variant": "#633f00",
+                      "text-primary": "#f0ede8",
+                      "outline": "#9d8e7d",
+                      "background": "#131316",
+                      "surface": "#131316",
+                      "outline-variant": "#514537",
+                      "on-error": "#690005",
+                      "on-primary": "#452b00",
+                      "surface-dim": "#131316",
+                      "on-tertiary-fixed": "#410001",
+                      "on-surface-variant": "#d5c4b1",
+                      "surface-container-highest": "#353438",
+                      "surface-bright": "#39393c",
+                      "on-secondary": "#003828",
+                      "secondary-fixed": "#93f6ce",
+                      "accent-gold": "#e8a84a",
+                      "text-tertiary": "#4a4850",
+                      "surface-container": "#1f1f22",
+                      "primary": "#ffc677",
+                      "bg-elevated": "#1c1c22",
+                      "surface-container-low": "#1b1b1e",
+                      "on-surface": "#e5e1e6",
+                      "on-primary-container": "#623f00",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#8c1710",
+                      "inverse-surface": "#e5e1e6",
+                      "error": "#ffb4ab",
+                      "on-secondary-fixed-variant": "#00513b",
+                      "bg-base": "#0c0c0f",
+                      "secondary-fixed-dim": "#76d9b2",
+                      "primary-container": "#e8a84a",
+                      "surface-variant": "#353438",
+                      "secondary-container": "#017f5e",
+                      "text-secondary": "#8a8790",
+                      "surface-container-high": "#2a2a2d",
+                      "inverse-on-surface": "#303033",
+                      "error-container": "#93000a",
+                      "surface-tint": "#fdba5a",
+                      "tertiary-container": "#ff988a",
+                      "on-tertiary-container": "#8b160f",
+                      "on-secondary-container": "#cfffe8",
+                      "tertiary": "#ffc1b8",
+                      "primary-fixed": "#ffddb4",
+                      "border-subtle": "rgba(255, 255, 255, 0.06)",
+                      "surface-container-lowest": "#0e0e11",
+                      "secondary": "#76d9b2",
+                      "status-ok": "#4aae8a",
+                      "bg-glass": "rgba(28, 28, 34, 0.72)",
+                      "bg-surface": "#141418"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "lg": "24px",
+                      "xl": "40px",
+                      "md": "16px",
+                      "unit": "4px",
+                      "sm": "8px",
+                      "canvas-max-width": "800px",
+                      "sidebar-width": "200px",
+                      "2xl": "64px"
+              },
+              "fontFamily": {
+                      "h2": [
+                              "Manrope"
+                      ],
+                      "display-lg": [
+                              "Newsreader"
+                      ],
+                      "body-ui": [
+                              "Manrope"
+                      ],
+                      "h1": [
+                              "Manrope"
+                      ],
+                      "doc-body": [
+                              "Newsreader"
+                      ],
+                      "display-md": [
+                              "Newsreader"
+                      ],
+                      "mono-technical": [
+                              "Space Grotesk"
+                      ],
+                      "doc-heading": [
+                              "Newsreader"
+                      ]
+              },
+              "fontSize": {
+                      "h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "56px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-ui": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h1": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "doc-body": [
+                              "11pt",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-md": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.15",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mono-technical": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "doc-heading": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+        .material-symbols-outlined.fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-base text-text-primary antialiased min-h-screen flex flex-col font-body-ui text-body-ui">
+<!-- TopAppBar -->
+<nav class="bg-[#0c0c0f]/80 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-white/10 shadow-[0_16px_48px_rgba(0,0,0,0.6)] flex justify-between items-center w-full px-6 py-3">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-serif italic text-[#e8a84a]">OLPDF</span>
+<div class="hidden md:flex items-center gap-6 font-newsreader font-medium tracking-tight">
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded" href="#">Dashboard</a>
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded" href="#">Editor</a>
+<a class="text-[#e8a84a] border-b-2 border-[#e8a84a] pb-1 hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded active:scale-[0.98] transition-transform duration-200" href="#">Book Maker</a>
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-3 py-1 rounded" href="#">PDF Toolkit</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-low border border-border-subtle rounded-full px-4 py-1.5 focus-within:border-accent-gold transition-colors">
+<span class="material-symbols-outlined text-text-secondary text-[18px] mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-ui font-body-ui text-text-primary placeholder:text-text-secondary w-48 outline-none" placeholder="Search templates..." type="text"/>
+</div>
+<button class="text-text-secondary hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-text-secondary hover:text-white transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<button class="bg-accent-gold text-on-primary font-body-ui text-body-ui font-semibold px-4 py-1.5 rounded hover:brightness-110 transition-all ml-2">
+                Create New
+            </button>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow flex flex-col w-full max-w-[1440px] mx-auto pt-lg pb-2xl px-8">
+<!-- Hero Section -->
+<section class="py-xl flex flex-col items-center justify-center text-center max-w-3xl mx-auto mb-lg">
+<h1 class="font-display-lg text-display-lg text-text-primary mb-md">Template Library</h1>
+<p class="font-doc-body text-doc-body text-text-secondary text-lg max-w-2xl mx-auto">
+                Start your next document with precision. Choose from our curated collection of professional templates, designed for liquid glass refinement and technical clarity.
+            </p>
+</section>
+<!-- Category Filters -->
+<section class="w-full flex justify-center mb-xl">
+<div class="flex items-center gap-2 bg-surface-container-low p-1.5 rounded-full border border-border-subtle overflow-x-auto max-w-full no-scrollbar">
+<button class="px-6 py-2 rounded-full bg-accent-gold text-on-primary font-body-ui text-body-ui font-semibold whitespace-nowrap transition-colors">All</button>
+<button class="px-6 py-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-variant transition-colors font-body-ui text-body-ui whitespace-nowrap">Business</button>
+<button class="px-6 py-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-variant transition-colors font-body-ui text-body-ui whitespace-nowrap">Academic</button>
+<button class="px-6 py-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-variant transition-colors font-body-ui text-body-ui whitespace-nowrap">Legal</button>
+<button class="px-6 py-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-variant transition-colors font-body-ui text-body-ui whitespace-nowrap">Books</button>
+<button class="px-6 py-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-variant transition-colors font-body-ui text-body-ui whitespace-nowrap">Personal</button>
+<button class="px-6 py-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface-variant transition-colors font-body-ui text-body-ui whitespace-nowrap">Community</button>
+</div>
+</section>
+<!-- Masonry Grid -->
+<section class="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6 w-full">
+<!-- Template Card 1 (Business Proposal) -->
+<div class="break-inside-avoid bg-bg-surface rounded-xl border border-border-subtle overflow-hidden hover:border-border-strong transition-colors group cursor-pointer flex flex-col relative">
+<div class="w-full aspect-[1/1.4] bg-surface-container-low relative overflow-hidden flex items-center justify-center p-4">
+<img alt="Document preview" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-100 transition-opacity shadow-[0_4px_12px_rgba(0,0,0,0.3)]" data-alt="A highly detailed document preview featuring a modern, minimalist business proposal layout. The design employs a sophisticated dark mode aesthetic with deep #131316 backgrounds, sharp #f0ede8 typography in a clean sans-serif font, and subtle #e8a84a gold accents. The document shows structured sections, elegant negative space, and a premium, corporate mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJ8OpTC0n3wBAFonNVTu_2XGTReJ-zI3yrYARLOkUFVuaXiDORKYxTQVbvqn-m087x4AMVWea32T-wgUSY0tDptW70O2v-e9dEnwQGfXpE3lJ4lxrlmF5qnitYa8oxyq6XemjErdeif9XEfOXC7SmcNB8hx6N9PvQfuhBpGYvhcnTnRRuTbkWrPz1GKPi5N1ME_9Jmbre2xuXeIY-3UZdTnvG6X8nQreOthidY44wpYK3tPDxleCrLCoGXQc4IUXYzzv9dQ5wfXA"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+<button class="bg-accent-gold text-on-primary px-6 py-2 rounded font-body-ui text-body-ui font-semibold hover:brightness-110 transition-all shadow-lg transform translate-y-4 group-hover:translate-y-0 duration-300">
+                            Use Template
+                        </button>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-xs">
+<h3 class="font-h2 text-h2 text-text-primary">Business Proposal</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-text-secondary font-body-ui text-sm">By OLPDF</span>
+<div class="flex items-center gap-1 text-text-tertiary font-mono-technical text-mono-technical">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>12.4k</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Template Card 2 (Academic Thesis) -->
+<div class="break-inside-avoid bg-bg-surface rounded-xl border border-border-subtle overflow-hidden hover:border-border-strong transition-colors group cursor-pointer flex flex-col relative">
+<div class="w-full aspect-[1/1.2] bg-surface-container-low relative overflow-hidden flex items-center justify-center p-4">
+<img alt="Document preview" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-100 transition-opacity shadow-[0_4px_12px_rgba(0,0,0,0.3)]" data-alt="A meticulously crafted academic thesis document template preview. The visual style embodies a 'Liquid Glass Refinement' dark theme with layered #0c0c0f and #141418 panels. The text layout features a classic serif font for headings and clean body text, emphasizing clarity and scholarly precision. Faint grid lines and subtle #e8a84a highlights suggest a structured, intelligent environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSu6uPJifH7NLIs_1kRCZnEoctYbWyLbfeg9CwMqiNxkmb6_k50IQjW6EQ5ofy1yQ4ZBTVBTbEo-TWFGfVQ9E4WtI1pcfUsrFQ-rXjTtrtjW8BvNK01qNpwRoBcNm-BG6WKH1fZ7T82_PKNbfiTsbe5iOA-VrCzEueM_I0obvk2iA-wvUl_7p6TEQXvi-m8zs559WN6G0ACEYCorLMIVJfIHCcFnIllOBfvooONqNoix9Au0A6ddiVZg71N1GULbnoILTYooMY8Q"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+<button class="bg-accent-gold text-on-primary px-6 py-2 rounded font-body-ui text-body-ui font-semibold hover:brightness-110 transition-all shadow-lg transform translate-y-4 group-hover:translate-y-0 duration-300">
+                            Use Template
+                        </button>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-xs">
+<h3 class="font-h2 text-h2 text-text-primary">Academic Thesis</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-text-secondary font-body-ui text-sm">By OLPDF</span>
+<div class="flex items-center gap-1 text-text-tertiary font-mono-technical text-mono-technical">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>8.2k</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Template Card 3 (Legal Contract) -->
+<div class="break-inside-avoid bg-bg-surface rounded-xl border border-border-subtle overflow-hidden hover:border-border-strong transition-colors group cursor-pointer flex flex-col relative">
+<div class="w-full aspect-[1/1.5] bg-surface-container-low relative overflow-hidden flex items-center justify-center p-4">
+<img alt="Document preview" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-100 transition-opacity shadow-[0_4px_12px_rgba(0,0,0,0.3)]" data-alt="A stark, highly professional legal contract template preview. The design uses a rigid, column-based structure rendered in a deep #131316 background to minimize eye strain. Typography is sharp, utilizing a technical monospaced font for clause numbers and a highly legible sans-serif for body text in #e5e1e6. The mood is authoritative, precise, and secure." src="https://lh3.googleusercontent.com/aida-public/AB6AXuANPmGnK4p35hVx5FQPnpalZYETIshjbb4mxW9VP80soRrqkAQeT29lYlDrYj4qcnZLup7fjaWICtSC5Wi4k4I258uUytZH6Kc2OB9NVmy2IT4fw9AKw_747H7TpnzV2OoO7qEl-W0-jpqrckOlT5epmbq_eaP0dXsGDD12X_r-01sWLNs9dMsV-V8p9peUDvTno4xtFElBH7J6mzzOmPenKoYlR6sJBZBCLH283rfDWz9WVBPBber_DkhZkRO-RLZsMsEia-ACNQ"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+<button class="bg-accent-gold text-on-primary px-6 py-2 rounded font-body-ui text-body-ui font-semibold hover:brightness-110 transition-all shadow-lg transform translate-y-4 group-hover:translate-y-0 duration-300">
+                            Use Template
+                        </button>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-xs">
+<h3 class="font-h2 text-h2 text-text-primary">NDA Agreement</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-text-secondary font-body-ui text-sm">By OLPDF</span>
+<div class="flex items-center gap-1 text-text-tertiary font-mono-technical text-mono-technical">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>45.1k</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Template Card 4 (Project Brief) -->
+<div class="break-inside-avoid bg-bg-surface rounded-xl border border-border-subtle overflow-hidden hover:border-border-strong transition-colors group cursor-pointer flex flex-col relative">
+<div class="w-full aspect-[1/1] bg-surface-container-low relative overflow-hidden flex items-center justify-center p-4">
+<img alt="Document preview" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-100 transition-opacity shadow-[0_4px_12px_rgba(0,0,0,0.3)]" data-alt="A dynamic project brief template preview displaying a bento-box grid layout within the document itself. The UI background is a premium #0c0c0f, contrasting with the document's sleek #1f1f22 panels. Subtle translucent glassmorphic effects overlap sections, and typography uses the Newsreader font for headings, evoking a sophisticated creative studio vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7CQ3nZyCq38TDhe6x06WmICbiIuREXAzHgMKkuYtSH_daGCR4VUBFMFuCQykyv7zuBivM5CEW3kMVFbwQPlamjhiKGaHscgdplH0GfUS8P5KFQbnobbJcgMdTCtTesHldm0sd9sLqexQDzXsAJrpeshI8b7eNMuPZs0kQPHGPGPHjZ2_VTaQehjKGZINOInX0avd7gxWeMyo2MSBQjeODQOLyJ0JEIOBcVbC4wCaFuE7vR9vBKZhwBs96ra0z1Q63km_ReEv0_A"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+<button class="bg-accent-gold text-on-primary px-6 py-2 rounded font-body-ui text-body-ui font-semibold hover:brightness-110 transition-all shadow-lg transform translate-y-4 group-hover:translate-y-0 duration-300">
+                            Use Template
+                        </button>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-xs">
+<h3 class="font-h2 text-h2 text-text-primary">Creative Brief</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-text-secondary font-body-ui text-sm">Community</span>
+<div class="flex items-center gap-1 text-text-tertiary font-mono-technical text-mono-technical">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>3.4k</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Template Card 5 (Invoice) -->
+<div class="break-inside-avoid bg-bg-surface rounded-xl border border-border-subtle overflow-hidden hover:border-border-strong transition-colors group cursor-pointer flex flex-col relative">
+<div class="w-full aspect-[1/1.3] bg-surface-container-low relative overflow-hidden flex items-center justify-center p-4">
+<img alt="Document preview" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-100 transition-opacity shadow-[0_4px_12px_rgba(0,0,0,0.3)]" data-alt="A clean, minimalist invoice template preview set against a dark mode interface. The document uses a stark white '#e5e1e6' text on a deep grey '#1b1b1e' background, emphasizing numerical clarity. Tables are styled with ultra-thin '#353438' borders. A warm '#e8a84a' gold accent highlights the total amount due, providing a professional financial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNdvw2TdSTPk8rnnETs86m-0PIZzT8hOq4WyzB5M1aqY_UwXiOdLW2xkFqNCEYzAnsXwIHXDCvhfzc_BFPY7fbbhCfuZ67VezzbTSIAJpPGMFxgbqvvXAhUm7g1kGRig30c683WmFA_ymordRyUo6fmaQdYc8aZ7e5BNzzWY0ZXmAQDWWpQIz_AgFIDS5aZv2I0BE9JHTur_nQoSC8iKKHCWi2fenXJumMidupI4gDcj7nZG7giMjdMLfapy_fIPP15h-AvLowDg"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+<button class="bg-accent-gold text-on-primary px-6 py-2 rounded font-body-ui text-body-ui font-semibold hover:brightness-110 transition-all shadow-lg transform translate-y-4 group-hover:translate-y-0 duration-300">
+                            Use Template
+                        </button>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-xs">
+<h3 class="font-h2 text-h2 text-text-primary">Standard Invoice</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="text-text-secondary font-body-ui text-sm">By OLPDF</span>
+<div class="flex items-center gap-1 text-text-tertiary font-mono-technical text-mono-technical">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>102k</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#0c0c0f] w-full py-12 border-t border-white/10 flat">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-8 gap-6">
+<span class="text-slate-600 font-newsreader text-xs tracking-widest uppercase">© 2024 OLPDF. Precision Document Operating System.</span>
+<div class="flex items-center gap-6 font-newsreader text-xs tracking-widest uppercase text-slate-600">
+<a class="hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">Service Terms</a>
+<a class="hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">API Reference</a>
+<a class="hover:text-[#e8a84a] transition-colors opacity-80 hover:opacity-100" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,12 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "ruff check .",
+    "typecheck": "python -m py_compile main.py models.py supabase_client.py worker_utils.py",
+    "test": "pytest",
+    "build": "python -c \"print('api build step placeholder')\""
+  },
+
+}

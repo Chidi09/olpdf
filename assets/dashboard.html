@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OLPDF Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400&amp;family=Manrope:wght@600&amp;family=Newsreader:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#39393c",
+                        "on-secondary": "#003828",
+                        "accent-gold": "#e8a84a",
+                        "secondary-fixed": "#93f6ce",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1b1b1e",
+                        "on-surface": "#e5e1e6",
+                        "on-primary-container": "#623f00",
+                        "text-tertiary": "#4a4850",
+                        "surface-container": "#1f1f22",
+                        "primary": "#ffc677",
+                        "bg-elevated": "#1c1c22",
+                        "on-tertiary-fixed-variant": "#8c1710",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#e5e1e6",
+                        "text-secondary": "#8a8790",
+                        "secondary-container": "#017f5e",
+                        "surface-variant": "#353438",
+                        "primary-container": "#e8a84a",
+                        "secondary-fixed-dim": "#76d9b2",
+                        "on-secondary-fixed-variant": "#00513b",
+                        "bg-base": "#0c0c0f",
+                        "tertiary": "#ffc1b8",
+                        "primary-fixed": "#ffddb4",
+                        "on-tertiary-container": "#8b160f",
+                        "on-secondary-container": "#cfffe8",
+                        "tertiary-container": "#ff988a",
+                        "surface-tint": "#fdba5a",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#2a2a2d",
+                        "inverse-on-surface": "#303033",
+                        "bg-surface": "#141418",
+                        "bg-glass": "rgba(28, 28, 34, 0.72)",
+                        "status-ok": "#4aae8a",
+                        "secondary": "#76d9b2",
+                        "surface-container-lowest": "#0e0e11",
+                        "border-subtle": "rgba(255, 255, 255, 0.06)",
+                        "primary-fixed-dim": "#fdba5a",
+                        "inverse-primary": "#835500",
+                        "status-review": "#e8834a",
+                        "on-secondary-fixed": "#002116",
+                        "on-primary-fixed": "#291800",
+                        "tertiary-fixed": "#ffdad5",
+                        "tertiary-fixed-dim": "#ffb4a9",
+                        "on-tertiary": "#690002",
+                        "on-primary-fixed-variant": "#633f00",
+                        "status-error": "#e85a4a",
+                        "border-strong": "rgba(255, 255, 255, 0.12)",
+                        "on-background": "#e5e1e6",
+                        "outline-variant": "#514537",
+                        "surface": "#131316",
+                        "background": "#131316",
+                        "text-primary": "#f0ede8",
+                        "outline": "#9d8e7d",
+                        "on-error": "#690005",
+                        "surface-dim": "#131316",
+                        "on-primary": "#452b00",
+                        "surface-container-highest": "#353438",
+                        "on-surface-variant": "#d5c4b1",
+                        "on-tertiary-fixed": "#410001"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "200px",
+                        "sm": "8px",
+                        "canvas-max-width": "800px",
+                        "2xl": "64px",
+                        "xl": "40px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "mono-technical": ["Space Grotesk"],
+                        "h1": ["Manrope"],
+                        "doc-body": ["Newsreader"],
+                        "display-md": ["Newsreader"],
+                        "doc-heading": ["Newsreader"],
+                        "display-lg": ["Newsreader"],
+                        "h2": ["Manrope"],
+                        "body-ui": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "mono-technical": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "h1": ["28px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "doc-body": ["11pt", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-md": ["40px", { "lineHeight": "1.15", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "doc-heading": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "display-lg": ["56px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h2": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-ui": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .liquid-glass-card {
+            background: linear-gradient(145deg, rgba(28, 28, 34, 0.6) 0%, rgba(20, 20, 24, 0.4) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .liquid-glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+            border-color: rgba(232, 168, 74, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-bg-base text-on-background font-body-ui text-body-ui min-h-screen flex selection:bg-accent-gold/30 selection:text-white antialiased">
+<!-- Top Navigation (Mobile Only) -->
+<nav class="md:hidden bg-[#0c0c0f]/80 backdrop-blur-xl docked full-width top-0 sticky z-50 shadow-[0_16px_48px_rgba(0,0,0,0.6)] border-b border-white/10 flex justify-between items-center w-full px-6 py-3">
+<div class="text-2xl font-serif italic text-[#e8a84a]">OLPDF</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-400 hover:text-white transition-colors cursor-pointer text-xl">notifications</span>
+<span class="material-symbols-outlined text-slate-400 hover:text-white transition-colors cursor-pointer text-xl">account_circle</span>
+</div>
+</nav>
+<!-- SideNavBar (Web) -->
+<aside class="hidden md:flex bg-[#141418] font-newsreader antialiased h-screen w-64 fixed left-0 top-0 z-40 border-r border-white/5 shadow-2xl shadow-black flex-col h-full pt-20 pb-6">
+<div class="px-6 mb-8 flex flex-col gap-2">
+<div class="w-12 h-12 rounded-full bg-surface-bright flex items-center justify-center border border-border-subtle overflow-hidden relative">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a professional individual in a minimalist, dimly lit studio environment. The lighting is sophisticated and moody, highlighting facial features with a subtle, warm glow against a dark, elegant background. The overall aesthetic is polished, high-end, and perfectly aligned with a premium digital workspace interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBw0OIajRQ54uZL1aJu02uPH2ADjR8xxblYI7H2OxnnDGyUWxwGVjo_elPC6XhWw5HZ34RqD1gOAywVtNPQyQVOldy6NfGzvY3ny386xgyaZ4ezsNNA8O1RrN5MZN9Ae8eFWt90C6qcg6YSpHx5tdp3BO1a4XaoYUMPJEjwN4Ppo9v7BdqCogagQsmv6uX56DiTiPjAN2f0gmuUv4DZbL22t9KZD8rmJP_qW78ysoMsNkcxhpjh9wRmFWD1aYP0WqAuSM5EStbzTw"/>
+</div>
+<div>
+<div class="text-lg font-bold text-[#e8a84a]">Studio Workspace</div>
+<div class="text-sm text-text-secondary">Pro Edition</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<button class="w-full bg-accent-gold text-on-primary-fixed py-2 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+                New Collection
+            </button>
+</div>
+<nav class="flex-1 overflow-y-auto">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 bg-[#1c1c22] border-l-4 border-[#e8a84a] text-white py-3 px-4 shadow-[inset_0_0_20px_rgba(232,168,74,0.05)] ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+                        Recent Documents
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+                        Project Library
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+                        Book Architect
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">ink_eraser</span>
+                        Redaction Tool
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                        Asset Manager
+                    </a>
+</li>
+</ul>
+</nav>
+<div class="mt-auto px-4 border-t border-border-subtle pt-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-2 px-4 hover:text-slate-200 hover:bg-white/5 rounded-lg ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-sm">settings</span>
+                        Settings
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-500 py-2 px-4 hover:text-slate-200 hover:bg-white/5 rounded-lg ease-in-out duration-300 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-sm">menu_book</span>
+                        Documentation
+                    </a>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- Header / Search -->
+<header class="hidden md:flex justify-between items-center px-8 py-6 border-b border-border-subtle bg-bg-base sticky top-0 z-30">
+<div class="flex-1 max-w-xl relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">search</span>
+<input class="w-full bg-surface-bright border-border-subtle text-text-primary rounded-lg pl-10 pr-4 py-2 focus:ring-1 focus:ring-accent-gold focus:border-accent-gold placeholder:text-text-secondary font-mono-technical text-mono-technical transition-colors" placeholder="Search documents, projects..." type="text"/>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-text-secondary hover:text-accent-gold transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<!-- Canvas -->
+<div class="flex-1 p-6 md:p-10 max-w-[1200px] w-full mx-auto">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-display-md text-display-md text-text-primary mb-2">Overview</h1>
+<p class="text-text-secondary">Manage and organize your precision documents.</p>
+</div>
+</div>
+<!-- Horizontal Tabs -->
+<div class="flex gap-8 border-b border-border-subtle mb-8">
+<button class="pb-3 text-accent-gold border-b-2 border-accent-gold font-medium">Recent</button>
+<button class="pb-3 text-text-secondary hover:text-text-primary transition-colors">Documents</button>
+<button class="pb-3 text-text-secondary hover:text-text-primary transition-colors">Books</button>
+</div>
+<!-- Document Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+<!-- Card 1 -->
+<div class="liquid-glass-card rounded-xl p-6 flex flex-col gap-4 group cursor-pointer relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-accent-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex justify-between items-start z-10">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center border border-border-strong group-hover:border-accent-gold/50 transition-colors">
+<span class="material-symbols-outlined text-accent-gold" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<button class="text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity hover:text-white">
+<span class="material-symbols-outlined text-sm">more_vert</span>
+</button>
+</div>
+<div class="mt-4 z-10 flex-1">
+<h3 class="font-doc-heading text-doc-heading text-text-primary mb-1 group-hover:text-accent-gold transition-colors">Q3 Business Report</h3>
+<p class="text-text-secondary font-mono-technical text-mono-technical">Edited 2 hours ago · 8 pages</p>
+</div>
+<div class="flex items-center gap-2 mt-2 z-10">
+<span class="w-2 h-2 rounded-full bg-status-review"></span>
+<span class="text-xs text-text-secondary uppercase tracking-wider">Reviewing</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="liquid-glass-card rounded-xl p-6 flex flex-col gap-4 group cursor-pointer relative overflow-hidden">
+<div class="flex justify-between items-start z-10">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center border border-border-strong group-hover:border-accent-gold/50 transition-colors">
+<span class="material-symbols-outlined text-accent-gold" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<button class="text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity hover:text-white">
+<span class="material-symbols-outlined text-sm">more_vert</span>
+</button>
+</div>
+<div class="mt-4 z-10 flex-1">
+<h3 class="font-doc-heading text-doc-heading text-text-primary mb-1 group-hover:text-accent-gold transition-colors">Q4 Projections</h3>
+<p class="text-text-secondary font-mono-technical text-mono-technical">Edited yesterday · 12 pages</p>
+</div>
+<div class="flex items-center gap-2 mt-2 z-10">
+<span class="w-2 h-2 rounded-full bg-status-ok"></span>
+<span class="text-xs text-text-secondary uppercase tracking-wider">Final</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="liquid-glass-card rounded-xl p-6 flex flex-col gap-4 group cursor-pointer relative overflow-hidden">
+<div class="flex justify-between items-start z-10">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center border border-border-strong group-hover:border-accent-gold/50 transition-colors">
+<span class="material-symbols-outlined text-accent-gold" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<button class="text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity hover:text-white">
+<span class="material-symbols-outlined text-sm">more_vert</span>
+</button>
+</div>
+<div class="mt-4 z-10 flex-1">
+<h3 class="font-doc-heading text-doc-heading text-text-primary mb-1 group-hover:text-accent-gold transition-colors">Annual Marketing Strategy 2025</h3>
+<p class="text-text-secondary font-mono-technical text-mono-technical">Edited 3 days ago · 45 pages</p>
+</div>
+<div class="flex items-center gap-2 mt-2 z-10">
+<span class="w-2 h-2 rounded-full bg-surface-bright border border-border-strong"></span>
+<span class="text-xs text-text-secondary uppercase tracking-wider">Draft</span>
+</div>
+</div>
+</div>
+<!-- Empty State / New Feature Area (Bento Layout) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="liquid-glass-card rounded-2xl p-8 flex flex-col justify-center items-center text-center relative overflow-hidden min-h-[300px]">
+<div class="absolute w-64 h-64 bg-accent-gold/10 rounded-full blur-3xl -top-10 -right-10 pointer-events-none"></div>
+<div class="relative w-20 h-20 mb-6">
+<div class="absolute inset-0 bg-accent-gold/20 rounded-full animate-pulse blur-xl"></div>
+<div class="relative w-full h-full bg-surface-container border border-accent-gold/30 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(232,168,74,0.2)] transform rotate-3">
+<span class="material-symbols-outlined text-4xl text-accent-gold">magic_button</span>
+</div>
+</div>
+<h3 class="font-h2 text-h2 text-text-primary mb-3">AI Document Generation</h3>
+<p class="text-text-secondary max-w-md mb-6">Describe the document you need, and our precision AI will structure, draft, and format a professional PDF instantly.</p>
+<button class="bg-transparent border border-white/20 text-text-primary px-6 py-2 rounded-lg hover:border-accent-gold hover:bg-accent-gold/10 transition-all duration-300">Try AI Generator</button>
+</div>
+<div class="liquid-glass-card rounded-2xl p-8 relative overflow-hidden min-h-[300px] flex flex-col">
+<h3 class="font-h2 text-h2 text-text-primary mb-6">System Status</h3>
+<div class="flex-1 flex flex-col justify-center gap-4">
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container border border-border-subtle">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-secondary">cloud_done</span>
+<span class="text-sm">Storage Capacity</span>
+</div>
+<span class="font-mono-technical text-mono-technical text-accent-gold">45%</span>
+</div>
+<div class="w-full bg-surface-bright h-1 rounded-full overflow-hidden">
+<div class="bg-accent-gold h-full w-[45%] rounded-full shadow-[0_0_10px_rgba(232,168,74,0.5)]"></div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container border border-border-subtle mt-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-secondary">memory</span>
+<span class="text-sm">AI Tokens Remaining</span>
+</div>
+<span class="font-mono-technical text-mono-technical text-accent-gold">12,450</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full bg-[#0c0c0f]/90 backdrop-blur-xl z-50 flex justify-around items-center py-3 px-2 border-t border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+<a class="flex flex-col items-center gap-1 text-[#e8a84a]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-[10px] font-medium tracking-wide">Recent</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="text-[10px] font-medium tracking-wide">Projects</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-[10px] font-medium tracking-wide">New</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium tracking-wide">Settings</span>
+</a>
+</nav>
+</body></html>

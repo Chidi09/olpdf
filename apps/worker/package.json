@@ -1,0 +1,11 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "node -e \"console.log('worker lint placeholder')\"",
+    "typecheck": "node -e \"console.log('worker typecheck placeholder')\"",
+    "test": "node -e \"console.log('no tests configured for worker')\"",
+    "build": "node -e \"console.log('worker build placeholder')\""
+  }
+}

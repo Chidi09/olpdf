@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OLPDF - Book Maker</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,700;1,6..72,400&amp;family=Space+Grotesk:wght@400&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#39393c",
+                    "on-secondary": "#003828",
+                    "accent-gold": "#e8a84a",
+                    "secondary-fixed": "#93f6ce",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-low": "#1b1b1e",
+                    "on-surface": "#e5e1e6",
+                    "on-primary-container": "#623f00",
+                    "text-tertiary": "#4a4850",
+                    "surface-container": "#1f1f22",
+                    "primary": "#ffc677",
+                    "bg-elevated": "#1c1c22",
+                    "on-tertiary-fixed-variant": "#8c1710",
+                    "error": "#ffb4ab",
+                    "inverse-surface": "#e5e1e6",
+                    "text-secondary": "#8a8790",
+                    "secondary-container": "#017f5e",
+                    "surface-variant": "#353438",
+                    "primary-container": "#e8a84a",
+                    "secondary-fixed-dim": "#76d9b2",
+                    "on-secondary-fixed-variant": "#00513b",
+                    "bg-base": "#0c0c0f",
+                    "tertiary": "#ffc1b8",
+                    "primary-fixed": "#ffddb4",
+                    "on-tertiary-container": "#8b160f",
+                    "on-secondary-container": "#cfffe8",
+                    "tertiary-container": "#ff988a",
+                    "surface-tint": "#fdba5a",
+                    "error-container": "#93000a",
+                    "surface-container-high": "#2a2a2d",
+                    "inverse-on-surface": "#303033",
+                    "bg-surface": "#141418",
+                    "bg-glass": "rgba(28, 28, 34, 0.72)",
+                    "status-ok": "#4aae8a",
+                    "secondary": "#76d9b2",
+                    "surface-container-lowest": "#0e0e11",
+                    "border-subtle": "rgba(255, 255, 255, 0.06)",
+                    "primary-fixed-dim": "#fdba5a",
+                    "inverse-primary": "#835500",
+                    "status-review": "#e8834a",
+                    "on-secondary-fixed": "#002116",
+                    "on-primary-fixed": "#291800",
+                    "tertiary-fixed": "#ffdad5",
+                    "tertiary-fixed-dim": "#ffb4a9",
+                    "on-tertiary": "#690002",
+                    "on-primary-fixed-variant": "#633f00",
+                    "status-error": "#e85a4a",
+                    "border-strong": "rgba(255, 255, 255, 0.12)",
+                    "on-background": "#e5e1e6",
+                    "outline-variant": "#514537",
+                    "surface": "#131316",
+                    "background": "#131316",
+                    "text-primary": "#f0ede8",
+                    "outline": "#9d8e7d",
+                    "on-error": "#690005",
+                    "surface-dim": "#131316",
+                    "on-primary": "#452b00",
+                    "surface-container-highest": "#353438",
+                    "on-surface-variant": "#d5c4b1",
+                    "on-tertiary-fixed": "#410001"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar-width": "200px",
+                    "sm": "8px",
+                    "canvas-max-width": "800px",
+                    "2xl": "64px",
+                    "xl": "40px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "mono-technical": [
+                            "Space Grotesk"
+                    ],
+                    "h1": [
+                            "Manrope"
+                    ],
+                    "doc-body": [
+                            "Newsreader"
+                    ],
+                    "display-md": [
+                            "Newsreader"
+                    ],
+                    "doc-heading": [
+                            "Newsreader"
+                    ],
+                    "display-lg": [
+                            "Newsreader"
+                    ],
+                    "h2": [
+                            "Manrope"
+                    ],
+                    "body-ui": [
+                            "Manrope"
+                    ]
+            },
+            "fontSize": {
+                    "mono-technical": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "h1": [
+                            "28px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "doc-body": [
+                            "11pt",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-md": [
+                            "40px",
+                            {
+                                    "lineHeight": "1.15",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "doc-heading": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-lg": [
+                            "56px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "h2": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-ui": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+</head>
+<body class="bg-bg-base text-text-primary font-body-ui text-body-ui overflow-hidden flex h-screen antialiased">
+<!-- Global SideNavBar (From JSON) -->
+<nav class="bg-[#141418] h-screen w-64 fixed left-0 top-0 z-40 border-r border-white/5 shadow-2xl shadow-black flex flex-col h-full pt-20 pb-6 flex-shrink-0">
+<!-- Logo / Header -->
+<div class="px-6 mb-8">
+<div class="text-lg font-bold text-[#e8a84a] font-newsreader antialiased tracking-wide">Studio Workspace</div>
+<div class="text-xs text-text-secondary mt-1">Pro Edition</div>
+</div>
+<!-- CTA -->
+<div class="px-4 mb-6">
+<button class="w-full bg-accent-gold/10 hover:bg-accent-gold/20 text-accent-gold border border-accent-gold/20 rounded py-2 px-4 flex items-center justify-center gap-2 transition-colors duration-300">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span class="font-h2 text-[14px]">New Collection</span>
+</button>
+</div>
+<!-- Main Nav Links -->
+<div class="flex-1 overflow-y-auto space-y-1">
+<!-- Recent Documents -->
+<div class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Recent Documents</span>
+</div>
+<!-- Project Library -->
+<div class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+<span>Project Library</span>
+</div>
+<!-- Book Architect (Active State) -->
+<div class="flex items-center gap-3 bg-[#1c1c22] border-l-4 border-[#e8a84a] text-white py-3 px-4 shadow-[inset_0_0_20px_rgba(232,168,74,0.05)] ease-in-out duration-300 cursor-pointer">
+<span class="material-symbols-outlined text-[#e8a84a]" data-icon="auto_stories">auto_stories</span>
+<span class="font-semibold text-text-primary">Book Architect</span>
+</div>
+<!-- Redaction Tool -->
+<div class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="ink_eraser">ink_eraser</span>
+<span>Redaction Tool</span>
+</div>
+<!-- Asset Manager -->
+<div class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Asset Manager</span>
+</div>
+</div>
+<!-- Footer Nav Links -->
+<div class="mt-auto space-y-1 border-t border-white/5 pt-4">
+<div class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</div>
+<div class="flex items-center gap-3 text-slate-500 py-3 px-4 hover:text-slate-200 hover:bg-white/5 group ease-in-out duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>Documentation</span>
+</div>
+</div>
+</nav>
+<!-- Main Content Area (Offset by SideNavBar width) -->
+<div class="ml-64 flex flex-col w-full h-full relative">
+<!-- Global TopAppBar (From JSON) -->
+<header class="bg-[#0c0c0f]/80 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-white/10 shadow-[0_16px_48px_rgba(0,0,0,0.6)] flex justify-between items-center w-full px-6 py-3 font-newsreader font-medium tracking-tight">
+<!-- Brand / Left Side -->
+<div class="flex items-center gap-8">
+<div class="text-2xl font-serif italic text-[#e8a84a]">OLPDF</div>
+<!-- Nav Links -->
+<nav class="hidden md:flex gap-6 items-center pt-1">
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-2 py-1 rounded" href="#">Dashboard</a>
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-2 py-1 rounded" href="#">Editor</a>
+<!-- Active Link -->
+<a class="text-[#e8a84a] border-b-2 border-[#e8a84a] pb-1 hover:bg-white/5 transition-all duration-300 px-2" href="#">Book Maker</a>
+<a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 px-2 py-1 rounded" href="#">PDF Toolkit</a>
+</nav>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-4">
+<button class="bg-[#141418] border border-white/10 text-text-primary px-4 py-1.5 rounded hover:border-[#e8a84a]/50 hover:bg-white/5 transition-all duration-300 active:scale-[0.98] flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Create New
+                </button>
+<div class="flex items-center gap-2 border-l border-white/10 pl-4">
+<button class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 p-1.5 rounded-full duration-300">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 p-1.5 rounded-full duration-300">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- 3-Panel Workspace Area -->
+<main class="flex-1 flex overflow-hidden w-full relative">
+<!-- Panel 1: Left Sidebar (Book Hierarchy) -->
+<aside class="w-[280px] bg-bg-surface border-r border-border-subtle flex flex-col flex-shrink-0 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
+<div class="p-md border-b border-border-subtle flex items-center justify-between">
+<h2 class="font-h2 text-h2 text-text-primary tracking-wide">Manuscript</h2>
+<button class="text-text-secondary hover:text-text-primary p-1 rounded hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-sm space-y-4 pt-md">
+<!-- Section: Front Matter -->
+<div>
+<div class="flex items-center justify-between px-2 py-1 mb-1 group cursor-pointer">
+<span class="text-xs font-bold text-text-tertiary uppercase tracking-wider">Front Matter</span>
+<span class="material-symbols-outlined text-[16px] text-text-secondary group-hover:text-text-primary transition-colors">expand_more</span>
+</div>
+<ul class="space-y-1">
+<li class="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] opacity-50">description</span>
+<span class="truncate flex-1">Title Page</span>
+<div class="w-1.5 h-1.5 rounded-full bg-status-ok" title="Final"></div>
+</li>
+<li class="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] opacity-50">description</span>
+<span class="truncate flex-1">Copyright</span>
+<div class="w-1.5 h-1.5 rounded-full bg-status-ok" title="Final"></div>
+</li>
+<li class="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] opacity-50">format_list_numbered</span>
+<span class="truncate flex-1">Table of Contents</span>
+<div class="w-1.5 h-1.5 rounded-full bg-surface-variant" title="Draft"></div>
+</li>
+</ul>
+</div>
+<!-- Section: Chapters -->
+<div>
+<div class="flex items-center justify-between px-2 py-1 mb-1 group cursor-pointer">
+<span class="text-xs font-bold text-text-tertiary uppercase tracking-wider">Chapters</span>
+<span class="material-symbols-outlined text-[16px] text-text-secondary group-hover:text-text-primary transition-colors">expand_more</span>
+</div>
+<ul class="space-y-1">
+<li class="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
+<span class="text-xs w-4 text-center opacity-50">01</span>
+<span class="truncate flex-1">The Genesis Engine</span>
+<div class="w-1.5 h-1.5 rounded-full bg-status-ok" title="Final"></div>
+</li>
+<li class="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
+<span class="text-xs w-4 text-center opacity-50">02</span>
+<span class="truncate flex-1">Echoes in the Void</span>
+<div class="w-1.5 h-1.5 rounded-full bg-status-ok" title="Final"></div>
+</li>
+<!-- Active Chapter -->
+<li class="flex items-center gap-2 px-3 py-1.5 rounded bg-bg-elevated border border-border-strong shadow-[inset_0_0_12px_rgba(255,255,255,0.02)] cursor-pointer text-text-primary">
+<span class="text-xs w-4 text-center text-accent-gold">03</span>
+<span class="truncate flex-1 font-medium">Liquid Glass</span>
+<div class="w-1.5 h-1.5 rounded-full bg-status-review shadow-[0_0_8px_rgba(232,131,74,0.6)]" title="Review"></div>
+</li>
+<li class="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
+<span class="text-xs w-4 text-center opacity-50">04</span>
+<span class="truncate flex-1 text-text-secondary/70 italic">Untitled Chapter</span>
+<div class="w-1.5 h-1.5 rounded-full bg-surface-variant" title="Draft"></div>
+</li>
+</ul>
+<button class="mt-2 w-full flex items-center justify-center gap-1 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-white/5 rounded border border-dashed border-border-subtle transition-all">
+<span class="material-symbols-outlined text-[14px]">add</span> Add Chapter
+                        </button>
+</div>
+<!-- Section: Back Matter -->
+<div>
+<div class="flex items-center justify-between px-2 py-1 mb-1 group cursor-pointer">
+<span class="text-xs font-bold text-text-tertiary uppercase tracking-wider">Back Matter</span>
+<span class="material-symbols-outlined text-[16px] text-text-secondary group-hover:text-text-primary transition-colors">expand_more</span>
+</div>
+<ul class="space-y-1">
+<li class="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/5 cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] opacity-50">bookmark</span>
+<span class="truncate flex-1">Appendix A</span>
+<div class="w-1.5 h-1.5 rounded-full bg-surface-variant" title="Draft"></div>
+</li>
+</ul>
+</div>
+</div>
+</aside>
+<!-- Panel 2: Center Editor (TipTap Concept) -->
+<section class="flex-1 flex flex-col relative bg-bg-base overflow-hidden">
+<!-- Editor Toolbar (Floating/Ghost style) -->
+<div class="absolute top-md left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-bg-glass backdrop-blur-md border border-border-strong rounded-full px-4 py-2 shadow-xl">
+<button class="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/10 rounded transition-colors"><span class="material-symbols-outlined text-[18px]">format_h1</span></button>
+<button class="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/10 rounded transition-colors"><span class="material-symbols-outlined text-[18px]">format_h2</span></button>
+<div class="w-px h-4 bg-border-strong mx-1"></div>
+<button class="p-1.5 text-text-primary bg-white/10 rounded transition-colors"><span class="material-symbols-outlined text-[18px]">format_bold</span></button>
+<button class="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/10 rounded transition-colors"><span class="material-symbols-outlined text-[18px]">format_italic</span></button>
+<button class="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/10 rounded transition-colors"><span class="material-symbols-outlined text-[18px]">format_underlined</span></button>
+<div class="w-px h-4 bg-border-strong mx-1"></div>
+<button class="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/10 rounded transition-colors"><span class="material-symbols-outlined text-[18px]">format_list_bulleted</span></button>
+<button class="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/10 rounded transition-colors"><span class="material-symbols-outlined text-[18px]">format_quote</span></button>
+</div>
+<!-- Document Canvas -->
+<div class="flex-1 overflow-y-auto pb-2xl px-6 pt-24 custom-scrollbar">
+<article class="max-w-canvas-max-width mx-auto bg-[#141418] border border-border-subtle shadow-[0_16px_48px_rgba(0,0,0,0.6)] min-h-[800px] p-xl md:p-2xl rounded-lg relative group">
+<!-- Chapter Header -->
+<div class="mb-12 border-b border-border-subtle pb-6">
+<h3 class="font-mono-technical text-mono-technical text-accent-gold mb-4 tracking-widest uppercase">Chapter 03</h3>
+<h1 class="font-doc-heading text-display-md text-text-primary outline-none" contenteditable="true">Liquid Glass</h1>
+</div>
+<!-- Document Body -->
+<div class="font-doc-body text-doc-body text-text-primary/90 space-y-6 outline-none" contenteditable="true">
+<p class="relative group/block">
+<span class="absolute -left-8 top-1 opacity-0 group-hover/block:opacity-100 transition-opacity cursor-grab text-text-tertiary">
+<span class="material-symbols-outlined text-[16px]">drag_indicator</span>
+</span>
+                                The aesthetic leans heavily into a concept we call "Liquid Glass Refinement." It balances the technical precision of a high-end document operating system with the tactile warmth of a creative studio. Deep, layered backgrounds are utilized to create a sense of infinite depth, ensuring that the document content itself remains the central protagonist of the experience.
+                            </p>
+<p class="relative group/block pl-3 border-l-[3px] border-status-review bg-status-review/5 -ml-[15px] py-1">
+<span class="absolute -left-8 top-2 opacity-0 group-hover/block:opacity-100 transition-opacity cursor-grab text-text-tertiary">
+<span class="material-symbols-outlined text-[16px]">drag_indicator</span>
+</span>
+                                High-end visual cues like translucent panels, subtle glows, and generous negative space distinguish it from generic SaaS dashboards, positioning it alongside premium creative tools. The focus is always on the craft of writing and structuring complex information.
+                                <!-- Need Review Badge -->
+<span class="absolute right-0 -top-3 text-[10px] font-mono-technical bg-status-review text-bg-base px-1.5 py-0.5 rounded shadow-sm">NEEDS REVIEW</span>
+</p>
+<p class="relative group/block">
+<span class="absolute -left-8 top-1 opacity-0 group-hover/block:opacity-100 transition-opacity cursor-grab text-text-tertiary">
+<span class="material-symbols-outlined text-[16px]">drag_indicator</span>
+</span>
+                                Shadows are used sparingly and are "Ambient" in nature—extra-diffused, low-opacity, and slightly tinted to match the dark surroundings. The document itself uses a "Floating" shadow style to visually lift the work surface off the darker, structural background layers.
+                            </p>
+</div>
+</article>
+</div>
+</section>
+<!-- Panel 3: Right Inspector (AI & Metadata) -->
+<aside class="w-[320px] bg-bg-surface border-l border-border-subtle flex flex-col flex-shrink-0 z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.2)]">
+<!-- Inspector Tabs -->
+<div class="flex border-b border-border-subtle p-2 gap-2">
+<button class="flex-1 bg-bg-elevated border border-border-strong text-text-primary text-xs font-semibold py-1.5 rounded shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">Chapter</button>
+<button class="flex-1 bg-transparent text-text-secondary hover:bg-white/5 text-xs font-medium py-1.5 rounded transition-colors">Book</button>
+</div>
+<div class="flex-1 overflow-y-auto p-lg space-y-8">
+<!-- Metadata Section -->
+<section>
+<h4 class="text-xs font-bold text-text-tertiary uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">info</span> Details
+                        </h4>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-bg-base p-3 rounded border border-border-subtle">
+<div class="text-[10px] text-text-secondary uppercase tracking-widest mb-1">Words</div>
+<div class="font-mono-technical text-h2 text-text-primary">1,248</div>
+</div>
+<div class="bg-bg-base p-3 rounded border border-border-subtle">
+<div class="text-[10px] text-text-secondary uppercase tracking-widest mb-1">Read Time</div>
+<div class="font-mono-technical text-h2 text-text-primary">5m</div>
+</div>
+</div>
+<div class="mt-4 bg-bg-base p-3 rounded border border-border-subtle flex items-center justify-between">
+<span class="text-xs text-text-secondary">Status</span>
+<div class="flex items-center gap-2 bg-status-review/10 text-status-review border border-status-review/20 px-2 py-1 rounded-full text-[11px] font-bold tracking-wide">
+<div class="w-1.5 h-1.5 rounded-full bg-status-review"></div>
+                                REVIEW
+                            </div>
+</div>
+</section>
+<div class="h-px bg-border-subtle w-full"></div>
+<!-- AI Book Tools Section -->
+<section>
+<h4 class="text-xs font-bold text-accent-gold uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">auto_awesome</span> AI Book Tools
+                        </h4>
+<div class="space-y-3">
+<!-- Continue Writing Action -->
+<button class="w-full relative group overflow-hidden bg-bg-elevated border border-border-strong rounded-lg p-4 text-left hover:border-accent-gold/50 transition-colors duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+<!-- Hover Shimmer -->
+<div class="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] bg-gradient-to-r from-transparent via-accent-gold/10 to-transparent transition-transform duration-1000 ease-in-out pointer-events-none"></div>
+<div class="flex items-start gap-3">
+<div class="bg-accent-gold/10 p-1.5 rounded text-accent-gold">
+<span class="material-symbols-outlined text-[20px]" data-weight="fill">edit_note</span>
+</div>
+<div>
+<div class="text-sm font-semibold text-text-primary mb-0.5 group-hover:text-accent-gold transition-colors">Continue Writing</div>
+<div class="text-xs text-text-secondary leading-relaxed">Generate the next paragraphs based on current tone and outline.</div>
+</div>
+</div>
+</button>
+<!-- Check Consistency Action -->
+<button class="w-full bg-bg-base hover:bg-bg-elevated border border-border-subtle hover:border-border-strong rounded-lg p-3 text-left transition-all duration-300 group">
+<div class="flex items-center gap-3">
+<div class="text-text-secondary group-hover:text-text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+</div>
+<div class="flex-1">
+<div class="text-sm font-medium text-text-primary">Check Consistency</div>
+</div>
+<span class="material-symbols-outlined text-[14px] text-text-tertiary">chevron_right</span>
+</div>
+</button>
+<!-- Analyze Pacing Action -->
+<button class="w-full bg-bg-base hover:bg-bg-elevated border border-border-subtle hover:border-border-strong rounded-lg p-3 text-left transition-all duration-300 group">
+<div class="flex items-center gap-3">
+<div class="text-text-secondary group-hover:text-text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">timeline</span>
+</div>
+<div class="flex-1">
+<div class="text-sm font-medium text-text-primary">Analyze Pacing</div>
+</div>
+<span class="material-symbols-outlined text-[14px] text-text-tertiary">chevron_right</span>
+</div>
+</button>
+</div>
+</section>
+<div class="h-px bg-border-subtle w-full"></div>
+<!-- Outline Inspector -->
+<section>
+<h4 class="text-xs font-bold text-text-tertiary uppercase tracking-wider mb-4">Chapter Outline</h4>
+<div class="border-l border-border-strong ml-2 space-y-4 relative py-2">
+<div class="relative pl-4">
+<div class="absolute w-2 h-2 rounded-full bg-border-strong -left-[4.5px] top-1.5"></div>
+<div class="text-xs text-text-primary font-medium">Definition of the Theme</div>
+<div class="text-[10px] text-text-secondary mt-0.5 line-clamp-1">Explaining "Liquid Glass Refinement"</div>
+</div>
+<div class="relative pl-4">
+<div class="absolute w-2 h-2 rounded-full bg-accent-gold -left-[4.5px] top-1.5 shadow-[0_0_8px_rgba(232,168,74,0.5)]"></div>
+<div class="text-xs text-accent-gold font-medium">Visual Cues</div>
+<div class="text-[10px] text-text-secondary mt-0.5 line-clamp-1">Comparing to SaaS dashboards</div>
+</div>
+<div class="relative pl-4 opacity-50">
+<div class="absolute w-2 h-2 rounded-full border border-border-strong bg-bg-base -left-[4.5px] top-1.5"></div>
+<div class="text-xs text-text-primary font-medium">Shadow Strategy</div>
+<div class="text-[10px] text-text-secondary mt-0.5 line-clamp-1">Ambient vs Floating</div>
+</div>
+</div>
+</section>
+</div>
+</aside>
+</main>
+</div>
+<style>
+        /* Custom scrollbar for a cleaner look */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</body></html>

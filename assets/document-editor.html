@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OLPDF Document Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Newsreader:ital,wght@0,400;0,500;0,700;1,400;1,700&amp;family=Space+Grotesk:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#39393c",
+                        "on-secondary": "#003828",
+                        "accent-gold": "#e8a84a",
+                        "secondary-fixed": "#93f6ce",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1b1b1e",
+                        "on-surface": "#e5e1e6",
+                        "on-primary-container": "#623f00",
+                        "text-tertiary": "#4a4850",
+                        "surface-container": "#1f1f22",
+                        "primary": "#ffc677",
+                        "bg-elevated": "#1c1c22",
+                        "on-tertiary-fixed-variant": "#8c1710",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#e5e1e6",
+                        "text-secondary": "#8a8790",
+                        "secondary-container": "#017f5e",
+                        "surface-variant": "#353438",
+                        "primary-container": "#e8a84a",
+                        "secondary-fixed-dim": "#76d9b2",
+                        "on-secondary-fixed-variant": "#00513b",
+                        "bg-base": "#0c0c0f",
+                        "tertiary": "#ffc1b8",
+                        "primary-fixed": "#ffddb4",
+                        "on-tertiary-container": "#8b160f",
+                        "on-secondary-container": "#cfffe8",
+                        "tertiary-container": "#ff988a",
+                        "surface-tint": "#fdba5a",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#2a2a2d",
+                        "inverse-on-surface": "#303033",
+                        "bg-surface": "#141418",
+                        "bg-glass": "rgba(28, 28, 34, 0.72)",
+                        "status-ok": "#4aae8a",
+                        "secondary": "#76d9b2",
+                        "surface-container-lowest": "#0e0e11",
+                        "border-subtle": "rgba(255, 255, 255, 0.06)",
+                        "primary-fixed-dim": "#fdba5a",
+                        "inverse-primary": "#835500",
+                        "status-review": "#e8834a",
+                        "on-secondary-fixed": "#002116",
+                        "on-primary-fixed": "#291800",
+                        "tertiary-fixed": "#ffdad5",
+                        "tertiary-fixed-dim": "#ffb4a9",
+                        "on-tertiary": "#690002",
+                        "on-primary-fixed-variant": "#633f00",
+                        "status-error": "#e85a4a",
+                        "border-strong": "rgba(255, 255, 255, 0.12)",
+                        "on-background": "#e5e1e6",
+                        "outline-variant": "#514537",
+                        "surface": "#131316",
+                        "background": "#131316",
+                        "text-primary": "#f0ede8",
+                        "outline": "#9d8e7d",
+                        "on-error": "#690005",
+                        "surface-dim": "#131316",
+                        "on-primary": "#452b00",
+                        "surface-container-highest": "#353438",
+                        "on-surface-variant": "#d5c4b1",
+                        "on-tertiary-fixed": "#410001"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "200px",
+                        "sm": "8px",
+                        "canvas-max-width": "800px",
+                        "2xl": "64px",
+                        "xl": "40px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "mono-technical": ["Space Grotesk"],
+                        "h1": ["Manrope"],
+                        "doc-body": ["Newsreader"],
+                        "display-md": ["Newsreader"],
+                        "doc-heading": ["Newsreader"],
+                        "display-lg": ["Newsreader"],
+                        "h2": ["Manrope"],
+                        "body-ui": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "mono-technical": ["12px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "h1": ["28px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "doc-body": ["11pt", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-md": ["40px", { "lineHeight": "1.15", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "doc-heading": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "display-lg": ["56px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h2": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-ui": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-bg-base text-text-primary h-screen overflow-hidden flex flex-col font-body-ui antialiased">
+<!-- JSON Component: TopAppBar -->
+<nav class="bg-[#0c0c0f]/80 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-white/10 shadow-[0_16px_48px_rgba(0,0,0,0.6)] flex justify-between items-center w-full px-6 py-3 font-newsreader font-medium tracking-tight">
+<div class="flex items-center gap-4">
+<img alt="OLPDF Logo" class="h-8 w-auto object-contain" data-alt="A sophisticated, minimalist 3D geometric logo mark made of frosted glass and warm gold accents, floating against a pure black background. The lighting is cinematic, highlighting the refractive qualities of the glass and the metallic sheen of the gold. Designed for a premium digital tool, with sharp edges and soft internal glows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRjPSmdoVnFT1g4m5lX0A2q4biPZTubIIX0aYnS7G1b4fXrKJj6M-wfI0mcjWbiBnUa-fYGJD9Tm-TfShlCgkr7gU8ni3sQKKwQbVnPakHsJwuLYOvpkCXYVAgk5g1khGLUHLG5TYnQQObumM1J8F0Ay-PQ2_JvMbIkd4F-VKLiUeyFTfbpb9RtkHKYJZ2iFT4xrqpF60pUMH6xCNwGZY-2J6fVIdMgweYz2b4y-3Szxkz5O-vOXm5GxQepfJdE87gqYEibk3a8Q"/>
+<span class="text-2xl font-serif italic text-[#e8a84a]">OLPDF</span>
+</div>
+<ul class="hidden md:flex items-center gap-6">
+<li><a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 active:scale-[0.98] py-2 px-3 rounded" href="#">Dashboard</a></li>
+<li><a class="text-[#e8a84a] border-b-2 border-[#e8a84a] pb-1 py-2 px-3" href="#">Editor</a></li>
+<li><a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 active:scale-[0.98] py-2 px-3 rounded" href="#">Book Maker</a></li>
+<li><a class="text-slate-400 hover:text-white transition-colors hover:bg-white/5 transition-all duration-300 active:scale-[0.98] py-2 px-3 rounded" href="#">PDF Toolkit</a></li>
+</ul>
+<div class="flex items-center gap-4">
+<button class="bg-accent-gold text-on-primary-container px-4 py-1.5 rounded font-body-ui text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all">Create New</button>
+<div class="flex items-center gap-2 text-[#e8a84a]">
+<span class="material-symbols-outlined p-1.5 hover:bg-white/5 rounded-full cursor-pointer transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined p-1.5 hover:bg-white/5 rounded-full cursor-pointer transition-colors" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</nav>
+<!-- Main Workspace -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Left Panel: Navigator -->
+<aside class="w-16 md:w-64 bg-surface-container border-r border-border-subtle flex flex-col flex-shrink-0 transition-all duration-300">
+<div class="flex md:hidden flex-col items-center py-4 gap-4 text-text-secondary">
+<span class="material-symbols-outlined p-2 rounded hover:bg-surface-bright hover:text-primary cursor-pointer transition-colors" data-icon="grid_view">grid_view</span>
+<span class="material-symbols-outlined p-2 rounded hover:bg-surface-bright hover:text-primary cursor-pointer transition-colors bg-surface-bright text-primary" data-icon="data_object">data_object</span>
+<span class="material-symbols-outlined p-2 rounded hover:bg-surface-bright hover:text-primary cursor-pointer transition-colors" data-icon="smart_toy">smart_toy</span>
+</div>
+<div class="hidden md:flex flex-col h-full">
+<div class="p-4 border-b border-border-subtle flex items-center justify-between">
+<span class="font-body-ui font-semibold text-text-primary">Structure</span>
+<span class="material-symbols-outlined text-text-secondary cursor-pointer hover:text-text-primary text-sm" data-icon="keyboard_double_arrow_left">keyboard_double_arrow_left</span>
+</div>
+<div class="flex-1 overflow-y-auto p-2 space-y-1">
+<div class="flex items-center gap-3 p-2 rounded bg-surface-bright text-primary cursor-pointer">
+<span class="material-symbols-outlined text-sm" data-icon="data_object">data_object</span>
+<span class="text-sm">Executive Summary</span>
+</div>
+<div class="flex items-center gap-3 p-2 rounded text-text-secondary hover:bg-surface-bright hover:text-text-primary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="data_object">data_object</span>
+<span class="text-sm">Market Analysis</span>
+</div>
+<div class="flex items-center gap-3 p-2 rounded text-text-secondary hover:bg-surface-bright hover:text-text-primary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-sm text-status-review" data-icon="warning">warning</span>
+<span class="text-sm">Financial Projections</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Center Panel: Editor Canvas -->
+<section class="flex-1 flex flex-col bg-bg-surface overflow-hidden relative">
+<!-- Top Toolbar -->
+<div class="h-12 border-b border-border-subtle bg-surface-container/80 backdrop-blur flex items-center justify-between px-4 flex-shrink-0 z-10">
+<div class="flex items-center gap-1 text-text-secondary">
+<button class="p-1.5 rounded hover:bg-surface-bright hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="undo">undo</span></button>
+<button class="p-1.5 rounded hover:bg-surface-bright hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="redo">redo</span></button>
+<div class="w-px h-5 bg-border-strong mx-2"></div>
+<button class="p-1.5 rounded bg-surface-bright text-primary transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="format_bold">format_bold</span></button>
+<button class="p-1.5 rounded hover:bg-surface-bright hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="format_italic">format_italic</span></button>
+<button class="p-1.5 rounded hover:bg-surface-bright hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="format_underlined">format_underlined</span></button>
+<div class="w-px h-5 bg-border-strong mx-2"></div>
+<button class="p-1.5 rounded hover:bg-surface-bright hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="table_chart">table_chart</span></button>
+<button class="p-1.5 rounded hover:bg-surface-bright hover:text-text-primary transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="image">image</span></button>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<img alt="Collaborator 1" class="w-7 h-7 rounded-full border-2 border-bg-surface z-20 object-cover" data-alt="A professional headshot of a young woman with natural makeup, looking directly at the camera, softly lit against a neutral background. Warm, corporate yet approachable aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4qjgGHIR6YIH6mBAabpMZM8QcGV6F6oEtg19ZG0o4JWuylDmDeOtgI7kU5NFkdKNLoH6rjKDhQu5QBMxpZQf3j6ORemt69IdP7QV25gF8xdNHSqzcbclok-RSCx9O2Dx31PNncKZBJoJRQiXWQoXSz_xj-ngLIWJ-i2LTvDEmGZY2iuAzf58WwG3JJS-Fyx5v2BXtV0n5YQrJcMQCpggQcrk4qh0JLvo-Pbth18PlGOt5dWWDNZ_k3MKsOOGR2Tzp569OjUFcXw"/>
+<img alt="Collaborator 2" class="w-7 h-7 rounded-full border-2 border-bg-surface z-10 object-cover" data-alt="A portrait of a man in profile, softly lit, conveying a sense of focus and professional creative work. Muted tones, high resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKekNn_bSoijdezoXYz7VBprW8w0wjLVkzbLxTCXmaH_aLNMcKiDSkylUMMZ90g5nUXCkZr2gq53Jfc2oeIY0NJD9L1KhJkt-5KhTijZ1JsRi_LwXlVGFnaA8VaTP65Iz9NqjS6eEI5J54qsdHBxuYdwxPUTdMkZqpVe7I-1qRVyw1lh6m9_1Zy40HdlaO2CXDFR68uQbskCixbMKHwmxAEi1eekW-KV0Lu8BZMmjnvKLRFqwgNoGw3wauV2xDD0bVaYjR7FkngA"/>
+</div>
+<button class="bg-surface-bright hover:bg-surface-variant text-text-primary px-3 py-1 rounded text-sm font-medium transition-colors border border-border-subtle">Share</button>
+</div>
+</div>
+<!-- Canvas Container -->
+<div class="flex-1 overflow-y-auto p-4 md:p-12 flex justify-center relative">
+<!-- White Paper Canvas -->
+<div class="w-full max-w-[800px] bg-[#fcfcfc] shadow-[0_16px_48px_rgba(0,0,0,0.6)] min-h-[1056px] p-16 text-[#1a1a1a] relative mb-24 rounded-sm">
+<h1 class="font-h1 text-h1 text-black mb-8">Q4 Strategic Vision &amp; Imperatives</h1>
+<!-- Standard Block -->
+<div class="relative group -mx-16 px-16 py-3 hover:bg-black/5 transition-colors duration-200">
+<div class="absolute left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-gray-400">
+<span class="material-symbols-outlined text-[18px]" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<p class="font-doc-body text-doc-body leading-relaxed">The landscape for digital document processing is undergoing a paradigm shift. Our objective for the upcoming quarter is to consolidate our position as the premium offering in the enterprise sector, leveraging our proprietary AI models to automate compliance checks and semantic structuring.</p>
+<div class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+<span class="px-2 py-1 bg-gray-200 text-gray-600 rounded text-[10px] uppercase font-mono-technical tracking-widest">Paragraph</span>
+</div>
+</div>
+<!-- Needs Review Block -->
+<div class="relative group -mx-16 px-16 py-4 hover:bg-black/5 transition-colors duration-200 border-l-[3px] border-status-review bg-status-review/5 mt-4">
+<div class="absolute left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-gray-400">
+<span class="material-symbols-outlined text-[18px]" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<p class="font-doc-body text-doc-body leading-relaxed text-gray-800">
+<span class="bg-accent-gold/30">Projected revenue increases of 45% YoY are entirely dependent on the successful acquisition of the pending federal contracts.</span> Given the current legislative environment, this assumption carries significant risk and requires secondary validation from the legal team before final publication.
+                        </p>
+<div class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px] text-status-review cursor-pointer hover:scale-110 transition-transform" data-icon="warning" title="AI Review Flagged">warning</span>
+<span class="px-2 py-1 bg-white border border-status-review/30 text-status-review rounded text-[10px] uppercase font-mono-technical tracking-widest">AI Generated</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Panel: Inspector -->
+<aside class="w-80 bg-surface-container border-l border-border-subtle flex flex-col flex-shrink-0">
+<!-- Tabs -->
+<div class="flex items-center border-b border-border-subtle bg-surface flex-shrink-0">
+<button class="flex-1 py-3.5 text-center border-b-2 border-transparent text-text-secondary hover:text-text-primary font-body-ui text-sm transition-colors">Document</button>
+<button class="flex-1 py-3.5 text-center border-b-2 border-primary text-primary font-body-ui text-sm font-semibold transition-colors">Block</button>
+<button class="flex-1 py-3.5 text-center border-b-2 border-transparent text-text-secondary hover:text-text-primary font-body-ui text-sm flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="auto_awesome">auto_awesome</span> AI
+                </button>
+</div>
+<!-- Inspector Content (Block Context) -->
+<div class="flex-1 overflow-y-auto p-5 space-y-8">
+<div>
+<h3 class="font-mono-technical text-xs text-text-secondary uppercase tracking-widest mb-4">Block Attributes</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-sm text-text-secondary">Type</span>
+<span class="px-2 py-1 bg-surface-bright rounded text-xs font-mono-technical text-text-primary border border-border-subtle">Text Node</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm text-text-secondary">ID</span>
+<span class="text-xs font-mono-technical text-text-tertiary">blk_09f82a1c</span>
+</div>
+</div>
+</div>
+<div class="pt-6 border-t border-border-subtle">
+<h3 class="font-mono-technical text-xs text-status-review uppercase tracking-widest mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="policy">policy</span> Review Required
+                    </h3>
+<div class="bg-surface-bright rounded-lg p-4 border border-status-review/20 shadow-lg">
+<div class="flex items-start gap-3 mb-3">
+<div class="w-6 h-6 rounded-full bg-status-review/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-status-review" data-icon="smart_toy">smart_toy</span>
+</div>
+<div>
+<h4 class="text-sm font-semibold text-text-primary mb-1">Confidence Score: Low</h4>
+<p class="text-xs text-text-secondary leading-relaxed">The AI model flagged the highlighted text as highly speculative based on cross-referenced internal data.</p>
+</div>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 bg-status-review/10 hover:bg-status-review/20 text-status-review py-1.5 rounded text-xs font-semibold transition-colors">Accept Risk</button>
+<button class="flex-1 bg-surface hover:bg-surface-variant text-text-primary py-1.5 rounded text-xs font-semibold border border-border-subtle transition-colors">Rewrite</button>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

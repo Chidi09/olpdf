@@ -1,0 +1,15 @@
+fastapi[all]
+supabase
+pypdf
+pydantic
+python-dotenv
+httpx
+google-generativeai
+pymupdf
+boto3
+pdfplumber
+qstash
+bleach
+python-jose[cryptography]
+reportlab
+ebooklib

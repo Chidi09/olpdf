@@ -1,0 +1,27 @@
+{
+  "name": "@olpdf/ui",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "lint": "node -e \"console.log('ui lint placeholder')\"",
+    "typecheck": "node -e \"console.log('ui typecheck placeholder')\"",
+    "test": "node -e \"console.log('no tests configured for ui')\"",
+    "build": "node -e \"console.log('ui build placeholder')\""
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.511.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "typescript": "^5.8.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}
