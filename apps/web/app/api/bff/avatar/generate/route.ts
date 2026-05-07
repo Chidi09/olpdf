@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { API_BASE_URL } from "@/app/api/bff/_shared";
-import { createSupabaseServerClient } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export async function POST() {
   const supabase = await createSupabaseServerClient();
