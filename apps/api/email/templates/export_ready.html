@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 style="font-size:22px;color:#0e0e11;margin:0 0 12px;">Your export is ready ✓</h2>
+<p style="color:#595661;line-height:1.6;margin:0 0 8px;">
+    <strong>{{ doc_title }}</strong> has been exported as
+    <code style="background:#f0ede8;padding:2px 8px;border-radius:4px;font-size:13px;">{{ format_type | upper }}</code>.
+</p>
+<p style="color:#918d93;font-size:13px;margin:0 0 28px;">
+    ⚠ This download link expires in <strong>24 hours</strong>.
+</p>
+<a href="{{ export_url }}" style="display:inline-block;background:#e6a449;color:#101014;padding:13px 32px;border-radius:100px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.04em;">Download Export →</a>
+{% endblock %}

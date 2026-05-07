@@ -1,0 +1,11 @@
+{% extends "base.txt" %}
+
+{% block content %}
+Your document is ready ✓
+
+{{ doc_title }} has been processed and is now ready to edit in OLPDF.
+
+Open Document: {{ app_url }}/editor/{{ doc_id }}
+
+Import complete. All pages have been classified and extracted.
+{% endblock %}

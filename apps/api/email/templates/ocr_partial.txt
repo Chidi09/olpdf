@@ -1,0 +1,12 @@
+{% extends "base.txt" %}
+
+{% block content %}
+Partial import complete
+
+{{ doc_title }} has been partially processed. Native text pages are ready to edit now.
+
+{{ pages_ocr }} scanned page{% if pages_ocr != 1 %}s{% endif %} {% if pages_ocr != 1 %}are{% else %}is{% endif %} queued for OCR and will be merged automatically.
+You'll receive another email when OCR is complete.
+
+Open Document: {{ app_url }}/editor/{{ doc_id }}
+{% endblock %}

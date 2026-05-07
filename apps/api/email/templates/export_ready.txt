@@ -1,0 +1,11 @@
+{% extends "base.txt" %}
+
+{% block content %}
+Your export is ready ✓
+
+{{ doc_title }} has been exported as {{ format_type | upper }}.
+
+⚠ This download link expires in 24 hours.
+
+Download Export: {{ export_url }}
+{% endblock %}

@@ -1,0 +1,10 @@
+{
+  "name": "olpdf-embed",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  }
+}

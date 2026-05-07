@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 style="font-size:22px;color:#0e0e11;margin:0 0 12px;">Partial import complete</h2>
+<p style="color:#595661;line-height:1.6;margin:0 0 8px;">
+    <strong>{{ doc_title }}</strong> has been partially processed.
+    Native text pages are ready to edit now.
+</p>
+<p style="color:#595661;line-height:1.6;margin:0 0 28px;">
+    <strong>{{ pages_ocr }} scanned page{% if pages_ocr != 1 %}s{% endif %}</strong>
+    {% if pages_ocr != 1 %}are{% else %}is{% endif %} queued for OCR and will be merged automatically.
+    You'll receive another email when OCR is complete.
+</p>
+<a href="{{ app_url }}/editor/{{ doc_id }}" style="display:inline-block;background:#e6a449;color:#101014;padding:13px 32px;border-radius:100px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.04em;">Open Document →</a>
+{% endblock %}
