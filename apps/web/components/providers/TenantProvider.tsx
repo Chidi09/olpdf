@@ -11,8 +11,15 @@ interface TenantBranding {
   favicon_url?: string;
 }
 
+interface TenantData {
+  id?: string;
+  name?: string;
+  slug?: string;
+  [key: string]: unknown;
+}
+
 interface TenantContextType {
-  tenant: any | null;
+  tenant: TenantData | null;
   branding: TenantBranding;
   isLoading: boolean;
 }
@@ -26,7 +33,7 @@ const TenantContext = createContext<TenantContextType>({
 export const useTenant = () => useContext(TenantContext);
 
 export function TenantProvider({ children }: { children: React.ReactNode }) {
-  const [tenant, setTenant] = useState<any | null>(null);
+  const [tenant, setTenant] = useState<TenantData | null>(null);
   const [branding, setBranding] = useState<TenantBranding>({});
   const [isLoading, setIsLoading] = useState(true);
 

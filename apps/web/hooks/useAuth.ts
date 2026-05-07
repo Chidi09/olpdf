@@ -41,9 +41,11 @@ export function useAuth() {
         user: mockUser,
       } as unknown as Session;
 
-      setUser(mockUser);
-      setSession(mockSession);
-      setLoading(false);
+      Promise.resolve().then(() => {
+        setUser(mockUser);
+        setSession(mockSession);
+        setLoading(false);
+      });
       return;
     }
 

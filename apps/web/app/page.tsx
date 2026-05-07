@@ -312,7 +312,7 @@ export default function LandingPage() {
               </span> Document Intelligence
           </h2>
           <p className="text-lg md:text-xl text-[var(--text-secondary)] leading-relaxed mb-8 font-medium">
-            Most PDFs are <span className="underline decoration-wavy decoration-[var(--border-strong)] underline-offset-4">"digital paper"</span>—unstructured and hard to edit. OLPDF is our attempt to turn every document into a semantic, machine-readable, and human-editable data structure.
+            Most PDFs are <span className="underline decoration-wavy decoration-[var(--border-strong)] underline-offset-4">&ldquo;digital paper&rdquo;</span>—unstructured and hard to edit. OLPDF is our attempt to turn every document into a semantic, machine-readable, and human-editable data structure.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             <div className="flex flex-col gap-3 relative">
@@ -526,8 +526,8 @@ export default function LandingPage() {
             <div className="p-6 overflow-x-auto text-sm font-mono text-blue-400/90 leading-relaxed">
               <pre><code>
 <span className="text-pink-400/90">curl</span> -X POST https://api.olpdf.xyz/v1/extract \
-  -H <span className="text-amber-300/90">"Authorization: Bearer free_beta_key"</span> \
-  -H <span className="text-amber-300/90">"Content-Type: application/json"</span> \
+  -H <span className="text-amber-300/90">&quot;Authorization: Bearer free_beta_key&quot;</span> \
+  -H <span className="text-amber-300/90">&quot;Content-Type: application/json&quot;</span> \
   -d <span className="text-amber-300/90">{`'{ "url": "https://example.com/invoice.pdf", "mode": "semantic" }'`}</span>
               </code></pre>
             </div>

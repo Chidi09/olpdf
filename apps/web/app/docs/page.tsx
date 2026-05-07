@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { 
@@ -338,7 +339,7 @@ function EndpointCard({ method, path, desc, payload }: { method: string, path: s
   );
 }
 
-function ActivityIcon(props: any) {
+function ActivityIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

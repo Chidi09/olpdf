@@ -111,7 +111,7 @@ export default function ContributePage() {
               <div className="max-w-2xl mx-auto p-8 rounded-3xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
                  <h4 className="font-bold mb-4 text-center">First-time contributor?</h4>
                  <p className="text-sm text-[var(--text-secondary)] text-center leading-relaxed mb-6">
-                    Check out our <code>GOOD_FIRST_ISSUES.md</code> on GitHub. We have plenty of "frontend-only" styling tasks and "backend-only" parser improvements waiting for your hands.
+                    Check out our <code>GOOD_FIRST_ISSUES.md</code> on GitHub. We have plenty of &ldquo;frontend-only&rdquo; styling tasks and &ldquo;backend-only&rdquo; parser improvements waiting for your hands.
                  </p>
                  <div className="flex justify-center">
                     <Link href="https://github.com/olpdf/olpdf" className="inline-flex items-center gap-2 text-[var(--accent)] font-black hover:underline">

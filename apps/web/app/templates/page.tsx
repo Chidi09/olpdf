@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Search, 
@@ -40,6 +41,7 @@ const categoryMap = [
 ];
 
 export default function TemplatesPage() {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [applyingId, setApplyingId] = useState<string | null>(null);
@@ -88,11 +90,11 @@ export default function TemplatesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ document_id: targetDocumentId }),
       });
-      window.location.href = `/editor/${targetDocumentId}`;
+      router.push(`/editor/${targetDocumentId}`);
     } catch (e) {
       console.error(e);
       // Fallback for demo
-      window.location.href = `/editor/demo-doc-1`;
+      router.push(`/editor/demo-doc-1`);
     } finally {
       setApplyingId(null);
     }

@@ -62,7 +62,7 @@ export default function HelpPage() {
               <Mail className="h-6 w-6" />
             </div>
             <h3 className="text-xl font-bold mb-2">Contact Support</h3>
-            <p className="text-[var(--text-secondary)] text-sm mb-4">Can't find what you need? Send us a message directly.</p>
+            <p className="text-[var(--text-secondary)] text-sm mb-4">Can&apos;t find what you need? Send us a message directly.</p>
             <span className="text-amber-500 text-sm font-semibold flex items-center gap-1">Email us <ExternalLink className="h-3 w-3" /></span>
           </div>
         </div>

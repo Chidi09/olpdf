@@ -48,7 +48,7 @@ export default function SecurityPage() {
           </div>
           <div className="prose prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)]">
             <p>
-              If you believe you've found a security vulnerability in OLPDF, please notify us immediately. We will work with you to resolve the issue promptly.
+              If you believe you&apos;ve found a security vulnerability in OLPDF, please notify us immediately. We will work with you to resolve the issue promptly.
             </p>
             <h3>Reporting Guidelines</h3>
             <ul>
@@ -63,7 +63,7 @@ export default function SecurityPage() {
             <ul>
               <li>Clickjacking on pages with no sensitive actions.</li>
               <li>Unauthenticated/logout/login CSRF.</li>
-              <li>Attacks requiring MITM or physical access to a user's device.</li>
+              <li>Attacks requiring MITM or physical access to a user&apos;s device.</li>
               <li>Missing security headers which do not lead directly to a vulnerability.</li>
             </ul>
           </div>
