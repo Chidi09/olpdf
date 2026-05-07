@@ -11,6 +11,7 @@
     "test": "node -e \"console.log('no tests configured for web')\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1044.0",
     "@olpdf/document-model": "workspace:*",
     "@olpdf/ui": "workspace:*",
     "@supabase/ssr": "^0.5.2",
