@@ -1,26 +1,127 @@
+import json
 import uuid
 import time
 import logging
-from fastapi import FastAPI, Request, HTTPException
+import os
+from typing import Optional
+from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from .auth_utils import verify_jwt_token
-from .routes import documents, books, ai, pdf, worker, templates
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from .limiter import limiter
+from .core.auth import verify_jwt_token
+from .core.security import hash_api_key
+from .repositories.user_repo import ApiKeyRepository
+from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "name": record.name,
+            "level": record.levelname,
+            "message": record.getMessage(),
+        }
+        if hasattr(record, "request_id"):
+            log_record["request_id"] = record.request_id
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_record)
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger("olpdf-api")
+logger.setLevel(logging.INFO)
+
+# Avoid adding multiple handlers in hot-reload scenarios
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
+    logger.addHandler(handler)
 
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
 
+REQUIRED_ENV_VARS = [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_JWT_SECRET",
+    "QSTASH_TOKEN",
+    "QSTASH_CURRENT_SIGNING_KEY",
+    "MODAL_WORKER_URL",
+    "WORKER_SECRET",
+    "GEMINI_API_KEY",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_ENDPOINT",
+    "R2_BUCKET_NAME"
+]
+
+def validate_env():
+    if os.environ.get("OLPDF_DEV_MODE") == "true":
+        logger.warning("OLPDF_DEV_MODE is enabled. Skipping some mandatory env var checks.")
+        return
+        
+    missing = [var for var in REQUIRED_ENV_VARS if not os.environ.get(var)]
+    if missing:
+        error_msg = f"Missing required environment variables: {', '.join(missing)}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+        
+    # Check SMTP if configured
+    smtp_host = os.environ.get("SMTP_HOST")
+    if smtp_host:
+        import smtplib
+        port = int(os.environ.get("SMTP_PORT", 587))
+        try:
+            with smtplib.SMTP(smtp_host, port, timeout=5) as server:
+                server.ehlo()
+                logger.info(f"Successfully connected to SMTP server at {smtp_host}:{port}")
+        except Exception as e:
+            logger.warning(f"Failed to connect to SMTP server at {smtp_host}:{port} - {e}")
+
+
 def create_app() -> FastAPI:
+    # Validate env before starting
+    validate_env()
+    
     app = FastAPI(
         title="OLPDF API",
         description="Backend API for OLPDF - Open Lightweight PDF Editor",
         version="0.1.0"
     )
+
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # CORS Middleware — origins controlled by ALLOWED_ORIGINS env var (comma-separated).
+    # Dev mode falls back to localhost only; production must set this explicitly.
+    _raw_origins = os.environ.get("ALLOWED_ORIGINS", "")
+    if _raw_origins:
+        _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+    elif os.environ.get("OLPDF_DEV_MODE") == "true":
+        _allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    else:
+        logger.warning("ALLOWED_ORIGINS is not set and OLPDF_DEV_MODE is off — CORS will reject all cross-origin requests")
+        _allowed_origins = []
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
+    )
+
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Content-Security-Policy for API should be very restrictive
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+        return response
 
     @app.middleware("http")
     async def add_request_id_and_logging(request: Request, call_next):
@@ -45,20 +146,35 @@ def create_app() -> FastAPI:
     async def guard_api_requests(request: Request, call_next):
         path = request.url.path
         if path.startswith("/api/"):
-            # Worker routes use QStash signature instead of JWT
+            # Worker routes use QStash signature instead of JWT/API Key
             if not path.startswith("/api/worker/"):
                 auth_header = request.headers.get("authorization", "")
-                if not auth_header.startswith("Bearer "):
+                api_key_header = request.headers.get("x-api-key", "")
+
+                authenticated = False
+                
+                # Try JWT
+                if auth_header.startswith("Bearer "):
+                    try:
+                        verify_jwt_token(auth_header[7:])
+                        authenticated = True
+                    except HTTPException:
+                        pass
+                
+                # Try API Key if not already authenticated via JWT
+                if not authenticated and api_key_header:
+                    key_hash = hash_api_key(api_key_header)
+                    if ApiKeyRepository.get_by_hash(key_hash):
+                        authenticated = True
+
+                # Dev mode fallback
+                if not authenticated and os.environ.get("OLPDF_DEV_MODE") == "true":
+                    authenticated = True
+
+                if not authenticated:
                     return JSONResponse(
                         status_code=401,
-                        content={"error": "api_error", "message": "Missing bearer token"}
-                    )
-                try:
-                    verify_jwt_token(auth_header[7:])
-                except HTTPException as e:
-                    return JSONResponse(
-                        status_code=e.status_code,
-                        content={"error": "api_error", "message": e.detail}
+                        content={"error": "api_error", "message": "Authentication required (JWT or API Key)"}
                     )
 
             # Enforce max payload size
@@ -90,15 +206,33 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
+        request_id = request.headers.get("X-Request-ID", "unknown")
+        logger.error(f"Unhandled exception: {str(exc)}", exc_info=exc, extra={"request_id": request_id})
         return JSONResponse(
             status_code=500,
-            content={"error": "internal_server_error", "message": str(exc)},
+            content={"error": "internal_server_error", "message": "An unexpected error occurred"},
         )
 
-    # Health Check
+    # Health Check — probes DB so load balancers / uptime monitors get accurate signal
     @app.get("/health")
     async def health_check():
-        return {"status": "healthy"}
+        from .core.supabase_client import supabase
+        checks: dict = {}
+
+        # DB probe: cheapest possible query
+        try:
+            supabase.table("profiles").select("id").limit(1).execute()
+            checks["db"] = "ok"
+        except Exception as exc:
+            logger.warning(f"Health check DB probe failed: {exc}")
+            checks["db"] = "degraded"
+
+        overall = "healthy" if all(v == "ok" for v in checks.values()) else "degraded"
+        status_code = 200 if overall == "healthy" else 503
+        return JSONResponse(
+            status_code=status_code,
+            content={"status": overall, "checks": checks},
+        )
 
     # Include Routers
     app.include_router(documents.router)
@@ -107,6 +241,15 @@ def create_app() -> FastAPI:
     app.include_router(pdf.router)
     app.include_router(worker.router)
     app.include_router(templates.router)
+    app.include_router(api_keys.router)
+    app.include_router(account.router)
+    app.include_router(webhooks.router)
+    app.include_router(signatures.router)
+    app.include_router(workspaces.router)
+    app.include_router(forms.router)
+    app.include_router(annotations.router)
+    app.include_router(plugins.router)
+    app.include_router(tenants.router)
 
     return app
 

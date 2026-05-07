@@ -5,7 +5,39 @@ node_modules
 out
 build
 dist
-.env*.local
+
+# Environment files — never commit secrets
+.env
+.env.*
+!.env.example
+
 .DS_Store
 *.log
+Thumbs.db
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Random generated / temp files
+ChatGPT\ Image*.png
+*.tmp
+
+# Internal planning & protocol docs (not for public repo)
+/docs/
+olpdf-plan.md
+OLPDF_Final_Master_Plan.md
+DEVELOPER_DOCS.md
+ROADMAP.md
+
+# AI assistant config files (internal tooling, not for public)
+CLAUDE.md
+AGENTS.md
+**/CLAUDE.md
+**/AGENTS.md

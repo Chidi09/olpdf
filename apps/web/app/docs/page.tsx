@@ -278,10 +278,10 @@ export default function DocsPage() {
               OLPDF is fully containerized and uses Cloudflare R2 for zero-egress storage.
             </p>
             
-            <div className="bg-[#0a0a0c] rounded-2xl border border-[var(--border-strong)] overflow-hidden shadow-2xl">
+            <div className="bg-[var(--bg-canvas)] rounded-2xl border border-[var(--border-strong)] overflow-hidden shadow-2xl">
               <div className="px-4 py-3 bg-[var(--border-subtle)] border-b border-[var(--border-strong)] flex items-center justify-between">
-                <span className="text-xs font-mono text-gray-400">docker-compose.yml</span>
-                <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="text-xs font-mono text-[var(--text-tertiary)]">docker-compose.yml</span>
+                <div className="h-2 w-2 rounded-full bg-[var(--status-ok)]" />
               </div>
               <div className="p-6 overflow-x-auto text-xs font-mono text-emerald-400">
 <pre><code>{`services:

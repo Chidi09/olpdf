@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DocumentModel } from "@olpdf/document-model";
-import { bffGet, bffPost } from "@/lib/bffClient";
+import { BffHttpError, bffGet, bffPost } from "@/lib/bffClient";
 
 type DocumentPayload = {
   id: string;
@@ -37,7 +37,30 @@ export function useSaveDocumentMutation(documentId: string) {
   return useMutation({
     mutationFn: (document_model: DocumentModel) =>
       bffPost(`/api/bff/documents/${documentId}/save`, { document_model }),
+    onError: (error, variables) => {
+      if (error instanceof BffHttpError && error.status === 401) {
+        if (typeof window !== "undefined") {
+          // Draft recovery: Save current state to local storage
+          try {
+            const recoveryKey = `olpdf_recovery_${documentId}`;
+            localStorage.setItem(recoveryKey, JSON.stringify({
+              model: variables,
+              timestamp: new Date().toISOString()
+            }));
+          } catch (e) {
+            console.error("Failed to save recovery draft", e);
+          }
+          
+          // Redirect to login with recovery flag
+          window.location.href = `/login?redirect=/editor/${documentId}&recovered=1`;
+        }
+      }
+    },
     onSuccess: () => {
+      // Clear recovery draft on success
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`olpdf_recovery_${documentId}`);
+      }
       queryClient.invalidateQueries({ queryKey: ["document", documentId] });
     },
   });

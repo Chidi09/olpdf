@@ -1,27 +1,47 @@
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException
-from ..repositories import TemplateRepository, DocumentRepository
-from ..auth_utils import require_auth
+from typing import List
+from ..core.supabase_client import get_supabase
+from ..core.auth import get_current_user
+from ..models import TemplateResponse
 
-router = APIRouter(prefix="/api/templates", tags=["templates"])
+router = APIRouter(prefix="/templates", tags=["templates"])
 
-@router.get("")
-async def list_templates(user: dict = Depends(require_auth)) -> List[dict]:
-    return TemplateRepository.list_all()
+@router.get("/", response_model=List[TemplateResponse])
+async def list_templates(category: str = None):
+    supabase = get_supabase()
+    query = supabase.table("templates").select("*").eq("is_public", True)
+    if category:
+        query = query.eq("category", category)
+    response = query.execute()
+    return response.data
 
 @router.post("/{template_id}/apply")
-async def apply_template(template_id: str, document_id: str, user: dict = Depends(require_auth)) -> dict:
-    template = TemplateRepository.get_by_id(template_id)
-    if not template: raise HTTPException(status_code=404, detail="Template not found")
+async def apply_template(
+    template_id: str,
+    workspace_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    supabase = get_supabase()
     
-    doc = DocumentRepository.get_by_id(document_id)
-    if not doc: raise HTTPException(status_code=404, detail="Document not found")
-    if doc.get("user_id") and str(doc["user_id"]) != user["sub"] and user["sub"] != "dev-user":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    # Get template
+    template = supabase.table("templates").select("*").eq("id", template_id).single().execute()
+    if not template.data:
+        raise HTTPException(status_code=404, detail="Template not found")
         
-    # Apply template logic (e.g. merge styles)
-    model = doc["document_model"]
-    model["styles"] = template["document_model"].get("styles", {})
-    DocumentRepository.update(document_id, {"document_model": model})
+    # Create document directly from template's document_model
+    new_doc = supabase.table("documents").insert({
+        "workspace_id": workspace_id,
+        "user_id": current_user["user_id"],
+        "document_model": template.data["document_model"],
+        "title": f"New from {template.data['title']}"
+    }).execute()
     
-    return {"status": "success", "template_id": template_id}
+    if not new_doc.data:
+        raise HTTPException(status_code=500, detail="Failed to create document from template")
+
+    # Increment uses count
+    supabase.table("templates").update({
+        "uses_count": template.data.get("uses_count", 0) + 1
+    }).eq("id", template_id).execute()
+    
+    return {"document_id": new_doc.data[0]["id"]}

@@ -39,6 +39,9 @@ import PdfPreview from "./editor/PdfPreview";
 import TemplateBrowser from "./editor/TemplateBrowser";
 import VersionHistoryPanel from "./editor/VersionHistoryPanel";
 import VersionDiffViewer from "./editor/VersionDiffViewer";
+import FloatingToolbar from "./editor/FloatingToolbar";
+import PageMinimap from "./editor/PageMinimap";
+import VirtualizedPageRail from "./editor/VirtualizedPageRail";
 import {
   createEmptyDocumentModel,
   documentModelToTiptap,
@@ -70,6 +73,7 @@ export default function CollaborativeEditor({
   const [versionToCompare2Id, setVersionToCompare2Id] = useState<string | null>(null);
   const [showDiffViewer, setShowDiffViewer] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const documentQuery = useDocumentQuery(documentId);
 
   const version1Query = useQuery<DocumentModel>({
@@ -106,6 +110,7 @@ export default function CollaborativeEditor({
       try {
         await saveMutation.mutateAsync(nextModel);
         setSaveError(null);
+        setIsDirty(false);
       } catch (error) {
         setSaveError(error instanceof Error ? error.message : "save_failed");
       }
@@ -184,6 +189,7 @@ export default function CollaborativeEditor({
           styles: hydratedModel.styles,
         };
         setModel(newModel);
+        setIsDirty(true);
         if (onModelChange) onModelChange(newModel);
         void saveRef.current(newModel);
     },
@@ -227,6 +233,9 @@ export default function CollaborativeEditor({
 
   return (
     <div className="flex h-screen bg-[var(--bg-base)] text-[var(--text-primary)] font-[var(--font-ui)] overflow-hidden">
+        <FloatingToolbar />
+        <PageMinimap pageCount={Math.max(model?.pages?.length || 0, 1)} />
+        <VirtualizedPageRail pageCount={Math.max(model?.page_dimensions?.length || 1, 1)} />
         {/* Command Palette */}
         {showCommandPalette && (
           <div 
@@ -296,11 +305,23 @@ export default function CollaborativeEditor({
             <header className="h-14 border-b border-[var(--border-subtle)] bg-[var(--bg-glass)] backdrop-blur-md flex items-center justify-between px-6 z-10">
                 <div className="flex items-center gap-4">
                     <span className="text-sm font-medium">{model.meta.title}</span>
+                    <div className="flex items-center gap-2">
+                        {saveMutation.isPending ? (
+                          <span className="text-[10px] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-0.5 rounded-full font-mono animate-pulse">SAVING...</span>
+                        ) : isDirty ? (
+                          <span className="text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full font-mono">UNSAVED</span>
+                        ) : (
+                          <span className="text-[10px] text-[var(--text-tertiary)] font-mono flex items-center gap-1.5">
+                            <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                            SAVED
+                          </span>
+                        )}
+                    </div>
                     {isOffline && <span className="text-[10px] bg-[var(--status-review)]/20 text-[var(--status-review)] px-2 py-0.5 rounded-full font-mono">OFFLINE</span>}
                     {saveError && <span className="text-[10px] bg-[var(--status-error)]/20 text-[var(--status-error)] px-2 py-0.5 rounded-full font-mono">SAVE FAILED</span>}
                     <button 
                       onClick={handleSaveVersion}
-                      className="text-xs bg-[var(--accent)] text-[var(--text-on-accent)] px-3 py-1 rounded hover:opacity-90 transition-opacity"
+                      className="text-xs bg-[var(--accent)] text-[var(--text-on-accent)] px-3 py-1 rounded hover:opacity-90 transition-opacity ml-2"
                     >
                       Save Version
                     </button>

@@ -3,8 +3,16 @@ import { z } from "zod";
 
 export const BlockType = z.enum([
   "paragraph", "heading1", "heading2", "heading3", "callout", 
-  "table", "list", "divider", "page_break", "image"
+  "table", "list", "divider", "page_break", "image", "shape"
 ]);
+
+export const FontMeta = z.object({
+  family: z.string(),
+  size: z.number(),
+  color: z.string(),
+  is_bold: z.boolean().default(false),
+  is_italic: z.boolean().default(false),
+});
 
 export const DocumentModel = z.object({
   id: z.string().uuid(),
@@ -24,8 +32,17 @@ export const DocumentModel = z.object({
     confidence_score: z.number().optional(),
     needs_review: z.boolean().optional(),
     bounding_box: z.array(z.number()).optional(),
-    style_overrides: z.record(z.any()).optional()
-  }))
+    style_overrides: z.record(z.any()).optional(),
+    fabric_data: z.record(z.any()).optional(),
+    font_meta: FontMeta.optional(),
+    z_index: z.number().int().default(0),
+    page_index: z.number().int().default(0),
+  })),
+  page_dimensions: z.array(z.object({
+    page_index: z.number().int(),
+    width: z.number(),
+    height: z.number(),
+  })).default([]),
 });
 
 export type DocumentBlock = z.infer<typeof DocumentModel.shape.blocks.element>;

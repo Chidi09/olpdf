@@ -129,13 +129,13 @@ from .supabase_client import supabase
 def extract_native_page(page: Any, page_idx: int) -> List[Dict[str, Any]]:
     """Extracts text blocks from a native PDF page using pdfplumber."""
     blocks = []
-    text_lines = page.extract_text_lines() or []
-    
-    for line_idx, line in enumerate(text_lines):
-        text = line.get("text", "").strip()
+    words = page.extract_words() or []
+
+    for line_idx, line in enumerate(words):
+        text = str(line.get("text", "")).strip()
         if not text:
             continue
-            
+
         # Infer type from height (approximate font size)
         height = line.get("bottom", 0) - line.get("top", 0)
         btype = "paragraph"
@@ -143,7 +143,9 @@ def extract_native_page(page: Any, page_idx: int) -> List[Dict[str, Any]]:
             btype = "heading1"
         elif height > 14:
             btype = "heading2"
-            
+
+        font_name = str(line.get("fontname") or "Helvetica")
+        font_size = float(line.get("size") or max(height, 10))
         blocks.append({
             "id": f"blk_native_{page_idx}_{line_idx}",
             "type": btype,
@@ -151,11 +153,19 @@ def extract_native_page(page: Any, page_idx: int) -> List[Dict[str, Any]]:
             "confidence_score": 1.0,
             "needs_review": False,
             "bounding_box": [line.get("x0"), line.get("top"), line.get("x1"), line.get("bottom")],
-            "style_overrides": {}
+            "style_overrides": {},
+            "font_meta": {
+                "family": font_name,
+                "size": font_size,
+                "color": "#000000",
+                "is_bold": "bold" in font_name.lower(),
+                "is_italic": "italic" in font_name.lower() or "oblique" in font_name.lower(),
+            },
+            "page_index": page_idx,
         })
     return blocks
 
-async def route_pdf_import(file_bytes: bytes, document_id: str) -> dict:
+async def route_pdf_import(file_bytes: bytes, document_id: str, layout_mode: str = "editable", request_id: str = "") -> dict:
     native_blocks: List[Dict[str, Any]] = []
     pages_needing_ocr: List[int] = []
     metadata_rows: list[dict] = []
@@ -164,6 +174,11 @@ async def route_pdf_import(file_bytes: bytes, document_id: str) -> dict:
 
     with pdfplumber.open(BytesIO(file_bytes)) as pdf:
         pages_total = len(pdf.pages)
+
+        # Cost guardrail: Hard limit on total pages to prevent OOM / runaway costs
+        if pages_total > 500:
+            _safe_update_document(document_id, {"status": "failed", "error": f"Document exceeds maximum allowed length of 500 pages (found {pages_total})."})
+            return {"status": "failed", "error": "Document too long"}
 
         for idx, page in enumerate(pdf.pages):
             classification = classify_page(page)
@@ -183,12 +198,24 @@ async def route_pdf_import(file_bytes: bytes, document_id: str) -> dict:
             progress = min(95, int(((idx + 1) / max(pages_total, 1)) * 90) + 5)
             _safe_update_document(document_id, {"import_progress": progress})
 
+    try:
+        from .engine.extractor import extract_document_model_from_pdf
+
+        extracted_model = extract_document_model_from_pdf(file_bytes)
+        if extracted_model.get("blocks"):
+            native_blocks = extracted_model.get("blocks", native_blocks)
+            page_dimensions = extracted_model.get("page_dimensions", [])
+        else:
+            page_dimensions = []
+    except Exception:
+        page_dimensions = []
+
     # Save page metadata
     _safe_insert_page_metadata(metadata_rows)
     
     # Update document with native blocks
     if native_blocks:
-        sanitized_model = sanitize_document_model({"blocks": native_blocks})
+        sanitized_model = sanitize_document_model({"blocks": native_blocks, "page_dimensions": page_dimensions})
         _safe_update_document(document_id, {
             "document_model": sanitized_model,
             "status": "partial" if pages_needing_ocr else "ready"
@@ -201,20 +228,55 @@ async def route_pdf_import(file_bytes: bytes, document_id: str) -> dict:
         
         if qstash_token and worker_url:
             import httpx
+            # QStash v2: destination URL is appended to the publish endpoint
+            destination = f"{worker_url.rstrip('/')}/worker/process-ocr"
+            headers = {
+                "Authorization": f"Bearer {qstash_token}", 
+                "Content-Type": "application/json",
+                "Upstash-Idempotency-Key": f"ocr-{document_id}"
+            }
+            if request_id:
+                headers["Upstash-Forward-X-Request-ID"] = request_id
+                
             async with httpx.AsyncClient() as client:
-                # We assume the worker handles the file retrieval from storage
                 await client.post(
-                    f"https://qstash.upstash.io/v1/publish/{worker_url}/worker/process-ocr",
-                    headers={"Authorization": f"Bearer {qstash_token}", "Content-Type": "application/json"},
+                    f"https://qstash.upstash.io/v2/publish/{destination}",
+                    headers=headers,
                     json={
                         "document_id": document_id,
                         "page_indices": pages_needing_ocr,
-                        "source": "qstash"
+                        "source": "qstash",
                     }
                 )
 
     final_status = "partial" if pages_needing_ocr else "ready"
     _safe_update_document(document_id, {"status": final_status, "import_progress": 100})
+
+    # Auto-summary on completed imports (best-effort)
+    if final_status == "ready":
+        try:
+            from .services.ai_service import summarise_document
+
+            await summarise_document(document_id)
+        except Exception:
+            pass
+
+    # Fire-and-forget email notification
+    try:
+        from .notification_utils import send_import_complete_notification, send_ocr_partial_notification
+        from .supabase_client import supabase as _sb
+
+        doc_row = _sb.table("documents").select("title, user_id").eq("id", document_id).single().execute()
+        if doc_row.data:
+            title = doc_row.data.get("title", "Your document")
+            user_id = doc_row.data.get("user_id")
+            if user_id:
+                if final_status == "ready":
+                    send_import_complete_notification(user_id, title, document_id)
+                else:
+                    send_ocr_partial_notification(user_id, title, document_id, len(pages_needing_ocr))
+    except Exception:
+        pass  # Notifications are best-effort; never block the import response
 
     return {
         "status": final_status,

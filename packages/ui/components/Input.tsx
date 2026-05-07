@@ -8,7 +8,7 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 
 export function Input({ prefix, suffix, className, ...props }: InputProps) {
   return (
-    <label className={cn("flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2", className)}>
+    <label className={cn("flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2 transition-shadow focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--accent)] focus-within:border-transparent", className)}>
       {prefix}
       <input {...props} className="w-full bg-transparent text-sm outline-none" />
       {suffix}
@@ -23,7 +23,7 @@ export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
 
 export function Textarea({ prefix, suffix, className, ...props }: TextareaProps) {
   return (
-    <div className={cn("flex gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2", className)}>
+    <div className={cn("flex gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2 transition-shadow focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--accent)] focus-within:border-transparent", className)}>
       {prefix}
       <textarea {...props} className="w-full min-h-20 resize-y bg-transparent text-sm outline-none" />
       {suffix}

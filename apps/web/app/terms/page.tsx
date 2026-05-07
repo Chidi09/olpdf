@@ -83,7 +83,7 @@ export default function TermsPage() {
            <p className="text-sm text-[var(--text-secondary)] mb-6">
              For specific legal questions or concerns regarding these terms, please contact our legal representative.
            </p>
-           <a href="mailto:legal@olpdf.com" className="inline-flex items-center gap-2 bg-[var(--text-primary)] text-[var(--bg-base)] px-6 py-2.5 rounded-full font-bold text-sm shadow-lg hover:opacity-90 transition-all">
+           <a href="mailto:legal@olpdf.xyz" className="inline-flex items-center gap-2 bg-[var(--text-primary)] text-[var(--bg-base)] px-6 py-2.5 rounded-full font-bold text-sm shadow-lg hover:opacity-90 transition-all">
               Contact Legal
            </a>
         </div>

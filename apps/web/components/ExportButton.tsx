@@ -20,6 +20,11 @@ export default function ExportButton({ model, documentId }: { model: DocumentMod
                 body: JSON.stringify(model)
             });
             
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                window.location.href = `/login?redirect=/editor/${documentId}`;
+                return;
+            }
             if (!response.ok) throw new Error("Preflight request failed");
             
             const issues = await response.json();
@@ -43,6 +48,11 @@ export default function ExportButton({ model, documentId }: { model: DocumentMod
                 body: JSON.stringify(model)
             });
             
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                window.location.href = `/login?redirect=/editor/${documentId}`;
+                return;
+            }
             if (!response.ok) throw new Error("Export request failed");
             
             const data = await response.json();

@@ -1,29 +1,52 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from ..models import AiInstructionPayload
 from ..repositories import DocumentRepository
-from ..auth_utils import require_auth
+from ..auth_utils import require_auth, check_ownership
 from ..ai_utils import execute_ai_instruction
+from ..services.ai_service import chat_with_document, summarise_document, detect_pii
 from ..supabase_client import supabase
+from ..security_utils import sanitize_string
+
+# Import limiter from limiter module
+from ..limiter import limiter
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
-def _check_doc_ownership(doc_id: str, user: dict):
-    doc = DocumentRepository.get_by_id(doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-    if doc.get("user_id") and str(doc["user_id"]) != user["sub"] and user["sub"] != "dev-user":
-        raise HTTPException(status_code=403, detail="Forbidden")
-
 @router.get("/documents/{document_id}/logs")
 async def get_ai_logs(document_id: str, user: dict = Depends(require_auth)) -> List[dict]:
-    _check_doc_ownership(document_id, user)
+    check_ownership(document_id, user)
     return DocumentRepository.get_logs(document_id)
 
 @router.post("/documents/{document_id}/instruction")
-async def ai_instruction(document_id: str, payload: AiInstructionPayload, user: dict = Depends(require_auth)) -> dict:
-    _check_doc_ownership(document_id, user)
-    return await execute_ai_instruction(document_id, payload.instruction)
+@limiter.limit("5/minute")
+async def ai_instruction(request: Request, document_id: str, payload: AiInstructionPayload, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(document_id, user)
+    instruction = sanitize_string(payload.instruction)
+    return await execute_ai_instruction(document_id, instruction)
+
+
+@router.post("/documents/{document_id}/chat")
+@limiter.limit("10/minute")
+async def ai_chat(request: Request, document_id: str, payload: AiInstructionPayload, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(document_id, user)
+    message = sanitize_string(payload.instruction)
+    return await chat_with_document(document_id, message)
+
+
+@router.post("/documents/{document_id}/summarise")
+@limiter.limit("5/minute")
+async def ai_summarise(request: Request, document_id: str, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(document_id, user)
+    result = await summarise_document(document_id)
+    return {"summary": result.get("updated_model", {}).get("blocks", [])[:2], "log_id": result.get("log_id")}
+
+
+@router.post("/documents/{document_id}/detect-pii")
+@limiter.limit("10/minute")
+async def ai_detect_pii(request: Request, document_id: str, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(document_id, user)
+    return await detect_pii(document_id)
 
 @router.post("/logs/{log_id}/accept")
 async def accept_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dict:
@@ -31,7 +54,7 @@ async def accept_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dic
     log = res.data
     if not log:
         raise HTTPException(status_code=404, detail="Log not found")
-    _check_doc_ownership(log["document_id"], user)
+    check_ownership(log["document_id"], user)
     
     doc = DocumentRepository.get_by_id(log["document_id"])
     model = doc["document_model"]
@@ -46,7 +69,7 @@ async def reject_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dic
     log = res.data
     if not log:
         raise HTTPException(status_code=404, detail="Log not found")
-    _check_doc_ownership(log["document_id"], user)
+    check_ownership(log["document_id"], user)
     
     DocumentRepository.update_log(log_id, {"status": "rejected"})
     return {"status": "success"}

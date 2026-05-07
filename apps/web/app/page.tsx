@@ -1,6 +1,35 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://olpdf.xyz";
+
+export const metadata: Metadata = {
+  title: "OLPDF — Word for PDFs | Free AI PDF Editor",
+  description:
+    "Edit PDFs like a Word document — completely free. OLPDF reconstructs semantic layouts from raw PDF coordinates and lets you edit with AI. No subscriptions, no uploads to third parties.",
+  alternates: { canonical: APP_URL },
+  openGraph: {
+    url: APP_URL,
+    title: "OLPDF — Word for PDFs",
+    description:
+      "Edit PDFs like a Word document. Free AI-powered PDF editor with semantic structure reconstruction.",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "OLPDF",
+  url: APP_URL,
+  applicationCategory: "UtilitiesApplication",
+  operatingSystem: "Web",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  description:
+    "OLPDF is a free AI-powered PDF editor that reconstructs semantic layouts from raw PDF coordinates, letting you edit PDFs like a Word document.",
+  creator: { "@type": "Organization", name: "OLPDF", url: APP_URL },
+};
 import { 
   FileJson, 
   Layers, 
@@ -17,7 +46,10 @@ import {
   BookOpen,
   Sparkles,
   CheckCircle2,
-  Database
+  Database,
+  PenTool,
+  Bookmark,
+  Library
 } from "lucide-react";
 
 // Official Logos as SVG Components
@@ -37,191 +69,343 @@ const CloudflareIcon = () => (
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-hidden font-sans transition-colors duration-300">
-      {/* ... rest of the code ... */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       
-      {/* HERO SECTION */}
-      <section className="relative min-h-[90vh] flex flex-col justify-center px-6 bg-[var(--bg-base)]">
-        <div className="mx-auto w-full max-w-6xl relative z-10 flex flex-col items-center text-center">
-            <div className="animate-reveal opacity-0" style={{ animationDelay: '0ms' }}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-strong)] text-[var(--text-secondary)] text-xs font-bold mb-10 tracking-widest uppercase shadow-sm">
-                    <div className="h-2 w-2 rounded-full bg-[var(--text-primary)] animate-pulse" />
-                    Open Source Beta
-                </div>
+      {/* Paper texture overlay for the entire page */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.02] z-50 mix-blend-multiply dark:mix-blend-screen" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
 
-                <h1 className="text-6xl md:text-[6rem] lg:text-[8.5rem] font-black tracking-tighter mb-8 text-[var(--text-primary)] leading-[0.9]">
-                    Document <br /> Intelligence.
+      {/* HERO SECTION */}
+      <section className="relative min-h-[90vh] flex flex-col justify-center px-6 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] overflow-hidden">
+        {/* Subtle Background Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[80vw] max-w-[1000px] max-h-[1000px] bg-gradient-to-b from-[var(--accent-glow)] to-transparent rounded-full blur-[100px] pointer-events-none" />
+        
+        <div className="mx-auto w-full max-w-7xl relative z-10 flex flex-col lg:flex-row items-center gap-16 pt-20">
+            <div className="flex-1 animate-reveal opacity-0 text-left" style={{ animationDelay: '0ms' }}>
+                <h1 className="text-6xl md:text-[5rem] lg:text-[7rem] leading-[0.9] mb-6 relative z-10">
+                    <span className="inline-flex items-baseline relative">
+                        {/* 3 Orange AI Sparkles at Top Left */}
+                        <div className="absolute -top-8 -left-6 flex gap-1 transform -rotate-12">
+                            <span className="text-orange-400 animate-[pulse_2s_ease-in-out_infinite] opacity-100"><Sparkles className="h-7 w-7" /></span>
+                            <span className="text-orange-500 animate-[pulse_3s_ease-in-out_infinite] opacity-70 -mt-2"><Sparkles className="h-5 w-5" /></span>
+                            <span className="text-orange-600 animate-[pulse_1.5s_ease-in-out_infinite] opacity-40 mt-1"><Sparkles className="h-4 w-4" /></span>
+                        </div>
+                        
+                        <span className="font-sans font-black tracking-tighter text-orange-500">O</span>
+                        <span className="font-serif italic font-light text-[#fff3e6] dark:text-[#ffedd6] -ml-2 transform -rotate-3 translate-y-1 mr-3">L</span>
+                        <span className="bg-[#e21818] text-white px-4 py-1 rounded-2xl shadow-lg border border-[#b31212] inline-flex items-baseline relative transform rotate-1">
+                            <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-2xl pointer-events-none"></div>
+                            <span className="font-mono font-bold tracking-tight opacity-90 relative z-10">P</span>
+                            <span className="font-serif font-black -ml-1 relative z-10">D</span>
+                            <span className="font-sans font-thin italic ml-1 scale-110 origin-bottom relative z-10">F</span>
+                        </span>
+                    </span> <br />
+                    <span className="text-[var(--text-secondary)] text-4xl md:text-[4rem] font-medium tracking-tight mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <span className="text-[#2b579a] dark:text-[#4285f4] px-5 py-1 rounded-xl border-2 border-[#2b579a] dark:border-[#4285f4] font-serif italic font-bold transform -rotate-2 bg-transparent shadow-sm">
+                            Word
+                        </span> 
+                        <span className="font-serif italic">for</span> 
+                        <span className="text-[#e21818] dark:text-[#f25050] px-5 py-1 rounded-xl border-2 border-[#e21818] dark:border-[#f25050] font-sans font-black tracking-tighter transform rotate-2 bg-transparent shadow-sm">
+                            PDFs.
+                        </span>
+                    </span>
                 </h1>
                 
-                <p className="text-lg md:text-xl font-medium text-[var(--text-secondary)] mb-12 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg md:text-xl font-medium text-[var(--text-secondary)] mb-10 max-w-lg leading-relaxed">
                     A structure-first operating system for PDFs. Reconstruct semantic layouts from raw coordinates and edit with AI. Completely free.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Link href="/dashboard" className="group h-14 px-8 flex items-center justify-center bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 text-sm font-black uppercase tracking-widest rounded-full transition-all hover:-translate-y-0.5 shadow-lg">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <Link href="/dashboard" className="group h-14 px-8 flex items-center justify-center bg-[var(--accent)] text-[var(--text-on-accent)] hover:brightness-110 active:scale-[0.97] text-sm font-black uppercase tracking-widest rounded-full transition-all hover:-translate-y-0.5 shadow-lg shadow-[var(--accent-glow)] w-full sm:w-auto">
                         Open Workspace
                     </Link>
-                    <Link href="/docs" className="h-14 px-8 flex items-center justify-center border border-[var(--border-strong)] text-[var(--text-primary)] hover:bg-[var(--bg-surface)] text-sm font-black uppercase tracking-widest rounded-full transition-all hover:-translate-y-0.5">
+                    <Link href="/docs" className="h-14 px-8 flex items-center justify-center border border-[var(--border-strong)] text-[var(--text-primary)] hover:bg-[var(--bg-surface)] text-sm font-black uppercase tracking-widest rounded-full transition-all hover:-translate-y-0.5 w-full sm:w-auto">
                         Documentation
                     </Link>
+                    <a href="#extraction-loop" className="h-14 px-6 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-semibold transition-colors gap-1.5 w-full sm:w-auto">
+                        See how it works <ArrowRight className="h-4 w-4 rotate-90" />
+                    </a>
                 </div>
+            </div>
+
+            {/* Highly Detailed AI DOM Illustration - Enhanced for 'Word' feel */}
+            <div className="flex-1 w-full max-w-lg relative animate-reveal opacity-0 mt-10 lg:mt-0" style={{ animationDelay: '200ms' }}>
+               {/* Pencil Scribble floating */}
+               <svg className="absolute -top-12 -left-12 w-24 h-24 text-[var(--text-tertiary)] -rotate-12 z-0 opacity-40" viewBox="0 0 100 100">
+                  <path d="M10,80 Q20,20 80,10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M15,60 Q40,40 60,60 T85,60" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+               </svg>
+
+               <div className="relative aspect-[4/5] w-full bg-[#fdfdfc] dark:bg-[#1a1a1c] border border-[var(--border-strong)] rounded-3xl shadow-2xl overflow-hidden flex flex-col group hover:border-[var(--accent)] transition-colors duration-500 z-10">
+                  {/* Editor Header - Word/Docs Style */}
+                  <div className="h-14 border-b border-[var(--border-subtle)] bg-[#f3f4f6] dark:bg-[#252528] flex items-center px-4 justify-between shrink-0">
+                     <div className="flex items-center gap-4">
+                       <div className="flex gap-1.5">
+                         <div className="w-3 h-3 rounded-full bg-red-400" />
+                         <div className="w-3 h-3 rounded-full bg-amber-400" />
+                         <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                       </div>
+                       <div className="flex gap-2 text-[var(--text-tertiary)]">
+                          <BookOpen className="h-4 w-4" />
+                          <Bookmark className="h-4 w-4" />
+                       </div>
+                     </div>
+                     <div className="flex items-center gap-2 bg-white dark:bg-[#1e1e20] px-3 py-1.5 rounded-md border border-[var(--border-subtle)] shadow-sm">
+                        <div className="text-xs font-serif italic font-bold text-[var(--text-primary)]">document_v2.pdf</div>
+                        <div className="w-px h-3 bg-[var(--border-strong)] mx-1" />
+                        <div className="text-[10px] font-mono text-emerald-500 uppercase tracking-widest font-bold flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Active</div>
+                     </div>
+                  </div>
+                  
+                  {/* Editor Canvas - Paper texture feel */}
+                  <div className="flex-1 p-8 flex flex-col gap-6 relative bg-white dark:bg-[#141415] shadow-inner">
+                     {/* Paper lines background */}
+                     <div className="absolute inset-0 pointer-events-none opacity-5 dark:opacity-[0.02]" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, var(--text-primary) 31px, var(--text-primary) 32px)' }}></div>
+
+                     {/* Title block */}
+                     <div className="relative w-full p-2 group-hover:pl-4 transition-all duration-300">
+                        <div className="absolute -left-4 top-1 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <PenTool className="h-4 w-4" />
+                        </div>
+                        <h2 className="font-serif italic text-3xl font-bold text-[var(--text-primary)]">The Future of Documents</h2>
+                        <div className="absolute -bottom-1 left-0 w-3/4 h-1">
+                            <svg viewBox="0 0 100 10" preserveAspectRatio="none" className="w-full h-full text-emerald-500/50">
+                                <path d="M0,5 Q25,8 50,5 T100,5" fill="none" stroke="currentColor" strokeWidth="2" />
+                            </svg>
+                        </div>
+                     </div>
+
+                     {/* Text block actively being edited by AI */}
+                     <div className="relative w-full p-5 mt-2 border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg transform scale-[1.02] z-10 transition-transform">
+                        <div className="absolute -inset-px rounded-lg border border-emerald-500/50 animate-pulse pointer-events-none" />
+                        
+                        <div className="space-y-3 mt-1 text-[var(--text-secondary)]">
+                           <p className="leading-relaxed relative">
+                               This document was once <span className="line-through opacity-50">a static picture of text</span> 
+                               <span className="text-emerald-600 dark:text-emerald-400 font-bold ml-1">an editable, semantic structure</span>. 
+                               <svg className="absolute -top-3 left-[45%] w-8 h-8 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                           </p>
+                           <p className="leading-relaxed">
+                               Just like a Word processor, you can now seamlessly edit PDFs using AI.
+                           </p>
+                        </div>
+                        
+                        {/* Cursor element */}
+                        <div className="absolute -bottom-3 right-4 flex items-center gap-2">
+                           <div className="bg-emerald-500 text-white text-[10px] px-3 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1">
+                              <Sparkles className="h-3 w-3" /> Rephrasing...
+                           </div>
+                        </div>
+                     </div>
+
+                     {/* Complex Table Reconstruction */}
+                     <div className="relative w-full p-4 border border-[var(--border-subtle)] bg-[var(--bg-surface)] rounded-xl mt-4 opacity-90">
+                        <div className="absolute -top-3 -right-2 bg-[var(--bg-elevated)] border border-[var(--border-strong)] text-[10px] font-mono px-2 py-1 rounded text-[var(--text-tertiary)] shadow-sm rotate-3">Parsed Table</div>
+                        <div className="grid grid-cols-3 gap-3 mt-2">
+                           <div className="h-2 bg-[var(--text-primary)] opacity-40 rounded w-full" />
+                           <div className="h-2 bg-[var(--text-primary)] opacity-40 rounded w-full" />
+                           <div className="h-2 bg-[var(--text-primary)] opacity-40 rounded w-full" />
+                           <div className="h-px bg-[var(--border-strong)] col-span-3 my-1" />
+                           <div className="h-2 bg-[var(--text-secondary)] opacity-20 rounded w-3/4" />
+                           <div className="h-2 bg-[var(--text-secondary)] opacity-20 rounded w-1/2" />
+                           <div className="h-2 bg-[var(--text-secondary)] opacity-20 rounded w-5/6" />
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               
+               {/* Abstract floating book node */}
+               <div className="absolute bottom-10 -right-10 bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-4 rounded-xl shadow-2xl animate-float hidden md:flex items-center gap-3 z-20" style={{ animationDelay: '500ms' }}>
+                  <div className="h-10 w-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
+                      <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col">
+                      <span className="text-xs font-bold text-[var(--text-primary)]">Semantic Layout</span>
+                      <span className="text-[10px] text-[var(--text-secondary)]">Preserved flawlessly</span>
+                  </div>
+               </div>
             </div>
         </div>
       </section>
 
-{/* TECH STACK EXPLANATION */}
-      <section className="py-24 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16 animate-reveal opacity-0" style={{ animationDelay: '80ms' }}>
-            <h2 className="text-3xl font-bold mb-4">Built on Open Foundations</h2>
-            <p className="text-[var(--text-secondary)] max-w-2xl mx-auto">
-              OLPDF isn&apos;t just a tool; it&apos;s a stack of modern infrastructure optimized for document intelligence.
+      {/* TECH STACK EXPLANATION - Redesigned as "The Binding" / Infrastructure */}
+      <section className="py-24 border-b border-[var(--border-subtle)] bg-[#fdfdfc] dark:bg-[#141415] relative overflow-hidden">
+        {/* Subtle spine line */}
+        <div className="absolute left-6 md:left-12 top-0 bottom-0 w-px bg-emerald-500/20"></div>
+        <div className="absolute left-8 md:left-14 top-0 bottom-0 w-px bg-emerald-500/10"></div>
+        
+        <div className="max-w-6xl mx-auto px-6 pl-12 md:pl-24">
+          <div className="text-left mb-16 animate-reveal opacity-0 relative" style={{ animationDelay: '80ms' }}>
+            <div className="absolute -left-10 md:-left-20 top-2 text-[var(--border-strong)] opacity-50 transform -rotate-90 origin-left text-xs font-mono tracking-[0.3em]">INFRASTRUCTURE</div>
+            <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-4 text-[var(--text-primary)]">Built on Open Foundations</h2>
+            <p className="text-[var(--text-secondary)] max-w-2xl text-lg font-medium">
+              OLPDF isn&apos;t just a tool; it&apos;s a stack of modern infrastructure optimized for document intelligence and robust publishing.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="p-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-sm hover:shadow-md transition-all">
-              <div className="h-12 w-12 bg-black rounded-xl flex items-center justify-center text-white mb-6">
-                <svg viewBox="0 0 116 100" fill="currentColor" className="h-6 w-6"><path d="M57.5 0L115 100H0L57.5 0z" /></svg>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
+            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
+              <div className="absolute top-0 right-8 w-8 h-4 bg-red-500/10 rounded-b-md" />
+              <div className="h-10 w-10 bg-[var(--text-primary)] rounded-lg flex items-center justify-center text-[var(--bg-base)] mb-6">
+                <svg viewBox="0 0 116 100" fill="currentColor" className="h-5 w-5"><path d="M57.5 0L115 100H0L57.5 0z" /></svg>
               </div>
-              <h3 className="font-bold text-lg mb-3">Next.js & Vercel</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
-                The frontend is built with Next.js 15 for instant page transitions and server-side rendering, deployed on Vercel&apos;s edge network for global low latency.
+              <h3 className="font-serif font-bold text-lg mb-3">Next.js & Vercel</h3>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
+                The frontend is built with Next.js 15 for instant page transitions and server-side rendering, deployed on Vercel&apos;s edge network.
               </p>
-              <div className="text-xs font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer">
-                <a href="https://nextjs.org" target="_blank" rel="noreferrer">Learn more <ArrowRight className="h-3 w-3 inline" /></a>
-              </div>
             </div>
 
-            <div className="p-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-sm hover:shadow-md transition-all">
-              <div className="h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center text-white mb-6">
-                <svg viewBox="0 0 128 128" fill="currentColor" className="h-7 w-7"><path d="M64.6 2c-17.1 0-26.6 7.6-26.6 23.4v12.8h27.3V43H36.9C15.8 43 5.3 56.4 8.7 78.4c3.2 20.3 16.5 24.5 28.5 24.5h8.9V91.2c0-16.1 13.8-29.3 29.5-29.3h22.8V49.1C98.4 25.5 86.8 2 64.6 2zM52.3 16.3c3.2 0 5.8 2.6 5.8 5.8s-2.6 5.8-5.8 5.8-5.8-2.6-5.8-5.8 2.6-5.8 5.8-5.8z"/><path d="M64.6 126c17.1 0 26.6-7.6 26.6-23.4v-12.8H63.9v4.8h28.4C113.4 85 123.9 71.6 120.5 49.6c-3.2-20.3-16.5-24.5-28.5-24.5h-8.9v11.7c0 16.1-13.8 29.3-29.5 29.3H30.8v12.8C30.8 102.5 42.4 126 64.6 126zm12.3-14.3c-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8 5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8z"/></svg>
+            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
+              <div className="absolute top-0 right-8 w-8 h-4 bg-blue-500/10 rounded-b-md" />
+              <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center text-white mb-6">
+                <svg viewBox="0 0 128 128" fill="currentColor" className="h-5 w-5"><path d="M64.6 2c-17.1 0-26.6 7.6-26.6 23.4v12.8h27.3V43H36.9C15.8 43 5.3 56.4 8.7 78.4c3.2 20.3 16.5 24.5 28.5 24.5h8.9V91.2c0-16.1 13.8-29.3 29.5-29.3h22.8V49.1C98.4 25.5 86.8 2 64.6 2zM52.3 16.3c3.2 0 5.8 2.6 5.8 5.8s-2.6 5.8-5.8 5.8-5.8-2.6-5.8-5.8 2.6-5.8 5.8-5.8z"/><path d="M64.6 126c17.1 0 26.6-7.6 26.6-23.4v-12.8H63.9v4.8h28.4C113.4 85 123.9 71.6 120.5 49.6c-3.2-20.3-16.5-24.5-28.5-24.5h-8.9v11.7c0 16.1-13.8 29.3-29.5 29.3H30.8v12.8C30.8 102.5 42.4 126 64.6 126zm12.3-14.3c-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8 5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8z"/></svg>
               </div>
-              <h3 className="font-bold text-lg mb-3">Python & FastAPI</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
-                Our extraction engine leverages Python&apos;s rich ecosystem for PDF parsing and heuristic structural reconstruction, exposed via high-performance FastAPI endpoints.
+              <h3 className="font-serif font-bold text-lg mb-3">Python & FastAPI</h3>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
+                Our extraction engine leverages Python&apos;s rich ecosystem for PDF parsing and heuristic structural reconstruction.
               </p>
-              <div className="text-xs font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer">
-                <a href="https://fastapi.tiangolo.com" target="_blank" rel="noreferrer">Learn more <ArrowRight className="h-3 w-3 inline" /></a>
-              </div>
             </div>
 
-            <div className="p-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-sm hover:shadow-md transition-all">
-              <div className="h-12 w-12 bg-[#F6821F]/10 rounded-xl flex items-center justify-center mb-6">
+            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
+              <div className="absolute top-0 right-8 w-8 h-4 bg-orange-500/10 rounded-b-md" />
+              <div className="h-10 w-10 bg-[#F6821F]/10 rounded-lg flex items-center justify-center mb-6">
                 <CloudflareIcon />
               </div>
-              <h3 className="font-bold text-lg mb-3">Cloudflare R2</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
-                S3-compatible object storage with zero egress fees. We use R2 to store your processed documents and export artifacts securely and cost-effectively.
+              <h3 className="font-serif font-bold text-lg mb-3">Cloudflare R2</h3>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
+                S3-compatible object storage with zero egress fees to store processed documents and export artifacts securely.
               </p>
-              <div className="text-xs font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer">
-                <a href="https://www.cloudflare.com/products/r2/" target="_blank" rel="noreferrer">Learn more <ArrowRight className="h-3 w-3 inline" /></a>
-              </div>
             </div>
 
-            <div className="p-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-base)] shadow-sm hover:shadow-md transition-all">
-              <div className="h-12 w-12 bg-[#3ECF8E]/10 rounded-xl flex items-center justify-center mb-6">
+            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
+              <div className="absolute top-0 right-8 w-8 h-4 bg-emerald-500/10 rounded-b-md" />
+              <div className="h-10 w-10 bg-[#3ECF8E]/10 rounded-lg flex items-center justify-center mb-6">
                 <SupabaseIcon />
               </div>
-              <h3 className="font-bold text-lg mb-3">Supabase Auth & DB</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
-                PostgreSQL with Row Level Security (RLS) ensures your data is private. Supabase Auth handles identity so we can focus on document structure.
+              <h3 className="font-serif font-bold text-lg mb-3">Supabase Auth</h3>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
+                PostgreSQL with RLS ensures your data is private. Supabase Auth handles identity securely.
               </p>
-              <div className="text-xs font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer">
-                <a href="https://supabase.com" target="_blank" rel="noreferrer">Learn more <ArrowRight className="h-3 w-3 inline" /></a>
-              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* MISSION / SOCIAL PROOF REPLACEMENT */}
-      <section className="py-24 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]">
-        <div className="max-w-4xl mx-auto px-6 text-center animate-reveal opacity-0" style={{ animationDelay: '120ms' }}>
-          <h2 className="text-3xl md:text-5xl font-bold mb-8 tracking-tight">One mission: Accessible Document Intelligence</h2>
-          <p className="text-lg md:text-xl text-[var(--text-secondary)] leading-relaxed mb-12">
-            Most PDFs are "digital paper"—unstructured and hard to edit. OLPDF is our attempt to turn every document into a semantic, machine-readable, and human-editable data structure.
+      <section className="py-24 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] relative">
+        {/* Decorative flourish */}
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 opacity-20">
+            <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
+                <path d="M10 12 Q 30 0, 60 12 T 110 12" />
+                <path d="M50 8 L 60 16 L 70 8" />
+            </svg>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 text-center animate-reveal opacity-0 mt-8" style={{ animationDelay: '120ms' }}>
+          <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-8 text-[var(--text-primary)]">
+              One Mission: <span className="relative inline-block text-emerald-600 dark:text-emerald-400">Accessible
+                 <svg className="absolute -bottom-2 left-0 w-full h-3 text-emerald-500 opacity-60" viewBox="0 0 100 20" preserveAspectRatio="none">
+                     <path d="M5,15 Q30,5 50,15 T95,10" fill="none" stroke="currentColor" strokeWidth="4" />
+                 </svg>
+              </span> Document Intelligence
+          </h2>
+          <p className="text-lg md:text-xl text-[var(--text-secondary)] leading-relaxed mb-16 font-medium">
+            Most PDFs are <span className="underline decoration-wavy decoration-[var(--border-strong)] underline-offset-4">"digital paper"</span>—unstructured and hard to edit. OLPDF is our attempt to turn every document into a semantic, machine-readable, and human-editable data structure.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
-            <div className="flex flex-col gap-2">
-              <div className="text-[var(--accent)] font-black text-2xl">Open Source</div>
-              <p className="text-sm text-[var(--text-secondary)]">The core extraction heuristics are public. No black boxes or hidden fees.</p>
+            <div className="flex flex-col gap-3 relative">
+              <div className="absolute -left-4 top-2 text-emerald-500 opacity-10"><Bookmark className="h-12 w-12" /></div>
+              <div className="font-serif italic font-bold text-3xl z-10">Open Source</div>
+              <p className="text-sm text-[var(--text-secondary)] z-10 font-medium leading-relaxed">The core extraction heuristics are public. No black boxes or hidden fees.</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="text-[var(--accent)] font-black text-2xl">Structure-First</div>
-              <p className="text-sm text-[var(--text-secondary)]">We don&apos;t just OCR text; we reconstruct the hierarchy of headers, lists, and tables.</p>
+            <div className="flex flex-col gap-3 relative">
+              <div className="absolute -left-4 top-2 text-emerald-500 opacity-10"><Bookmark className="h-12 w-12" /></div>
+              <div className="font-serif italic font-bold text-3xl z-10">Structure-First</div>
+              <p className="text-sm text-[var(--text-secondary)] z-10 font-medium leading-relaxed">We don&apos;t just OCR text; we reconstruct the hierarchy of headers, lists, and tables.</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="text-[var(--accent)] font-black text-2xl">AI-Native</div>
-              <p className="text-sm text-[var(--text-secondary)]">Built specifically to leverage LLM reasoning for non-destructive document editing.</p>
+            <div className="flex flex-col gap-3 relative">
+              <div className="absolute -left-4 top-2 text-emerald-500 opacity-10"><Bookmark className="h-12 w-12" /></div>
+              <div className="font-serif italic font-bold text-3xl z-10">AI-Native</div>
+              <p className="text-sm text-[var(--text-secondary)] z-10 font-medium leading-relaxed">Built specifically to leverage LLM reasoning for non-destructive document editing.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* AI CANVAS VISUALIZATION */}
-      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)] animate-reveal opacity-0" style={{ animationDelay: '160ms' }}>
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[#f3f4f6] dark:bg-[#1a1a1c] animate-reveal opacity-0 relative overflow-hidden" style={{ animationDelay: '160ms' }}>
+        {/* Subtle grid background */}
+        <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'linear-gradient(to right, var(--border-strong) 1px, transparent 1px), linear-gradient(to bottom, var(--border-strong) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
           <div className="animate-slideUp">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-bold mb-6">
-                <Sparkles className="h-4 w-4" /> AI SEMANTIC EDITING
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-6 font-mono uppercase tracking-widest border border-emerald-500/20">
+                <PenTool className="h-3 w-3" /> Editor Canvas
             </div>
-            <h2 className="text-4xl font-bold mb-6">Edit PDFs like text files</h2>
-            <p className="text-lg text-[var(--text-secondary)] mb-6 leading-relaxed">
+            <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-6 text-[var(--text-primary)]">Edit PDFs like <br/>Word documents.</h2>
+            <p className="text-lg text-[var(--text-secondary)] mb-8 leading-relaxed font-medium">
               We extract absolute bounding boxes and transform them into an editable DOM. You can ask Gemini 1.5 Pro to rewrite paragraphs, adjust formatting, or redact sensitive vectors directly on the canvas.
             </p>
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-[var(--status-ok)]" /> Keep exact original layouts</li>
-              <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-[var(--status-ok)]" /> Visual diff before accepting edits</li>
-              <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 text-[var(--status-ok)]" /> Auditable, non-destructive history</li>
+            <ul className="space-y-5 mb-8 font-medium">
+              <li className="flex items-center gap-3"><span className="flex items-center justify-center w-6 h-6 rounded-full border border-[var(--border-strong)] bg-white dark:bg-[#252528] text-emerald-500 text-xs shadow-sm">1</span> Keep exact original layouts</li>
+              <li className="flex items-center gap-3"><span className="flex items-center justify-center w-6 h-6 rounded-full border border-[var(--border-strong)] bg-white dark:bg-[#252528] text-emerald-500 text-xs shadow-sm">2</span> Visual diff before accepting edits</li>
+              <li className="flex items-center gap-3"><span className="flex items-center justify-center w-6 h-6 rounded-full border border-[var(--border-strong)] bg-white dark:bg-[#252528] text-emerald-500 text-xs shadow-sm">3</span> Auditable, non-destructive history</li>
             </ul>
           </div>
           
-          <div className="relative h-[450px] rounded-3xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_16px_48px_rgba(0,0,0,0.1)] dark:shadow-float overflow-hidden flex flex-col animate-fadeIn">
+          {/* Editor Mockup */}
+          <div className="relative h-[450px] rounded-xl border border-[var(--border-strong)] bg-white dark:bg-[#141415] shadow-2xl overflow-hidden flex flex-col animate-fadeIn group">
              {/* Fake Editor Header */}
-             <div className="h-12 border-b border-[var(--border-subtle)] flex items-center px-4 gap-2 bg-[var(--bg-surface)]">
+             <div className="h-12 border-b border-[var(--border-subtle)] flex items-center px-4 gap-2 bg-[#fdfdfc] dark:bg-[#1e1e20]">
                 <div className="flex gap-1.5 mr-4">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[var(--border-strong)]"></div>
                 </div>
-                <div className="text-xs font-mono text-[var(--text-tertiary)] bg-[var(--bg-base)] px-3 py-1 rounded-md border border-[var(--border-subtle)]">annual_report.pdf</div>
+                <div className="text-xs font-serif italic font-bold text-[var(--text-primary)] bg-[var(--bg-surface)] px-3 py-1 rounded shadow-sm border border-[var(--border-subtle)]">annual_report_draft.pdf</div>
              </div>
              
              {/* Fake Canvas Body */}
-             <div className="flex-1 flex bg-[var(--bg-canvas)] relative">
+             <div className="flex-1 flex bg-[#f9f9f8] dark:bg-[#101011] relative">
                 {/* PDF Page Side */}
-                <div className="w-1/2 p-8 border-r border-[var(--border-subtle)] relative">
-                   <div className="w-full h-8 bg-[var(--border-strong)] rounded mb-4 animate-pulse"></div>
-                   <div className="w-3/4 h-4 bg-[var(--border-subtle)] rounded mb-2"></div>
-                   <div className="w-5/6 h-4 bg-[var(--border-subtle)] rounded mb-2"></div>
-                   <div className="w-full h-4 bg-[var(--border-subtle)] rounded mb-8"></div>
+                <div className="w-1/2 p-8 border-r border-[var(--border-subtle)] relative bg-white dark:bg-[#141415] m-4 shadow-sm border">
+                   <div className="w-full h-8 font-serif italic text-xl font-bold text-[var(--text-primary)] mb-4">Financial Overview</div>
+                   <div className="w-full space-y-2 mb-8">
+                      <div className="w-full h-2 bg-[var(--border-strong)] opacity-20 rounded"></div>
+                      <div className="w-5/6 h-2 bg-[var(--border-strong)] opacity-20 rounded"></div>
+                      <div className="w-4/5 h-2 bg-[var(--border-strong)] opacity-20 rounded"></div>
+                   </div>
                    
                    {/* Highlighted text being edited */}
-                   <div className="relative p-2 -mx-2 bg-[var(--accent-subtle)] border border-[var(--accent)] border-dashed rounded">
-                     <div className="w-full h-4 bg-[var(--accent)]/30 rounded mb-2"></div>
-                     <div className="w-2/3 h-4 bg-[var(--accent)]/30 rounded"></div>
+                   <div className="relative p-3 -mx-3 bg-emerald-50 dark:bg-emerald-900/10 border-l-2 border-emerald-500 rounded-r">
+                     <div className="w-full h-2 bg-emerald-500/40 rounded mb-2"></div>
+                     <div className="w-2/3 h-2 bg-emerald-500/40 rounded"></div>
                      
                      {/* Floating AI Tooltip */}
-                     <div className="absolute -top-10 -right-4 bg-[var(--bg-elevated)] border border-[var(--accent)] shadow-lg rounded-lg p-2 flex items-center gap-2 animate-slideUp">
-                        <Sparkles className="h-4 w-4 text-[var(--accent)]" />
-                        <span className="text-xs font-medium">Rewriting to formal tone...</span>
-                        <span className="w-2 h-4 bg-[var(--accent)] animate-pulse"></span>
+                     <div className="absolute -top-8 -right-8 bg-white dark:bg-[#1e1e20] border border-[var(--border-strong)] shadow-xl rounded px-3 py-2 flex items-center gap-2 animate-slideUp z-20">
+                        <Sparkles className="h-3 w-3 text-emerald-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Rewriting formal tone</span>
+                        <span className="w-1.5 h-3 bg-emerald-500 animate-pulse"></span>
                      </div>
                    </div>
                 </div>
                 
                 {/* AI Assistant Side */}
-                <div className="w-1/2 bg-[var(--bg-surface)] p-4 flex flex-col justify-end">
-                   <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg p-3 mb-4 shadow-sm">
-                      <p className="text-xs text-[var(--text-secondary)] mb-2">AI Agent Suggestion</p>
-                      <div className="text-sm font-medium mb-3">Replaced casual phrasing with corporate terminology. Layout metrics preserved.</div>
+                <div className="w-1/2 p-4 flex flex-col justify-end bg-[#fdfdfc] dark:bg-[#1a1a1c]">
+                   <div className="bg-white dark:bg-[#252528] border border-[var(--border-subtle)] rounded shadow-sm p-4 mb-4 relative">
+                      <div className="absolute -left-2 top-4 w-4 h-4 bg-white dark:bg-[#252528] border-l border-t border-[var(--border-subtle)] rotate-45"></div>
+                      <p className="text-[10px] font-mono text-[var(--text-tertiary)] uppercase tracking-widest mb-2 flex items-center gap-1"><Wand2 className="h-3 w-3"/> AI Suggestion</p>
+                      <div className="text-sm font-serif mb-4 leading-relaxed text-[var(--text-primary)]">Replaced casual phrasing with corporate terminology. Layout metrics preserved perfectly.</div>
                       <div className="flex gap-2">
-                        <button className="flex-1 bg-[var(--status-ok)]/10 text-[var(--status-ok)] text-xs py-1.5 rounded font-bold border border-[var(--status-ok)]/20">Accept</button>
-                        <button className="flex-1 bg-[var(--status-error)]/10 text-[var(--status-error)] text-xs py-1.5 rounded font-bold border border-[var(--status-error)]/20">Reject</button>
+                        <button className="flex-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 text-xs py-2 rounded font-bold border border-emerald-200 dark:border-emerald-800 transition-colors hover:bg-emerald-100">Accept</button>
+                        <button className="flex-1 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 text-xs py-2 rounded font-bold border border-red-200 dark:border-red-800 transition-colors hover:bg-red-100">Reject</button>
                       </div>
                    </div>
-                   <div className="h-10 border border-[var(--border-subtle)] rounded-full bg-[var(--bg-base)] flex items-center px-4 text-xs text-[var(--text-tertiary)]">
-                     Ask Gemini to change the document...
+                   <div className="h-12 border border-[var(--border-strong)] rounded-lg bg-white dark:bg-[#141415] flex items-center px-4 text-xs text-[var(--text-tertiary)] font-medium shadow-inner">
+                     <PenTool className="h-4 w-4 mr-2 opacity-50" />
+                     Ask Gemini to format the document...
                    </div>
                 </div>
              </div>
@@ -230,95 +414,91 @@ export default function LandingPage() {
       </section>
 
       {/* BOOK PUBLISHING VISUALIZATION */}
-      <section className="py-24 px-6 border-b border-[var(--border-subtle)] animate-reveal opacity-0" style={{ animationDelay: '200ms' }}>
+      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] animate-reveal opacity-0" style={{ animationDelay: '200ms' }}>
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-          <div className="relative h-[400px] rounded-3xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_16px_48px_rgba(0,0,0,0.1)] dark:shadow-float overflow-hidden flex animate-fadeIn order-2 lg:order-1">
-             {/* Sidebar */}
-             <div className="w-1/3 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 flex flex-col gap-2">
-                <h4 className="text-xs font-bold tracking-widest text-[var(--text-tertiary)] uppercase mb-2">Chapters</h4>
-                <div className="bg-[var(--status-ok)]/10 border border-[var(--status-ok)]/30 p-2 rounded flex items-center justify-between">
-                  <span className="text-xs font-medium text-[var(--status-ok)]">1. Introduction</span>
-                  <CheckCircle2 className="h-3 w-3 text-[var(--status-ok)]" />
-                </div>
-                <div className="bg-[var(--status-ok)]/10 border border-[var(--status-ok)]/30 p-2 rounded flex items-center justify-between">
-                  <span className="text-xs font-medium text-[var(--status-ok)]">2. Methodology</span>
-                  <CheckCircle2 className="h-3 w-3 text-[var(--status-ok)]" />
-                </div>
-                <div className="bg-[var(--accent-subtle)] border border-[var(--accent)]/50 p-2 rounded flex items-center justify-between">
-                  <span className="text-xs font-medium text-[var(--accent)]">3. Analysis</span>
-                  <span className="h-2 w-2 rounded-full bg-[var(--status-review)] animate-pulse"></span>
-                </div>
-             </div>
-             {/* Main Content */}
-             <div className="w-2/3 bg-[var(--bg-canvas)] p-8 flex flex-col justify-center items-center text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--accent-glow)_0%,transparent_60%)]" />
-                <BookOpen className="h-16 w-16 text-[var(--accent)] mb-6 relative z-10" />
-                <h3 className="text-xl font-bold mb-2 relative z-10">Consistency Check</h3>
-                <p className="text-xs text-[var(--text-secondary)] mb-6 relative z-10">Cross-referencing entities and formatting across 3 documents...</p>
-                <div className="w-full max-w-[200px] h-2 bg-[var(--border-subtle)] rounded-full overflow-hidden relative z-10">
-                  <div className="h-full bg-[var(--accent)] w-2/3 animate-pulse rounded-full"></div>
-                </div>
+          <div className="relative h-[400px] rounded-xl border border-[var(--border-strong)] bg-[#fdfdfc] dark:bg-[#141415] shadow-2xl overflow-hidden flex animate-fadeIn order-2 lg:order-1 p-2">
+             <div className="flex w-full border border-[var(--border-subtle)] rounded shadow-inner overflow-hidden">
+                 {/* Sidebar */}
+                 <div className="w-1/3 border-r border-[var(--border-subtle)] bg-[#f3f4f6] dark:bg-[#1e1e20] p-4 flex flex-col gap-3">
+                    <h4 className="text-[10px] font-mono tracking-widest text-[var(--text-tertiary)] uppercase mb-2">Table of Contents</h4>
+                    <div className="bg-white dark:bg-[#252528] border border-[var(--border-subtle)] p-3 rounded shadow-sm flex items-center justify-between group cursor-pointer">
+                      <span className="text-xs font-serif font-bold text-[var(--text-primary)]">I. Introduction</span>
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="bg-white dark:bg-[#252528] border border-[var(--border-subtle)] p-3 rounded shadow-sm flex items-center justify-between group cursor-pointer">
+                      <span className="text-xs font-serif font-bold text-[var(--text-primary)]">II. Methodology</span>
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 p-3 rounded shadow-sm flex items-center justify-between relative overflow-hidden">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+                      <span className="text-xs font-serif font-bold text-emerald-700 dark:text-emerald-400">III. Analysis</span>
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    </div>
+                 </div>
+                 {/* Main Content */}
+                 <div className="w-2/3 bg-white dark:bg-[#141415] p-8 flex flex-col justify-center items-center text-center relative">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--accent-glow)_0%,transparent_60%)] opacity-50" />
+                    <Library className="h-12 w-12 text-[var(--text-secondary)] mb-4 relative z-10 stroke-[1.5]" />
+                    <h3 className="text-xl font-serif italic font-bold mb-2 relative z-10 text-[var(--text-primary)]">Compiling Volume</h3>
+                    <p className="text-xs text-[var(--text-tertiary)] mb-6 relative z-10 font-mono">Cross-referencing entities...</p>
+                    <div className="w-full max-w-[200px] h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden relative z-10">
+                      <div className="h-full bg-[var(--text-primary)] w-2/3 animate-pulse rounded-full"></div>
+                    </div>
+                 </div>
              </div>
           </div>
           
           <div className="animate-slideUp order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold mb-6">
-                <BookOpen className="h-4 w-4" /> BOOK MAKER
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-strong)] text-[var(--text-secondary)] text-xs font-bold mb-6 font-mono uppercase tracking-widest shadow-sm">
+                <Library className="h-3 w-3" /> Book Maker
             </div>
-            <h2 className="text-4xl font-bold mb-6">Publish with structural consistency</h2>
-            <p className="text-lg text-[var(--text-secondary)] mb-6 leading-relaxed">
+            <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-6 text-[var(--text-primary)]">Publish with <br/>structural consistency.</h2>
+            <p className="text-lg text-[var(--text-secondary)] mb-8 leading-relaxed font-medium">
               Compile multiple individual documents into a single cohesive book or report. Our engine runs global consistency checks across all chapters to ensure character names, terminology, and font hierarchies remain uniform.
             </p>
             <div className="flex gap-4">
-              <span className="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-sm font-semibold bg-[var(--bg-surface)]">EPUB3 Export</span>
-              <span className="px-4 py-2 rounded-full border border-[var(--border-subtle)] text-sm font-semibold bg-[var(--bg-surface)]">PDF/A Archival</span>
+              <span className="px-5 py-2.5 rounded border border-[var(--border-strong)] text-sm font-bold bg-[#fdfdfc] dark:bg-[#1e1e20] shadow-sm flex items-center gap-2 hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"><ArrowRight className="h-4 w-4" /> EPUB3 Export</span>
+              <span className="px-5 py-2.5 rounded border border-[var(--border-strong)] text-sm font-bold bg-[#fdfdfc] dark:bg-[#1e1e20] shadow-sm flex items-center gap-2 hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"><ArrowRight className="h-4 w-4" /> PDF/A Archival</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* HOW IT WORKS / THE LOOP */}
-      <section className="py-24 px-6 relative bg-[var(--bg-surface)] animate-reveal opacity-0" style={{ animationDelay: '240ms' }}>
+      <section id="extraction-loop" className="py-24 px-6 relative bg-[#fdfdfc] dark:bg-[#101011] animate-reveal opacity-0 border-b border-[var(--border-subtle)]" style={{ animationDelay: '240ms' }}>
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">The Extraction Loop</h2>
-            <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
+          <div className="text-center mb-20 relative">
+            {/* Scribble */}
+            <svg className="absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-32 text-emerald-500 opacity-10 pointer-events-none" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="animate-[spin_20s_linear_infinite]" />
+            </svg>
+            <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-4 text-[var(--text-primary)]">The Extraction Loop</h2>
+            <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto font-medium">
               We reconstruct the semantic DOM from raw coordinates.
             </p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-6 relative">
-            <div className="relative bg-[var(--bg-elevated)] p-6 rounded-3xl border border-[var(--border-subtle)] shadow-sm hover:shadow-md hover:border-[var(--accent)]/50 transition-all duration-300">
-              <div className="h-12 w-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-4 text-blue-600 dark:text-blue-400">
-                <FileJson className="h-6 w-6" />
-              </div>
-              <h3 className="font-bold mb-2">1. Extract</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Raw PDF binaries are parsed to extract untagged text and coordinates.</p>
-            </div>
+             {/* Connecting dashed line */}
+             <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px border-t-2 border-dashed border-[var(--border-strong)] -translate-y-1/2 z-0"></div>
 
-            <div className="relative bg-[var(--bg-elevated)] p-6 rounded-3xl border border-[var(--border-subtle)] shadow-sm hover:shadow-md hover:border-[var(--accent)]/50 transition-all duration-300">
-              <div className="h-12 w-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4 text-purple-600 dark:text-purple-400">
-                <Layers className="h-6 w-6" />
-              </div>
-              <h3 className="font-bold mb-2">2. Reconstruct</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Python heuristics engine rebuilds paragraphs, tables, and lists.</p>
-            </div>
-
-            <div className="relative bg-[var(--bg-elevated)] p-6 rounded-3xl border border-[var(--border-subtle)] shadow-sm hover:shadow-md hover:border-[var(--accent)]/50 transition-all duration-300">
-              <div className="h-12 w-12 bg-[var(--accent)]/10 rounded-xl flex items-center justify-center mb-4 text-[var(--accent)]">
-                <Wand2 className="h-6 w-6" />
-              </div>
-              <h3 className="font-bold mb-2">3. AI Edit</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Gemini 1.5 Pro performs precise JSON tree mutations seamlessly.</p>
-            </div>
-
-            <div className="relative bg-[var(--bg-elevated)] p-6 rounded-3xl border border-[var(--border-subtle)] shadow-sm hover:shadow-md hover:border-[var(--accent)]/50 transition-all duration-300">
-              <div className="h-12 w-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-4 text-emerald-600 dark:text-emerald-400">
-                <Download className="h-6 w-6" />
-              </div>
-              <h3 className="font-bold mb-2">4. Export</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Compiled back into a pristine PDF/A or EPUB3 document.</p>
-            </div>
+            {[
+                { icon: FileJson, title: "1. Extract", desc: "Raw PDF binaries are parsed to extract untagged text and coordinates." },
+                { icon: Layers, title: "2. Reconstruct", desc: "Python heuristics engine rebuilds paragraphs, tables, and lists." },
+                { icon: Wand2, title: "3. AI Edit", desc: "Gemini 1.5 Pro performs precise JSON tree mutations seamlessly." },
+                { icon: Download, title: "4. Export", desc: "Compiled back into a pristine PDF/A or EPUB3 document." }
+            ].map((step, idx) => (
+                <div key={idx} className="relative bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-[4px_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-transform duration-300 z-10 group">
+                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-[#fdfdfc] dark:bg-[#101011] rounded-full border border-[var(--border-strong)] flex items-center justify-center shadow-sm">
+                      <div className="w-2 h-2 rounded-full bg-[var(--text-primary)] group-hover:bg-emerald-500 transition-colors"></div>
+                  </div>
+                  <div className="h-12 w-12 rounded flex items-center justify-center mb-6 text-[var(--text-primary)] border border-[var(--border-subtle)] bg-[#f9f9f8] dark:bg-[#252528]">
+                    <step.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-serif italic font-bold text-xl mb-3">{step.title}</h3>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed font-medium">{step.desc}</p>
+                </div>
+            ))}
           </div>
         </div>
       </section>
@@ -326,79 +506,85 @@ export default function LandingPage() {
       {/* EASY INTEGRATION / API */}
       <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] animate-reveal opacity-0" style={{ animationDelay: '280ms' }}>
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">Integrate in Minutes</h2>
-          <p className="text-lg text-[var(--text-secondary)] mb-12 max-w-2xl mx-auto">
-            You don&apos;t need to use our UI. Hook into our public API endpoint using the free rate-limited key and parse documents directly in your backend. Cloudflare R2 storage keeps assets secure.
+          <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-6 text-[var(--text-primary)]">Integrate in Minutes</h2>
+          <p className="text-lg text-[var(--text-secondary)] mb-12 max-w-2xl mx-auto font-medium">
+            You don&apos;t need to use our UI. Hook into our public API endpoint using the free rate-limited key and parse documents directly in your backend.
           </p>
           
-          {/* Terminal Box for Code - Keep this dark in both modes for standard terminal aesthetics */}
-          <div className="text-left bg-[#0a0a0c] rounded-2xl border border-[var(--border-strong)] overflow-hidden shadow-2xl max-w-3xl mx-auto animate-slideUp">
-            <div className="flex items-center justify-between px-4 py-3 bg-[var(--border-subtle)] border-b border-[var(--border-strong)]">
+          <div className="text-left bg-[#0a0a0c] rounded border border-[#2a2a2c] overflow-hidden shadow-2xl max-w-3xl mx-auto animate-slideUp relative">
+            {/* Syntax highlight decorative bar */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500/50"></div>
+            
+            <div className="flex items-center justify-between px-4 py-3 bg-[#121214] border-b border-[#2a2a2c]">
               <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#3a3a3c]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#3a3a3c]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#3a3a3c]"></div>
               </div>
-              <div className="text-xs font-mono text-gray-400">extract.sh</div>
+              <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">extract.sh</div>
             </div>
-            <div className="p-6 overflow-x-auto text-sm font-mono text-emerald-400">
+            <div className="p-6 overflow-x-auto text-sm font-mono text-emerald-400/90 leading-relaxed">
               <pre><code>
-<span className="text-pink-400">curl</span> -X POST https://api.olpdf.com/v1/extract \
-  -H <span className="text-amber-300">"Authorization: Bearer free_beta_key"</span> \
-  -H <span className="text-amber-300">"Content-Type: application/json"</span> \
-  -d <span className="text-amber-300">{`'{ "url": "https://example.com/invoice.pdf", "mode": "semantic" }'`}</span>
+<span className="text-pink-400/90">curl</span> -X POST https://api.olpdf.xyz/v1/extract \
+  -H <span className="text-amber-300/90">"Authorization: Bearer free_beta_key"</span> \
+  -H <span className="text-amber-300/90">"Content-Type: application/json"</span> \
+  -d <span className="text-amber-300/90">{`'{ "url": "https://example.com/invoice.pdf", "mode": "semantic" }'`}</span>
               </code></pre>
             </div>
           </div>
-          <div className="mt-8">
-             <Link href="/docs" className="text-[var(--accent)] hover:underline font-bold inline-flex items-center gap-2">
-                Read Full API Documentation <ArrowRight className="h-4 w-4" />
+          <div className="mt-10">
+             <Link href="/docs" className="text-[var(--text-primary)] hover:text-emerald-500 font-serif italic font-bold inline-flex items-center gap-2 text-lg transition-colors">
+                Read Full API Documentation <ArrowRight className="h-5 w-5" />
              </Link>
           </div>
         </div>
       </section>
 
       {/* FREE COMMITMENT SECTION */}
-      <section className="py-24 px-6 bg-[var(--bg-surface)] animate-reveal opacity-0" style={{ animationDelay: '320ms' }}>
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] text-xs font-black uppercase tracking-widest mb-8 shadow-lg shadow-[var(--accent)]/20">
-            100% Free Forever
+      <section className="py-24 px-6 bg-[#fdfdfc] dark:bg-[#141415] animate-reveal opacity-0 relative border-b border-[var(--border-subtle)]" style={{ animationDelay: '320ms' }}>
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-mono font-bold uppercase tracking-widest mb-10 shadow-sm bg-white dark:bg-[#1e1e20]">
+            <Bookmark className="h-3 w-3" /> 100% Free Forever
           </div>
-          <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter">No Paywalls. Just Documents.</h2>
-          <p className="text-xl text-[var(--text-secondary)] leading-relaxed mb-12 max-w-2xl mx-auto">
+          <h2 className="text-4xl md:text-6xl font-serif italic font-bold mb-8 tracking-tighter text-[var(--text-primary)]">
+              No Paywalls. <br/>
+              <span className="relative">
+                  Just Documents.
+                  <svg className="absolute -bottom-3 left-0 w-full h-4 text-emerald-500 opacity-60" viewBox="0 0 100 20" preserveAspectRatio="none">
+                     <path d="M5,15 Q50,5 95,15" fill="none" stroke="currentColor" strokeWidth="4" />
+                  </svg>
+              </span>
+          </h2>
+          <p className="text-xl text-[var(--text-secondary)] leading-relaxed mb-16 max-w-2xl mx-auto font-medium">
             We believe that document intelligence should be a public good. OLPDF is committed to remaining free for individuals and open-source projects.
           </p>
           
           <div className="grid md:grid-cols-3 gap-6 text-left">
-            <div className="bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-subtle)]">
-               <div className="h-10 w-10 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-6 w-6" />
-               </div>
-               <h4 className="font-bold mb-2">Unlimited Projects</h4>
-               <p className="text-xs text-[var(--text-secondary)]">Create as many documents or books as you need without hitting a cap.</p>
+            <div className="bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-sm hover:shadow-md transition-shadow">
+               <h4 className="font-serif italic font-bold text-xl mb-3">Unlimited Projects</h4>
+               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Create as many documents or books as you need without hitting a cap.</p>
             </div>
-            <div className="bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-subtle)]">
-               <div className="h-10 w-10 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-6 w-6" />
-               </div>
-               <h4 className="font-bold mb-2">Full AI Access</h4>
-               <p className="text-xs text-[var(--text-secondary)]">Use Gemini-powered structural editing without a subscription fee.</p>
+            <div className="bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-sm hover:shadow-md transition-shadow">
+               <h4 className="font-serif italic font-bold text-xl mb-3">Full AI Access</h4>
+               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Use Gemini-powered structural editing without a subscription fee.</p>
             </div>
-            <div className="bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-subtle)]">
-               <div className="h-10 w-10 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-6 w-6" />
-               </div>
-               <h4 className="font-bold mb-2">Open API</h4>
-               <p className="text-xs text-[var(--text-secondary)]">Integrate our extraction engine into your own apps for free.</p>
+            <div className="bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-sm hover:shadow-md transition-shadow">
+               <h4 className="font-serif italic font-bold text-xl mb-3">Open API</h4>
+               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Integrate our extraction engine into your own apps for free.</p>
             </div>
           </div>
 
-          <div className="mt-12 p-8 rounded-3xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-base)]">
-             <h3 className="text-xl font-bold mb-4">How do we survive?</h3>
-             <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-xl mx-auto mb-6">
+          <div className="mt-16 p-10 rounded border border-dashed border-[var(--border-strong)] bg-white dark:bg-[#1e1e20] relative">
+             <div className="absolute -top-3 -left-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
+             <div className="absolute -top-3 -right-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
+             <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
+             <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
+
+             <h3 className="text-2xl font-serif italic font-bold mb-4">How do we survive?</h3>
+             <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-xl mx-auto mb-8 font-medium">
                 OLPDF is supported by infrastructure grants and a passionate community of contributors. We don&apos;t want your credit card; we want your feedback and your pull requests.
              </p>
-             <Link href="/contribute" className="inline-flex items-center justify-center h-10 rounded-full bg-[var(--text-primary)] text-[var(--bg-base)] font-bold px-8 hover:opacity-90 transition-opacity">
+             <Link href="/contribute" className="inline-flex items-center justify-center h-12 rounded bg-[var(--text-primary)] text-[var(--bg-base)] font-serif italic font-bold px-10 hover:opacity-90 transition-opacity text-lg shadow-md">
                 Join the Community
              </Link>
           </div>
@@ -406,41 +592,49 @@ export default function LandingPage() {
       </section>
 
       {/* CONTRIBUTE CTA */}
-      <section className="py-24 px-6 border-t border-[var(--border-subtle)] bg-[var(--accent-subtle)] animate-reveal opacity-0" style={{ animationDelay: '360ms' }}>
+      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] animate-reveal opacity-0" style={{ animationDelay: '360ms' }}>
         <div className="max-w-4xl mx-auto text-center">
-          <Users className="h-12 w-12 text-[var(--accent)] mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[var(--text-primary)]">Open Source & Community Driven</h2>
-          <p className="text-[var(--text-secondary)] mb-8 text-lg">
+          <BookOpen className="h-12 w-12 text-[var(--text-primary)] mx-auto mb-8 opacity-50" />
+          <h2 className="text-3xl md:text-5xl font-serif italic font-bold mb-6 text-[var(--text-primary)]">Open Source & <br/>Community Driven</h2>
+          <p className="text-[var(--text-secondary)] mb-10 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
             OLPDF is built by developers, for developers. Check out our good first issues, sponsor the project, or build your own custom extraction plugins.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-             <Link href="https://github.com/olpdf/olpdf" target="_blank" className="inline-flex items-center justify-center h-10 bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 px-6 rounded-full font-bold shadow-lg transition-opacity">
-                  <Github className="mr-2 h-5 w-5" /> Star on GitHub
+             <Link href="https://github.com/olpdf/olpdf" target="_blank" className="inline-flex items-center justify-center h-12 bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 px-8 rounded font-serif italic font-bold shadow-lg transition-opacity text-lg">
+                  <Github className="mr-3 h-5 w-5 not-italic" /> Star on GitHub
              </Link>
-             <Link href="/contribute" className="inline-flex items-center justify-center h-10 px-6 rounded-full font-bold border border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors">
-                  <Code2 className="mr-2 h-5 w-5" /> View Contribution Guide
+             <Link href="/contribute" className="inline-flex items-center justify-center h-12 px-8 rounded font-serif italic font-bold border border-[var(--border-strong)] hover:bg-[#fdfdfc] dark:hover:bg-[#1a1a1c] bg-white dark:bg-[#1e1e20] text-[var(--text-primary)] shadow-sm transition-colors text-lg">
+                  <Code2 className="mr-3 h-5 w-5 not-italic" /> Contribution Guide
              </Link>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-20 px-6 border-t border-[var(--border-subtle)] bg-[var(--bg-base)]">
+      <footer className="py-20 px-6 bg-[#fdfdfc] dark:bg-[#101011] relative">
           <div className="mx-auto max-w-6xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-16">
               <div className="col-span-2 lg:col-span-2">
-                  <Link href="/" className="text-xl font-extrabold tracking-tighter text-[var(--text-primary)] mb-6 block">
-                      OLPDF
+                  <Link href="/" className="text-3xl mb-6 inline-flex items-baseline group">
+                      <span className="font-sans font-black tracking-tighter text-orange-500">O</span>
+                      <span className="font-serif italic font-light text-[#fff3e6] dark:text-[#ffedd6] -ml-1 transform -rotate-3 translate-y-0.5 mr-1.5">L</span>
+                      <span className="bg-[#e21818] text-white px-2.5 py-0.5 rounded-lg shadow-sm border border-[#b31212] inline-flex items-baseline relative transform rotate-1 group-hover:rotate-2 transition-transform">
+                          <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg pointer-events-none"></div>
+                          <span className="font-mono font-bold tracking-tight opacity-90 relative z-10">P</span>
+                          <span className="font-serif font-black -ml-0.5 relative z-10">D</span>
+                          <span className="font-sans font-thin italic ml-0.5 scale-110 origin-bottom relative z-10">F</span>
+                      </span>
+                      <span className="text-[var(--text-primary)] font-serif font-bold ml-1">.</span>
                   </Link>
-                  <p className="text-[var(--text-secondary)] text-sm max-w-xs mb-6">
+                  <p className="text-[var(--text-secondary)] text-sm max-w-xs mb-8 font-medium leading-relaxed">
                       The structure-first AI document operating system. Reconstructing the semantic DOM from raw coordinates since 2026.
                   </p>
                   <div className="flex gap-4">
-                     <Link href="https://github.com/olpdf/olpdf" target="_blank" className="p-2 rounded-full bg-[var(--bg-surface)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"><Github className="h-5 w-5" /></Link>
+                     <Link href="https://github.com/olpdf/olpdf" target="_blank" className="p-2.5 rounded border border-[var(--border-subtle)] bg-white dark:bg-[#1e1e20] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shadow-sm"><Github className="h-4 w-4" /></Link>
                   </div>
               </div>
               
               <div>
-                  <h4 className="text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6">Product</h4>
+                  <h4 className="text-[10px] font-mono text-[var(--text-tertiary)] uppercase tracking-widest mb-6 font-bold">Product</h4>
                   <ul className="space-y-4 text-sm text-[var(--text-secondary)] font-medium">
                       <li><Link href="/dashboard" className="hover:text-[var(--text-primary)] transition-colors">Workspace</Link></li>
                       <li><Link href="/templates" className="hover:text-[var(--text-primary)] transition-colors">Templates</Link></li>
@@ -449,7 +643,7 @@ export default function LandingPage() {
               </div>
 
               <div>
-                  <h4 className="text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6">Resources</h4>
+                  <h4 className="text-[10px] font-mono text-[var(--text-tertiary)] uppercase tracking-widest mb-6 font-bold">Resources</h4>
                   <ul className="space-y-4 text-sm text-[var(--text-secondary)] font-medium">
                       <li><Link href="/docs" className="hover:text-[var(--text-primary)] transition-colors">Documentation</Link></li>
                       <li><Link href="/contribute" className="hover:text-[var(--text-primary)] transition-colors">Contribute</Link></li>
@@ -457,7 +651,7 @@ export default function LandingPage() {
               </div>
 
               <div>
-                  <h4 className="text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6">Legal</h4>
+                  <h4 className="text-[10px] font-mono text-[var(--text-tertiary)] uppercase tracking-widest mb-6 font-bold">Legal</h4>
                   <ul className="space-y-4 text-sm text-[var(--text-secondary)] font-medium">
                       <li><Link href="/privacy" className="hover:text-[var(--text-primary)] transition-colors">Privacy Policy</Link></li>
                       <li><Link href="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms of Service</Link></li>
@@ -465,12 +659,12 @@ export default function LandingPage() {
               </div>
           </div>
           
-          <div className="mx-auto max-w-6xl pt-8 border-t border-[var(--border-subtle)] flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-[var(--text-tertiary)]">
+          <div className="mx-auto max-w-6xl pt-8 border-t border-[var(--border-subtle)] flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-mono text-[var(--text-tertiary)]">
               <div>
                   © 2026 OLPDF. Released under MIT License.
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[var(--status-ok)] animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 System Status: Operational
               </div>
           </div>

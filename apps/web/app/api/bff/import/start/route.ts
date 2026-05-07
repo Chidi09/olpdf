@@ -5,9 +5,10 @@ export async function POST(request: Request) {
 
   const documentId = body?.document_id || body?.documentId;
   const fileBytes = body?.file_bytes || "";
+  const layoutMode = body?.layout_mode || body?.layoutMode || "editable";
 
   return forwardJson(`/api/documents/import/start`, {
     method: "POST",
-    body: JSON.stringify({ document_id: documentId, file_bytes: fileBytes }),
+    body: JSON.stringify({ document_id: documentId, file_bytes: fileBytes, layout_mode: layoutMode }),
   });
 }

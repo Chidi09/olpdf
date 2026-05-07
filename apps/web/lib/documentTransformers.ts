@@ -61,6 +61,7 @@ export function createEmptyDocumentModel(documentId: string): EditorDocumentMode
     meta: defaultMeta,
     styles: {},
     blocks: [],
+    page_dimensions: [],
   };
 }
 
@@ -129,6 +130,8 @@ export function tiptapToDocumentModel(tiptapDoc: unknown, documentId: string): E
       confidence_score: 1,
       needs_review: false,
       style_overrides: (node.attrs?.style_overrides as Record<string, unknown>) || {},
+      z_index: 0,
+      page_index: 0,
     }));
 
   return {
@@ -136,6 +139,7 @@ export function tiptapToDocumentModel(tiptapDoc: unknown, documentId: string): E
     meta: defaultMeta,
     styles: {},
     blocks,
+    page_dimensions: [],
   };
 }
 

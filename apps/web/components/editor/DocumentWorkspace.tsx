@@ -2,10 +2,37 @@
 
 import { useMemo, useState } from "react";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
-import CollaborativeEditor from "@/components/CollaborativeEditor";
+import dynamic from "next/dynamic";
 import ExportButton from "@/components/ExportButton";
 import AiEditDiffPanel from "@/components/editor/AiEditDiffPanel";
 import AiHistoryPanel from "@/components/editor/AiHistoryPanel";
+import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
+import { useInstalledPlugins } from "@/hooks/usePlugins";
+import { PluginHost } from "./PluginHost";
+
+const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-screen w-full items-center justify-center bg-[var(--bg-base)]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--border-subtle)] border-t-[var(--accent)]" />
+        <p className="text-sm font-bold tracking-widest uppercase text-[var(--text-tertiary)]">Loading Studio Editor...</p>
+      </div>
+    </div>
+  ),
+});
+
+const FidelityCanvas = dynamic(() => import("@/components/editor/FidelityCanvas"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-screen w-full items-center justify-center bg-[var(--bg-surface)]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--border-subtle)] border-t-[var(--accent)]" />
+        <p className="text-sm font-bold tracking-widest uppercase text-[var(--text-tertiary)]">Loading Fidelity Canvas...</p>
+      </div>
+    </div>
+  ),
+});
 
 type AiLog = {
   id: string;
@@ -26,6 +53,11 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const [isRunningAi, setIsRunningAi] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [activeAiLog, setActiveAiLog] = useState<AiLog | null>(null);
+  const saveMutation = useSaveDocumentMutation(documentId);
+
+  // Fetch installed plugins for the workspace
+  const workspaceId = currentModel?.meta?.workspace_id || "default-workspace";
+  const { data: installedPlugins } = useInstalledPlugins(workspaceId);
 
   const canRunAi = instruction.trim().length > 0 && !isRunningAi;
 
@@ -72,18 +104,73 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     return activeAiLog.diff_snapshot;
   }, [activeAiLog]);
 
+  const layoutMode = currentModel?.meta?.layout_mode ?? "editable";
+
+  const setLayoutMode = async (mode: "editable" | "fidelity") => {
+    if (!currentModel || currentModel.meta.layout_mode === mode) return;
+    const nextModel: DocumentModel = {
+      ...currentModel,
+      meta: {
+        ...currentModel.meta,
+        layout_mode: mode,
+      },
+    };
+    setCurrentModel(nextModel);
+    await saveMutation.mutateAsync(nextModel);
+  };
+
   return (
     <div className="h-screen w-full relative">
-      <CollaborativeEditor
-        documentId={documentId}
-        userName="Divine Adoyi"
-        userColor="#e6a449"
-        initialModel={currentModel ?? undefined}
-        onModelChange={setCurrentModel}
-      />
+      {layoutMode === "fidelity" && currentModel ? (
+        <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} />
+      ) : (
+        <CollaborativeEditor
+          documentId={documentId}
+          userName="Divine Adoyi"
+          userColor="#e6a449"
+          initialModel={currentModel ?? undefined}
+          onModelChange={setCurrentModel}
+        />
+      )}
+
+      {/* Plugin Sandbox Hosts */}
+      {installedPlugins?.map((p: any) => (
+        <PluginHost
+          key={p.id}
+          bundleUrl={p.bundle_url}
+          documentId={documentId}
+          blocks={currentModel?.blocks || []}
+          onUpdateBlock={(id, content) => {
+            if (!currentModel) return;
+            const nextBlocks = currentModel.blocks.map(b => b.id === id ? { ...b, content } : b);
+            const nextModel = { ...currentModel, blocks: nextBlocks };
+            setCurrentModel(nextModel);
+            saveMutation.mutate(nextModel);
+          }}
+          onEmitNotification={(msg, type) => {
+            console.log(`[Plugin:${p.name}] ${type}: ${msg}`);
+          }}
+        />
+      ))}
 
       <div className="fixed top-16 right-6 z-40 w-[340px] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-glass)] p-4 backdrop-blur-md shadow-2xl space-y-3">
-        <div className="text-xs font-bold tracking-widest uppercase text-[var(--text-tertiary)]">AI</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-bold tracking-widest uppercase text-[var(--text-tertiary)]">AI</div>
+          <div className="inline-flex rounded-full border border-white/15 p-0.5">
+            <button
+              onClick={() => void setLayoutMode("editable")}
+              className={`px-2 py-1 text-[10px] font-semibold uppercase ${layoutMode === "editable" ? "bg-[var(--accent)] text-[var(--text-on-accent)]" : "text-[var(--text-secondary)]"}`}
+            >
+              Editable
+            </button>
+            <button
+              onClick={() => void setLayoutMode("fidelity")}
+              className={`px-2 py-1 text-[10px] font-semibold uppercase ${layoutMode === "fidelity" ? "bg-[var(--accent)] text-[var(--text-on-accent)]" : "text-[var(--text-secondary)]"}`}
+            >
+              Fidelity
+            </button>
+          </div>
+        </div>
         <textarea
           value={instruction}
           onChange={(event) => setInstruction(event.target.value)}

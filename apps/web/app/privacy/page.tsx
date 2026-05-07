@@ -82,7 +82,7 @@ export default function PrivacyPage() {
            <p className="text-sm text-[var(--text-secondary)] mb-6">
              Our privacy team is available to help with data export requests, deletion, or technical security inquiries.
            </p>
-           <a href="mailto:privacy@olpdf.com" className="inline-flex items-center gap-2 bg-[var(--accent)] text-[var(--text-on-accent)] px-6 py-2.5 rounded-full font-bold text-sm shadow-lg hover:opacity-90 transition-all">
+           <a href="mailto:privacy@olpdf.xyz" className="inline-flex items-center gap-2 bg-[var(--accent)] text-[var(--text-on-accent)] px-6 py-2.5 rounded-full font-bold text-sm shadow-lg hover:opacity-90 transition-all">
               Email Privacy Team
            </a>
         </div>

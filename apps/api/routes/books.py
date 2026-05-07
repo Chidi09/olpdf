@@ -2,7 +2,8 @@ from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from ..models import BookModel, BookChapter
 from ..repositories import DocumentRepository, BookRepository
-from ..auth_utils import require_auth
+from ..auth_utils import require_auth, check_ownership
+from ..security_utils import sanitize_string, sanitize_dict
 from ..factories import BookExportFactory
 from ..worker_utils import index_chapter_embeddings
 from ..ai_utils import check_book_consistency as ai_check_consistency
@@ -13,55 +14,46 @@ router = APIRouter(prefix="/api/books", tags=["books"])
 
 @router.post("/create")
 async def create_book(book: BookModel, user: dict = Depends(require_auth)) -> dict:
-    res = BookRepository.create(book.title, book.meta, user_id=user["sub"])
+    title = sanitize_string(book.title)
+    meta = sanitize_dict(book.meta)
+    res = BookRepository.create(title, meta, user_id=user["sub"])
     return {"id": res["id"], "status": "created"}
 
 @router.get("/{book_id}")
 async def get_book(book_id: str, user: dict = Depends(require_auth)) -> dict:
-    book = BookRepository.get_by_id(book_id)
-    if not book: raise HTTPException(status_code=404, detail="Book not found")
-    if book.get("user_id") and str(book["user_id"]) != user["sub"] and user["sub"] != "dev-user":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    book = check_ownership(book_id, user, resource_type="book")
     chapters = BookRepository.get_chapters(book_id)
     return {**book, "chapters": chapters}
 
 @router.post("/{book_id}/consistency")
 async def check_book_consistency(book_id: str, query: str, user: dict = Depends(require_auth)) -> dict:
-    book = BookRepository.get_by_id(book_id)
-    if not book: raise HTTPException(status_code=404, detail="Book not found")
-    if book.get("user_id") and str(book["user_id"]) != user["sub"] and user["sub"] != "dev-user":
-        raise HTTPException(status_code=403, detail="Forbidden")
-        
+    check_ownership(book_id, user, resource_type="book")
     return await ai_check_consistency(book_id, query)
 
 @router.post("/{book_id}/chapters")
 async def add_chapter(book_id: str, chapter: BookChapter, user: dict = Depends(require_auth)) -> dict:
-    book = BookRepository.get_by_id(book_id)
-    if book and book.get("user_id") and str(book["user_id"]) != user["sub"] and user["sub"] != "dev-user":
-        raise HTTPException(status_code=403, detail="Forbidden")
-        
-    new_doc = DocumentRepository.create(chapter.title, {"blocks": [], "meta": {"user_id": user["sub"]}}, "ready")
-    new_ch = BookRepository.create_chapter(book_id, new_doc["id"], chapter.title, chapter.chapter_number)
+    check_ownership(book_id, user, resource_type="book")
+    
+    title = sanitize_string(chapter.title)
+    new_doc = DocumentRepository.create(title, {"blocks": [], "meta": {"user_id": user["sub"]}}, "ready")
+    new_ch = BookRepository.create_chapter(book_id, new_doc["id"], title, chapter.chapter_number)
     return {"id": new_ch["id"], "document_id": new_doc["id"]}
 
 @router.put("/{book_id}/chapters/{chapter_id}")
 async def update_chapter(book_id: str, chapter_id: str, chapter: BookChapter, background_tasks: BackgroundTasks, user: dict = Depends(require_auth)) -> dict:
-    book = BookRepository.get_by_id(book_id)
-    if book and book.get("user_id") and str(book["user_id"]) != user["sub"] and user["sub"] != "dev-user":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_ownership(book_id, user, resource_type="book")
         
     ch_data = supabase.table("book_chapters").select("status").eq("id", chapter_id).single().execute()
     old_status = ch_data.data["status"]
-    BookRepository.update_chapter(chapter_id, {"title": chapter.title, "chapter_number": chapter.chapter_number, "status": chapter.status, "word_count": chapter.word_count})
+    title = sanitize_string(chapter.title)
+    BookRepository.update_chapter(chapter_id, {"title": title, "chapter_number": chapter.chapter_number, "status": chapter.status, "word_count": chapter.word_count})
     if old_status == "draft" and chapter.status == "review":
         background_tasks.add_task(index_chapter_embeddings, chapter_id)
     return {"status": "success"}
 
 @router.post("/{book_id}/export/{format_type}")
 async def export_book(book_id: str, format_type: str, user: dict = Depends(require_auth)) -> dict:
-    book_data = BookRepository.get_by_id(book_id)
-    if book_data and book_data.get("user_id") and str(book_data["user_id"]) != user["sub"] and user["sub"] != "dev-user":
-        raise HTTPException(status_code=403, detail="Forbidden")
+    book_data = check_ownership(book_id, user, resource_type="book")
         
     ch_list = BookRepository.get_chapters(book_id)
     chapters = []

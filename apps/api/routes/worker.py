@@ -46,3 +46,36 @@ async def worker_process_import(request: Request) -> dict:
     payload = WorkerImportPayload.model_validate_json(raw_body)
     result = await route_pdf_import(payload.file_bytes, payload.document_id)
     return {"status": "processed", "document_id": payload.document_id, **result}
+
+
+@router.post("/ocr-complete")
+async def worker_ocr_complete(request: Request) -> dict:
+    secret = request.headers.get("X-Worker-Secret", "")
+    expected = os.environ.get("WORKER_SECRET", "")
+    if expected and not hmac.compare_digest(secret, expected):
+        raise HTTPException(status_code=401, detail="Invalid worker secret")
+
+    payload = await request.json()
+    document_id = str(payload.get("document_id", "")).strip()
+    if not document_id:
+        raise HTTPException(status_code=400, detail="Missing document_id")
+
+    status = payload.get("status", "ready")
+    failed_pages = payload.get("failed_pages", [])
+
+    try:
+        from ..notification_utils import send_import_complete_notification, send_ocr_partial_notification
+        from ..supabase_client import supabase as _sb
+
+        doc_row = _sb.table("documents").select("title, user_id").eq("id", document_id).single().execute()
+        if doc_row.data and doc_row.data.get("user_id"):
+            title = doc_row.data.get("title", "Your document")
+            user_id = doc_row.data.get("user_id")
+            if status == "ready":
+                send_import_complete_notification(user_id, title, document_id)
+            else:
+                send_ocr_partial_notification(user_id, title, document_id, len(failed_pages))
+    except Exception:
+        pass
+
+    return {"status": "acknowledged", "document_id": document_id}

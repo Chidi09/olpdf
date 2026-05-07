@@ -152,20 +152,55 @@ export default function SettingsPage() {
               <Shield className="h-5 w-5 text-red-500" /> Data & Safety
             </h2>
             <p className="text-xs text-[var(--text-tertiary)] font-medium leading-relaxed">
-              Manage your document retention and local storage data.
+              Manage your document retention, export your data, and delete your account.
             </p>
           </div>
           <div className="md:col-span-2 space-y-6">
-            <div className="bg-[var(--bg-elevated)] p-8 rounded-3xl border border-red-500/20 shadow-sm">
-               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="bg-[var(--bg-elevated)] p-8 rounded-3xl border border-[var(--border-subtle)] shadow-sm space-y-6">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-[var(--border-subtle)]">
                   <div>
-                    <h3 className="font-bold mb-1">Erase Workspace Data</h3>
+                    <h3 className="font-bold mb-1">Export Data Archive</h3>
                     <p className="text-xs text-[var(--text-secondary)] leading-relaxed max-w-sm">
-                      This will permanently delete all local documents, favorites, and version history. This action is irreversible.
+                      Download a machine-readable JSON archive containing all your documents, books, and metadata.
                     </p>
                   </div>
-                  <Button className="bg-red-500 text-white font-black rounded-full px-6 hover:bg-red-600 transition-all shrink-0">
-                    <Trash2 className="h-4 w-4 mr-2" /> Purge All Data
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                        window.open("/api/bff/account/export-data", "_blank");
+                    }}
+                    className="border-[var(--border-strong)] font-black rounded-full px-6 transition-all shrink-0"
+                  >
+                    <Database className="h-4 w-4 mr-2 text-blue-500" /> Request Export
+                  </Button>
+               </div>
+
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  <div>
+                    <h3 className="font-bold mb-1 text-red-500">Delete Account</h3>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed max-w-sm">
+                      This will permanently delete your account, local data, and all cloud artifacts. This action is irreversible.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={async () => {
+                      if (window.confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
+                         try {
+                           const res = await fetch("/api/bff/account/delete", { method: "DELETE" });
+                           if (res.ok) {
+                             alert("Account deleted. You will now be signed out.");
+                             window.location.href = "/login";
+                           } else {
+                             alert("Failed to delete account. Please try again or contact support.");
+                           }
+                         } catch (e) {
+                           alert("Network error.");
+                         }
+                      }
+                    }}
+                    className="bg-red-500 text-white font-black rounded-full px-6 hover:bg-red-600 transition-all shrink-0"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete Account
                   </Button>
                </div>
             </div>

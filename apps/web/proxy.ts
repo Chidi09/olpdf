@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { createServerClient } from "@supabase/ssr";
 
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 const hasRedisConfig = Boolean(redisUrl && redisToken);
 
 const redis = hasRedisConfig ? new Redis({ url: redisUrl!, token: redisToken! }) : null;
+const protectedRoutes = ["/dashboard", "/editor", "/books", "/templates", "/toolkit", "/settings", "/api/bff"];
 
 const limits = redis
   ? {
@@ -18,6 +20,39 @@ const limits = redis
 
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  const response = NextResponse.next();
+
+  if (process.env.NODE_ENV !== "development") {
+    const isProtected = protectedRoutes.some((prefix) => path.startsWith(prefix));
+    if (isProtected) {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return req.cookies.getAll();
+            },
+            setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+              for (const cookie of cookiesToSet) {
+                response.cookies.set(cookie.name, cookie.value, cookie.options);
+              }
+            },
+          },
+        }
+      );
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        const loginUrl = new URL("/login", req.url);
+        loginUrl.searchParams.set("redirect", path);
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+  }
 
   if (path.startsWith("/api/pdf/import")) {
     const size = parseInt(req.headers.get("content-length") ?? "0", 10);
@@ -26,7 +61,7 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  if (!limits) return NextResponse.next();
+  if (!limits) return response;
 
   const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const userId = req.headers.get("x-user-id") ?? forwardedFor ?? "anon";
@@ -38,7 +73,7 @@ export async function proxy(req: NextRequest) {
         ? limits.import
         : null;
 
-  if (!limiter) return NextResponse.next();
+  if (!limiter) return response;
 
   const { success, reset } = await limiter.limit(userId);
   if (!success) {
@@ -48,5 +83,5 @@ export async function proxy(req: NextRequest) {
     );
   }
 
-  return NextResponse.next();
+  return response;
 }

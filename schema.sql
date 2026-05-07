@@ -113,6 +113,34 @@ CREATE TABLE chapter_embeddings (
 CREATE INDEX ON chapter_embeddings USING ivfflat (embedding vector_cosine_ops)
   WITH (lists = 100);
 
+-- Fidelity Font Registry
+CREATE TABLE fidelity_font_registry (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    pdf_font_name TEXT NOT NULL,
+    ttf_path TEXT,
+    subset_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Auth profile auto-provisioning
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, display_name)
+  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email));
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE PROCEDURE handle_new_user();
+
 -- Row Level Security
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users own documents" ON documents FOR ALL USING (auth.uid() = user_id);

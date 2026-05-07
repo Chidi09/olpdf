@@ -30,10 +30,20 @@ def test_request_id_propagation():
     assert response.headers["X-Request-ID"] == "custom-id"
     assert "X-Process-Time" in response.headers
 
+import base64
+from unittest.mock import AsyncMock, patch
+...
 def test_worker_route_skips_jwt():
     # Worker routes use QStash signature, so they should skip the JWT middleware gate
     # We expect 401 because QStash signature is missing, NOT because JWT is missing.
     # If it was blocked by JWT gate, it would return "Missing bearer token"
-    response = client.post("/api/worker/process-import")
-    assert response.status_code == 401
-    assert response.json()["message"] == "Invalid QStash signature"
+    payload = {
+        "document_id": "550e8400-e29b-41d4-a716-446655440000", 
+        "file_bytes": "YmFzZTY0"
+    }
+    with patch("apps.api.routes.worker.route_pdf_import", new_callable=AsyncMock) as mock_import:
+        mock_import.return_value = {}
+        response = client.post("/api/worker/process-import", json=payload)
+        assert response.status_code == 401
+        assert response.json()["message"] == "Invalid QStash signature"
+        mock_import.assert_not_called()
