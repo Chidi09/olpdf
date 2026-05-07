@@ -56,7 +56,7 @@ export default function ContributePage() {
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
               Help us refine the Python heuristics for PDF layout reconstruction or improve our Gemini tool-calling loops.
             </p>
-            <Link href="https://github.com/olpdf/olpdf" target="_blank">
+            <Link href="https://github.com/chidi09/olpdf" target="_blank">
                <Button variant="outline" className="w-full rounded-xl border-[var(--border-strong)] font-bold group-hover:bg-[var(--accent)] group-hover:text-white group-hover:border-[var(--accent)] transition-all">
                   Browse Code <ArrowRight className="ml-2 h-4 w-4" />
                </Button>
@@ -71,7 +71,7 @@ export default function ContributePage() {
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
               Report bugs, suggest new PDF toolkit operations, or share how you use OLPDF in your professional workflow.
             </p>
-            <Link href="https://github.com/olpdf/olpdf/issues" target="_blank">
+            <Link href="https://github.com/chidi09/olpdf/issues" target="_blank">
                <Button variant="outline" className="w-full rounded-xl border-[var(--border-strong)] font-bold group-hover:bg-[var(--accent)] group-hover:text-white group-hover:border-[var(--accent)] transition-all">
                   Open Issue <ArrowRight className="ml-2 h-4 w-4" />
                </Button>
@@ -114,7 +114,7 @@ export default function ContributePage() {
                     Check out our <code>GOOD_FIRST_ISSUES.md</code> on GitHub. We have plenty of &ldquo;frontend-only&rdquo; styling tasks and &ldquo;backend-only&rdquo; parser improvements waiting for your hands.
                  </p>
                  <div className="flex justify-center">
-                    <Link href="https://github.com/olpdf/olpdf" className="inline-flex items-center gap-2 text-[var(--accent)] font-black hover:underline">
+                    <Link href="https://github.com/chidi09/olpdf" className="inline-flex items-center gap-2 text-[var(--accent)] font-black hover:underline">
                        <Github className="h-5 w-5" /> Start here <ArrowRight className="h-4 w-4" />
                     </Link>
                  </div>

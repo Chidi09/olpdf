@@ -600,7 +600,7 @@ export default function LandingPage() {
             OLPDF is built by developers, for developers. Check out our good first issues, sponsor the project, or build your own custom extraction plugins.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-             <Link href="https://github.com/olpdf/olpdf" target="_blank" className="inline-flex items-center justify-center h-12 bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 px-8 rounded font-sans font-black shadow-lg transition-opacity text-sm uppercase tracking-widest">
+             <Link href="https://github.com/chidi09/olpdf" target="_blank" className="inline-flex items-center justify-center h-12 bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 px-8 rounded font-sans font-black shadow-lg transition-opacity text-sm uppercase tracking-widest">
                   <Github className="mr-3 h-5 w-5 not-italic" /> Star on GitHub
              </Link>
              <Link href="/contribute" className="inline-flex items-center justify-center h-12 px-8 rounded font-sans font-bold border border-[var(--border-strong)] hover:bg-[#fdfdfc] dark:hover:bg-[#1a1a1c] bg-white dark:bg-[#1e1e20] text-[var(--text-primary)] shadow-sm transition-colors text-sm uppercase tracking-widest">
@@ -629,7 +629,7 @@ export default function LandingPage() {
                       The structure-first AI document operating system. Reconstructing the semantic DOM from raw coordinates since 2026.
                   </p>
                   <div className="flex gap-4">
-                     <Link href="https://github.com/olpdf/olpdf" target="_blank" className="p-2.5 rounded border border-[var(--border-subtle)] bg-white dark:bg-[#1e1e20] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shadow-sm"><Github className="h-4 w-4" /></Link>
+                     <Link href="https://github.com/chidi09/olpdf" target="_blank" className="p-2.5 rounded border border-[var(--border-subtle)] bg-white dark:bg-[#1e1e20] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shadow-sm"><Github className="h-4 w-4" /></Link>
                   </div>
               </div>
               
