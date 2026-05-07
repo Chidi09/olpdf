@@ -13,6 +13,17 @@ import { Spinner, EmptyState } from "@olpdf/ui";
 import BackLink from "@/components/BackLink";
 import { PluginCard } from "@/components/marketplace/PluginCard";
 
+interface Plugin {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  installs: number;
+  is_verified: boolean;
+  category: string;
+  author_name: string;
+}
+
 const categories = ["All", "Editor", "Export", "AI", "UI", "Utility"];
 
 export default function PluginMarketplacePage() {
@@ -20,7 +31,7 @@ export default function PluginMarketplacePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [installingId, setInstallingId] = useState<string | null>(null);
 
-  const { data: plugins, isLoading } = useQuery({
+  const { data: plugins, isLoading } = useQuery<Plugin[]>({
     queryKey: ["plugins-marketplace", activeCategory],
     queryFn: async () => {
       const url = activeCategory === "All" 
@@ -51,7 +62,7 @@ export default function PluginMarketplacePage() {
     alert('Plugin added to your workspace!');
   };
 
-  const filtered = plugins?.filter(p => 
+  const filtered = plugins?.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.description.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
