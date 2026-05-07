@@ -56,7 +56,7 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="relative flex min-h-[calc(100vh-56px)] w-full items-center justify-center p-6 overflow-hidden">
+    <main className="relative flex min-h-[calc(100vh-56px)] w-full items-center justify-center p-6 overflow-hidden bg-[var(--bg-base)]">
       {/* Ambient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] bg-gradient-to-tr from-[#2b579a]/10 via-[#e21818]/5 to-orange-500/5 rounded-full blur-[100px] pointer-events-none" />
 
@@ -74,12 +74,23 @@ export default function SignupPage() {
             <span className="text-orange-500 animate-[pulse_3s_ease-in-out_infinite] opacity-70 absolute top-4 left-5"><Sparkles className="h-4 w-4" /></span>
         </div>
 
-        <form onSubmit={onSubmit} className="w-full rounded-2xl border border-[var(--border-strong)] bg-white dark:bg-[#101011] shadow-2xl p-8 sm:p-10 relative overflow-hidden group/form">
-          
+        <form onSubmit={onSubmit} className="w-full rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-surface)] shadow-2xl p-8 sm:p-10 relative overflow-hidden group/form">
+
           {/* Top accent line */}
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-500 via-[#e21818] to-[#2b579a]"></div>
 
           <div className="mb-10">
+            {/* Logo */}
+            <div className="inline-flex items-baseline mb-6">
+              <span className="font-sans font-black tracking-tighter text-orange-500 text-2xl">O</span>
+              <span className="font-serif italic font-light text-[var(--text-primary)] -ml-1 transform -rotate-3 translate-y-0.5 mr-1 text-2xl">L</span>
+              <span className="bg-[#e21818] text-white px-2 py-0.5 rounded-lg border border-[#b31212] inline-flex items-baseline relative transform rotate-1">
+                <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg pointer-events-none"></div>
+                <span className="font-mono font-bold tracking-tight opacity-90 relative z-10 text-lg">P</span>
+                <span className="font-serif font-black -ml-0.5 relative z-10 text-lg">D</span>
+                <span className="font-sans font-thin italic ml-0.5 scale-110 origin-bottom relative z-10 text-lg">F</span>
+              </span>
+            </div>
             <h1 className="text-4xl font-serif italic font-bold tracking-tight text-[var(--text-primary)] mb-2">
               Create account
             </h1>
