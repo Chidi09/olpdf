@@ -234,7 +234,7 @@ export default function CollaborativeEditor({
   return (
     <div className="flex h-screen bg-[var(--bg-base)] text-[var(--text-primary)] font-[var(--font-ui)] overflow-hidden">
         <FloatingToolbar />
-        <PageMinimap pageCount={Math.max(model?.pages?.length || 0, 1)} />
+        <PageMinimap pageCount={Math.max(model?.page_dimensions?.length || 0, 1)} />
         <VirtualizedPageRail pageCount={Math.max(model?.page_dimensions?.length || 1, 1)} />
         {/* Command Palette */}
         {showCommandPalette && (

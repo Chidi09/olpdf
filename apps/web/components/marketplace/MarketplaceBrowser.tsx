@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from 'react'
 
+interface Plugin {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export function MarketplaceBrowser() {
-  const [plugins, setPlugins] = useState([])
+  const [plugins, setPlugins] = useState<Plugin[]>([])
 
   useEffect(() => {
     fetch('/api/plugins').then(res => res.json()).then(setPlugins)

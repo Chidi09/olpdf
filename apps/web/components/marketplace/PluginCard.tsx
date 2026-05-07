@@ -1,7 +1,6 @@
 'use client'
 
 import { Star, Download, ShieldCheck, User, Box } from 'lucide-react'
-import type { PluginResponse } from '@/lib/api-types'
 
 interface PluginCardProps {
   plugin: {

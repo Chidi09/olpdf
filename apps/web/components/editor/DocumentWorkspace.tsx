@@ -56,7 +56,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const saveMutation = useSaveDocumentMutation(documentId);
 
   // Fetch installed plugins for the workspace
-  const workspaceId = currentModel?.meta?.workspace_id || "default-workspace";
+  const workspaceId = "default-workspace";
   const { data: installedPlugins } = useInstalledPlugins(workspaceId);
 
   const canRunAi = instruction.trim().length > 0 && !isRunningAi;
