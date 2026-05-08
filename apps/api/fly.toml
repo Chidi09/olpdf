@@ -1,5 +1,5 @@
-app = 'olpdf-api'
-primary_region = 'iad'
+app = 'olpdf'
+primary_region = 'ams'
 
 [build]
 
@@ -22,6 +22,6 @@ primary_region = 'iad'
     timeout = '5s'
 
 [[vm]]
-  memory = '1gb'
+  memory = '2gb'
   cpu_kind = 'shared'
-  cpus = 1
+  cpus = 2
