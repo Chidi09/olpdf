@@ -744,3 +744,162 @@ def fill_form_fields(pdf_bytes: bytes, field_values: Dict[str, str]) -> bytes:
     doc.save(buf)
     doc.close()
     return buf.getvalue()
+
+
+def _sorted_blocks(model: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return sorted(
+        model.get("blocks", []),
+        key=lambda b: (
+            b.get("page_index", 0),
+            b.get("column_index", 0),
+            (b.get("bounding_box", [0, 0, 0, 0]) or [0, 0, 0, 0])[1],
+        ),
+    )
+
+
+def _escape_html(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _blocks_to_html(blocks: List[Dict[str, Any]]) -> str:
+    html_parts: List[str] = []
+    for b in blocks:
+        content = _escape_html(str(b.get("content", "")))
+        if not content and b.get("type") != "table":
+            continue
+        btype = b.get("type", "paragraph")
+        if btype == "heading1":
+            html_parts.append(f"<h1>{content}</h1>")
+        elif btype == "heading2":
+            html_parts.append(f"<h2>{content}</h2>")
+        elif btype == "heading3":
+            html_parts.append(f"<h3>{content}</h3>")
+        elif btype == "table":
+            td = b.get("table_data", {}) or {}
+            rows = ([td.get("headers", [])] if td.get("headers") else []) + (td.get("rows", []) or [])
+            table_html = "<table border='1'>"
+            for ri, row in enumerate(rows):
+                tag = "th" if ri == 0 and td.get("headers") else "td"
+                cells = "".join(f"<{tag}>{_escape_html(str(c))}</{tag}>" for c in row)
+                table_html += f"<tr>{cells}</tr>"
+            table_html += "</table>"
+            html_parts.append(table_html)
+        else:
+            align = b.get("alignment", "left")
+            fm = b.get("font_meta") or {}
+            inner = content
+            if fm.get("is_bold"):
+                inner = f"<strong>{inner}</strong>"
+            if fm.get("is_italic"):
+                inner = f"<em>{inner}</em>"
+            html_parts.append(f"<p style='text-align:{align};'>{inner}</p>")
+    return "\n".join(html_parts)
+
+
+def export_epub(model: Dict[str, Any], doc_meta: Optional[Dict[str, Any]] = None) -> bytes:
+    meta = doc_meta or model.get("meta", {}) or {}
+    book = epub.EpubBook()
+    book.set_identifier(str(meta.get("id", "olpdf-doc")))
+    book.set_title(str(meta.get("title", "Untitled")))
+    book.set_language("en")
+
+    blocks = _sorted_blocks(model)
+    chapters: List[tuple[str, List[Dict[str, Any]]]] = []
+    current_title = "Chapter 1"
+    current_blocks: List[Dict[str, Any]] = []
+    for block in blocks:
+        if block.get("type") == "heading1" and current_blocks:
+            chapters.append((current_title, current_blocks))
+            current_blocks = []
+            current_title = str(block.get("content", "Chapter"))
+        current_blocks.append(block)
+    if current_blocks:
+        chapters.append((current_title, current_blocks))
+
+    spine: List[Any] = ["nav"]
+    for i, (title, chap_blocks) in enumerate(chapters):
+        chapter = epub.EpubHtml(title=title, file_name=f"chap_{i}.xhtml", lang="en")
+        chapter.content = f"<html><body>{_blocks_to_html(chap_blocks)}</body></html>"
+        book.add_item(chapter)
+        spine.append(chapter)
+
+    book.spine = spine
+    book.add_item(epub.EpubNcx())
+    book.add_item(epub.EpubNav())
+
+    buf = io.BytesIO()
+    epub.write_epub(buf, book)
+    return buf.getvalue()
+
+
+def export_html(model: Dict[str, Any], doc_meta: Optional[Dict[str, Any]] = None) -> bytes:
+    meta = doc_meta or model.get("meta", {}) or {}
+    title = _escape_html(str(meta.get("title", "Document")))
+    body = _blocks_to_html(_sorted_blocks(model))
+    html = f"""<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\">
+  <title>{title}</title>
+  <style>
+    body {{ font-family: Georgia, serif; max-width: 720px; margin: 40px auto; line-height: 1.6; color: #111; }}
+    h1 {{ font-size: 2em; margin-top: 1.5em; }} h2 {{ font-size: 1.5em; }} h3 {{ font-size: 1.2em; }}
+    table {{ border-collapse: collapse; width: 100%; }} td, th {{ border: 1px solid #ccc; padding: 6px 10px; }}
+    th {{ background: #e2e8f0; font-weight: bold; }}
+  </style>
+</head>
+<body>
+  <h1>{title}</h1>
+  {body}
+</body>
+</html>"""
+    return html.encode("utf-8")
+
+
+def export_markdown(model: Dict[str, Any], doc_meta: Optional[Dict[str, Any]] = None) -> bytes:
+    _ = doc_meta
+    blocks = _sorted_blocks(model)
+    lines: List[str] = []
+    for b in blocks:
+        content = str(b.get("content", "")).strip()
+        if not content:
+            continue
+        btype = b.get("type", "paragraph")
+        fm = b.get("font_meta") or {}
+        is_heading = btype in ("heading1", "heading2", "heading3")
+        if not is_heading:
+            if fm.get("is_bold") and fm.get("is_italic"):
+                content = f"***{content}***"
+            elif fm.get("is_bold"):
+                content = f"**{content}**"
+            elif fm.get("is_italic"):
+                content = f"*{content}*"
+
+        if btype == "heading1":
+            lines.append(f"# {content}\n")
+        elif btype == "heading2":
+            lines.append(f"## {content}\n")
+        elif btype == "heading3":
+            lines.append(f"### {content}\n")
+        elif btype == "bullet_list":
+            lines.append(f"- {content}")
+        elif btype == "table":
+            td = b.get("table_data", {}) or {}
+            headers = td.get("headers", []) or []
+            rows = td.get("rows", []) or []
+            if headers:
+                lines.append("| " + " | ".join(str(h) for h in headers) + " |")
+                lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+            for row in rows:
+                lines.append("| " + " | ".join(str(c) for c in row) + " |")
+            lines.append("")
+        else:
+            lines.append(f"{content}\n")
+    return "\n".join(lines).encode("utf-8")
+
+
+def export_text(model: Dict[str, Any], doc_meta: Optional[Dict[str, Any]] = None) -> bytes:
+    _ = doc_meta
+    blocks = _sorted_blocks(model)
+    lines = [str(b.get("content", "")).strip() for b in blocks if str(b.get("content", "")).strip()]
+    return "\n\n".join(lines).encode("utf-8")

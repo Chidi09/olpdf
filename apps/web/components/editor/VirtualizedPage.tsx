@@ -26,6 +26,15 @@ function captureThumbnail(canvas: HTMLCanvasElement, callback: (url: string) => 
   }
 }
 
+async function cacheThumbnail(pageIndex: number, thumbnailUrl: string) {
+  try {
+    const cache = await caches.open("page-thumbnails-v1");
+    await cache.put(`/thumbnail/local/${pageIndex}`, new Response(thumbnailUrl));
+  } catch {
+    // Best-effort cache only.
+  }
+}
+
 export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, children }: VirtualizedPageProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -61,6 +70,7 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
           captureThumbnail(canvasRef.current, (url) => {
             thumbnailCacheRef.current.set(dim.page_index, url);
             setThumbnailUrl(url);
+            void cacheThumbnail(dim.page_index, url);
             onCanvasDestroy(dim.page_index);
             setState("thumbnail");
           });

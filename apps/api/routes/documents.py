@@ -98,21 +98,27 @@ async def delete_document(doc_id: str, user: dict = Depends(require_auth)) -> di
 async def export_document(request: Request, doc_id: str, format_type: str, doc: DocumentModel, user: dict = Depends(require_auth)) -> dict:
     check_ownership(doc_id, user)
     try:
+        format_alias = {
+            "pdf": "standard",
+            "pdfa": "pdf_a",
+            "text": "txt",
+        }
+        normalized_format = format_alias.get(format_type, format_type)
         doc_dict = doc.model_dump()
-        if format_type == "fidelity" or doc.meta.layout_mode == "fidelity":
+        if normalized_format == "fidelity" or doc.meta.layout_mode == "fidelity":
             from ..reflow_engine import reflow_document
 
             doc_dict = reflow_document(doc_dict)
 
-        engine = ExportEngineFactory.get_engine(format_type)
+        engine = ExportEngineFactory.get_engine(normalized_format)
         
-        if format_type == "fidelity":
+        if normalized_format == "fidelity":
             color_space = doc.meta.color_space if hasattr(doc.meta, "color_space") else "rgb"
             pdf_bytes = engine(doc_dict, color_space=color_space)
         else:
             pdf_bytes = engine(doc_dict)
 
-        object_name = f"exports/{doc_id}.{format_type}"
+        object_name = f"exports/{doc_id}.{normalized_format}"
         url = r2_storage.upload_bytes(pdf_bytes, object_name)
 
         # Best-effort email notification
@@ -122,12 +128,12 @@ async def export_document(request: Request, doc_id: str, format_type: str, doc: 
                 user_id=user["sub"],
                 doc_title=doc.meta.title,
                 export_url=url,
-                format_type=format_type,
+                format_type=normalized_format,
             )
         except Exception:
             pass
 
-        return {"id": doc_id, "url": url, "size": len(pdf_bytes)}
+        return {"id": doc_id, "url": url, "size": len(pdf_bytes), "format": normalized_format}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
