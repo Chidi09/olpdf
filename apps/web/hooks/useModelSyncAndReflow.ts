@@ -1,8 +1,9 @@
 "use client";
 
 import type { RefObject } from "react";
-import type { Canvas, Textbox } from "fabric";
+import type { Canvas, IText, Textbox } from "fabric";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
+import type { FabricObjectWithMeta } from "@/types/editor";
 
 export function useModelSyncAndReflow(args: {
   model: DocumentModel;
@@ -20,8 +21,8 @@ export function useModelSyncAndReflow(args: {
       const top = obj.top ?? 0;
       const w = (obj.width ?? 1) * (obj.scaleX ?? 1);
       const h = (obj.height ?? 1) * (obj.scaleY ?? 1);
-      const blockId = (obj as any).data?.blockId ?? `blk_canvas_${pageIndex}_${idx}_${Date.now()}`;
-      const blockType = (obj as any).data?.blockType ?? "paragraph";
+      const blockId = (obj as FabricObjectWithMeta).data?.blockId ?? `blk_canvas_${pageIndex}_${idx}_${Date.now()}`;
+      const blockType = (obj as FabricObjectWithMeta).data?.blockType ?? "paragraph";
       const bbox: [number, number, number, number] = [left / scale, top / scale, (left + w) / scale, (top + h) / scale];
 
       if (obj.type === "textbox") {
@@ -48,7 +49,7 @@ export function useModelSyncAndReflow(args: {
       }
 
       if (obj.type === "group") {
-        const data = (obj as any).data ?? {};
+        const data = (obj as FabricObjectWithMeta).data ?? {};
         return {
           id: blockId,
           type: "table",
@@ -66,13 +67,13 @@ export function useModelSyncAndReflow(args: {
       return {
         id: blockId,
         type: "shape",
-        content: obj.type === "i-text" ? ((obj as any).text || "") : "",
+        content: obj.type === "i-text" ? ((obj as IText).text || "") : "",
         bounding_box: bbox,
         style_overrides: {},
         fabric_data: {
           ...(obj.toObject() as Record<string, unknown>),
-          ...((obj as any).data || {}),
-          type: (obj as any).data?.shapeType || obj.type,
+          ...((obj as FabricObjectWithMeta).data ?? {}),
+          type: (obj as FabricObjectWithMeta).data?.shapeType ?? obj.type,
         },
         z_index: idx,
         page_index: pageIndex,
@@ -92,7 +93,7 @@ export function useModelSyncAndReflow(args: {
   const applyReflowToCanvases = (nextModel: DocumentModel) => {
     for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
       for (const obj of canvas.getObjects()) {
-        const blockId = (obj as any).data?.blockId;
+        const blockId = (obj as FabricObjectWithMeta).data?.blockId;
         if (!blockId) continue;
         const block = nextModel.blocks?.find((b) => b.id === blockId);
         if (!block || (block.page_index ?? 0) !== pageIndex) continue;
@@ -110,7 +111,7 @@ export function useModelSyncAndReflow(args: {
   const restoreFabricTextbox = (blockId: string, pageIndex: number, text: string) => {
     const canvas = fabricCanvasesRef.current.get(pageIndex);
     if (!canvas) return;
-    const fabricObj = canvas.getObjects().find((o) => (o as any).data?.blockId === blockId) as Textbox | undefined;
+    const fabricObj = canvas.getObjects().find((o) => (o as FabricObjectWithMeta).data?.blockId === blockId) as Textbox | undefined;
     if (!fabricObj) return;
     fabricObj.set({ text, opacity: 1, evented: true, selectable: true });
     fabricObj.setCoords();

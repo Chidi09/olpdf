@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { RefObject } from "react";
 import { Ellipse, type Canvas } from "fabric";
 import type { EditorComment } from "@/components/editor/CommentSidebar";
+import type { FabricObjectWithMeta } from "@/types/editor";
 
 export function renderCommentIndicators(
   canvas: Canvas,
@@ -12,7 +13,7 @@ export function renderCommentIndicators(
   scale: number,
   onOpenThread: (threadKey: string) => void,
 ) {
-  const existing = canvas.getObjects().filter((o) => (o as any).data?.isCommentIndicator);
+  const existing = canvas.getObjects().filter((o) => (o as FabricObjectWithMeta).data?.isCommentIndicator);
   for (const obj of existing) canvas.remove(obj);
 
   const pageComments = comments.filter((c) => c.page_index === pageIndex && !c.resolved);
@@ -34,7 +35,7 @@ export function renderCommentIndicators(
       evented: true,
       hoverCursor: "pointer",
     });
-    (circle as any).data = { isCommentIndicator: true, blockId: key, commentIds: group.map((c) => c.id) };
+    (circle as FabricObjectWithMeta).data = { isCommentIndicator: true, blockId: key, commentIds: group.map((c) => c.id) };
     circle.on("mousedown", () => onOpenThread(key));
     canvas.add(circle);
   }

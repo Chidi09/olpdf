@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import debounce from "lodash/debounce";
-import { Canvas, Ellipse, Group, IText, Line, PencilBrush, Rect, Textbox } from "fabric";
+import { Canvas, Ellipse, FabricObject, Group, IText, Line, PencilBrush, Rect, Textbox } from "fabric";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useFidelityCanvasStore, type ShapeTool, type SelectedBlockMeta } from "@/store/useFidelityCanvasStore";
@@ -26,6 +26,7 @@ import { useDarkModeCanvas } from "@/hooks/useDarkModeCanvas";
 import { useAiTools } from "@/hooks/useAiTools";
 import { useEditorToolbarActions } from "@/hooks/useEditorToolbarActions";
 import { useModelSyncAndReflow } from "@/hooks/useModelSyncAndReflow";
+import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TipTapJSON, TableData } from "@/types/editor";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -83,12 +84,12 @@ function createTextBlock(block: DocumentBlock, scale: number) {
     transparentCorners: false,
     hasBorders: true,
   });
-  (tb as any).data = { blockId: block.id, blockType: block.type };
+  (tb as FabricObjectWithMeta).data = { blockId: block.id, blockType: block.type };
   return tb;
 }
 
 function createTableBlock(block: DocumentBlock, scale: number): Group {
-  const tableData = (block as any).table_data ?? { headers: [], rows: [] };
+  const tableData = (block.table_data ?? { headers: [], rows: [] }) as TableData;
   const bbox = block.bounding_box ?? [72, 72, 400, 200];
   const left = bbox[0] * scale;
   const top = bbox[1] * scale;
@@ -134,7 +135,7 @@ function createTableBlock(block: DocumentBlock, scale: number): Group {
     });
   });
 
-  const group = new Group(objects as any, {
+  const group = new Group(objects as FabricObject[], {
     left, top,
     selectable: true,
     hasControls: true,
@@ -143,12 +144,12 @@ function createTableBlock(block: DocumentBlock, scale: number): Group {
     cornerSize: 8,
     transparentCorners: false,
   });
-  (group as any).data = { blockId: block.id, blockType: "table", table_data: tableData };
+  (group as FabricObjectWithMeta).data = { blockId: block.id, blockType: "table", table_data: tableData };
   return group;
 }
 
 function createShapeBlock(block: DocumentBlock, scale: number) {
-  const fabricData = (block as any).fabric_data ?? {};
+  const fabricData = block.fabric_data ?? {};
   const bbox = block.bounding_box ?? [72, 72, 140, 120];
   const left = bbox[0] * scale;
   const top = bbox[1] * scale;
@@ -183,7 +184,7 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
       stroke, fill, strokeWidth,
     });
   }
-  (shape as any).data = { blockId: block.id, blockType: "shape", shapeType: objType, ...fabricData };
+  (shape as FabricObjectWithMeta).data = { blockId: block.id, blockType: "shape", shapeType: objType, ...fabricData };
   return shape;
 }
 
@@ -209,10 +210,10 @@ function createFieldBlock(block: DocumentBlock, scale: number): Rect {
     ry: 4,
     selectable: true,
   });
-  (fieldRect as any).data = {
+  (fieldRect as FabricObjectWithMeta).data = {
     blockId: block.id,
     blockType: "field",
-    fieldType: (block as any).field_type ?? "text",
+    fieldType: block.field_type ?? "text",
   };
   return fieldRect;
 }
@@ -295,7 +296,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     // Restore the Fabric object to its pre-change value so the canvas
     // visually reflects the rejection (model was never mutated in suggest mode).
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-      const obj = canvas.getObjects().find((o) => (o as any).data?.blockId === change.blockId);
+      const obj = canvas.getObjects().find((o) => (o as FabricObjectWithMeta).data?.blockId === change.blockId);
       if (!obj) continue;
       if (change.field === "bounding_box" && Array.isArray(change.oldValue) && change.oldValue.length === 4) {
         const [x0, y0] = change.oldValue as number[];
@@ -343,7 +344,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         for (const canvas of fabricCanvasesRef.current.values()) {
           const active = canvas.getActiveObjects();
           if (active.length === 0) continue;
-          const editing = active.find((o) => o.type === "textbox" && (o as any).isEditing);
+          const editing = active.find((o) => o.type === "textbox" && (o as IText).isEditing);
           if (editing) continue;
           canvas.discardActiveObject();
           canvas.remove(...active);
@@ -410,7 +411,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   useEffect(() => {
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
       for (const obj of canvas.getObjects()) {
-        const blockId = (obj as any).data?.blockId;
+        const blockId = (obj as FabricObjectWithMeta).data?.blockId;
         if (!blockId || obj.type !== "textbox") continue;
         const block = (model.blocks ?? []).find((b) => b.id === blockId);
         if (block && (obj as Textbox).text !== block.content) {
@@ -448,9 +449,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       const users = states
         .map(([id, state]) => ({
           id: String(id),
-          name: String((state as any)?.user?.name ?? "?"),
-          color: String((state as any)?.user?.color ?? "#64748b"),
-          selectedBlockId: (state as any)?.user?.selectedBlockId ?? null,
+          name: (state as AwarenessState).user?.name ?? "?",
+          color: (state as AwarenessState).user?.color ?? "#64748b",
+          selectedBlockId: (state as AwarenessState).user?.selectedBlockId ?? null,
         }))
         .filter((u) => u.id !== String(provider.awareness.clientID));
       setAwarenessUsers(users);
@@ -465,7 +466,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
   useEffect(() => {
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-      const highlights = canvas.getObjects().filter((o) => (o as any).data?.isHighlight);
+      const highlights = canvas.getObjects().filter((o) => (o as FabricObjectWithMeta).data?.isHighlight);
       for (const h of highlights) canvas.remove(h);
     }
 
@@ -490,7 +491,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         selectable: false,
         evented: false,
       });
-      (highlightRect as any).data = { isHighlight: true };
+      (highlightRect as FabricObjectWithMeta).data = { isHighlight: true };
       canvas.add(highlightRect);
       canvas.bringObjectToFront(highlightRect);
       canvas.renderAll();
@@ -515,7 +516,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const handleSelection = (canvas: Canvas) => {
     const obj = canvas.getActiveObject();
     if (!obj) { setSelectedBlock(null); return; }
-    const data = (obj as any).data ?? {};
+    const data = (obj as FabricObjectWithMeta).data ?? {};
     const left = obj.left ?? 0;
     const top = obj.top ?? 0;
     const w = (obj.width ?? 0) * (obj.scaleX ?? 1);
@@ -612,7 +613,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
           evented: true,
           hoverCursor: "pointer",
         });
-        (badge as any).data = { isOcrBadge: true, blockId: block.id };
+        (badge as FabricObjectWithMeta).data = { isOcrBadge: true, blockId: block.id };
         badge.on("mousedown", () => {
           void triggerOcrVerify(block.id);
         });
@@ -635,7 +636,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     fcanvas.on("object:added", sync);
     fcanvas.on("object:modified", (e) => {
       if (suggestModeRef.current && e.target) {
-        const blockId = (e.target as any).data?.blockId as string | undefined;
+        const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
         if (blockId) {
           const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
           if (existing) {
@@ -667,7 +668,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       // In suggest mode changes are captured, not committed — skip Yjs and reflow.
       if (suggestModeRef.current) return;
       if (e.target && ydocRef.current) {
-        const blockId = (e.target as any).data?.blockId as string | undefined;
+        const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
         if (blockId) {
           const yBlocks = ydocRef.current.getMap<Y.Map<unknown>>("blocks");
           const yBlock = yBlocks.get(blockId);
@@ -684,8 +685,8 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
           }
         }
       }
-      if (!e.target || (e.target as any).data?.blockType === "shape") return;
-      const blockId = (e.target as any).data?.blockId as string | undefined;
+      if (!e.target || (e.target as FabricObjectWithMeta).data?.blockType === "shape") return;
+      const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
       if (!blockId) return;
       reflowDebounced(blockId);
     });
@@ -698,19 +699,19 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         return;
       }
       if (target.type !== "textbox") return;
-      const blockId = (target as any).data?.blockId as string | undefined;
+      const blockId = (target as FabricObjectWithMeta).data?.blockId;
       if (!blockId) return;
       target.set({ opacity: 0, evented: false, selectable: false });
       fcanvas.renderAll();
       setActiveTipTapBlock({ blockId, pageIndex });
     });
     fcanvas.on("mouse:down", (e) => {
-      const raw = (e as any).e as MouseEvent | undefined;
-      if (!raw || raw.button !== 2) return;
+      const raw = (e as unknown as FabricMouseEvent).e;
+      if (!(raw instanceof MouseEvent) || raw.button !== 2) return;
       const target = e.target;
       if (!target) return;
       raw.preventDefault();
-      const blockId = (target as any).data?.blockId as string | undefined;
+      const blockId = (target as FabricObjectWithMeta).data?.blockId;
       if (!blockId) return;
       const action = window.prompt("AI tools: improve | shorten | formal | casual | ocr", "improve");
       if (!action) return;
@@ -722,7 +723,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     });
     let longPressTimer: ReturnType<typeof setTimeout> | null = null;
     fcanvas.on("touch:gesture", (e) => {
-      const gesture = (e as any)?.self;
+      const gesture = (e as unknown as FabricGestureEvent).self;
       if (!gesture || gesture.touches !== 2) return;
       const currentWidth = containerWidthRef.current;
       const currentScale = Math.max(0.4, Math.min(2, currentWidth / primaryPage.width));
@@ -735,9 +736,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     fcanvas.on("mouse:down", () => {
       longPressTimer = setTimeout(() => {
         const obj = fcanvas.getActiveObject();
-        const blockId = obj ? (obj as any).data?.blockId : null;
+        const blockId = (obj as FabricObjectWithMeta | undefined)?.data?.blockId ?? null;
         if (blockId) {
-          void aiRewrite(String(blockId), "improve");
+          void aiRewrite(blockId, "improve");
         }
       }, 500);
     });
@@ -747,25 +748,25 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     fcanvas.on("selection:created", () => {
       handleSelection(fcanvas);
       const obj = fcanvas.getActiveObject();
-      const blockId = obj ? (obj as any).data?.blockId : null;
+      const blockId = (obj as FabricObjectWithMeta | undefined)?.data?.blockId ?? null;
       providerRef.current?.awareness.setLocalStateField("user", {
-        ...(providerRef.current?.awareness.getLocalState() as any)?.user,
+        ...(providerRef.current?.awareness.getLocalState() as AwarenessState | null)?.user,
         selectedBlockId: blockId,
       });
     });
     fcanvas.on("selection:updated", () => {
       handleSelection(fcanvas);
       const obj = fcanvas.getActiveObject();
-      const blockId = obj ? (obj as any).data?.blockId : null;
+      const blockId = (obj as FabricObjectWithMeta | undefined)?.data?.blockId ?? null;
       providerRef.current?.awareness.setLocalStateField("user", {
-        ...(providerRef.current?.awareness.getLocalState() as any)?.user,
+        ...(providerRef.current?.awareness.getLocalState() as AwarenessState | null)?.user,
         selectedBlockId: blockId,
       });
     });
     fcanvas.on("selection:cleared", () => {
       setSelectedBlock(null);
       providerRef.current?.awareness.setLocalStateField("user", {
-        ...(providerRef.current?.awareness.getLocalState() as any)?.user,
+        ...(providerRef.current?.awareness.getLocalState() as AwarenessState | null)?.user,
         selectedBlockId: null,
       });
     });
@@ -792,22 +793,22 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     let shape;
     if (activeTool === "rect") {
       shape = new Rect({ left: 70, top: 70, width: 140, height: 90, fill: "rgba(14,165,233,0.12)", stroke: "#0284c7", strokeWidth: 2 });
-      (shape as any).data = { blockType: "shape", shapeType: "rect" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rect" };
     } else if (activeTool === "roundedRect") {
       shape = new Rect({ left: 80, top: 80, width: 160, height: 96, rx: 16, ry: 16, fill: "rgba(99,102,241,0.12)", stroke: "#4f46e5", strokeWidth: 2 });
-      (shape as any).data = { blockType: "shape", shapeType: "rounded-rect" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rounded-rect" };
     } else if (activeTool === "ellipse") {
       shape = new Ellipse({ left: 90, top: 90, rx: 70, ry: 45, fill: "rgba(34,197,94,0.12)", stroke: "#16a34a", strokeWidth: 2 });
-      (shape as any).data = { blockType: "shape", shapeType: "ellipse" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "ellipse" };
     } else if (activeTool === "arrow") {
       shape = new Line([120, 120, 290, 220], { stroke: "#dc2626", strokeWidth: 3 });
-      (shape as any).data = { blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28 };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28 };
     } else if (activeTool === "line") {
       shape = new Line([120, 120, 290, 220], { stroke: "#f97316", strokeWidth: 3 });
-      (shape as any).data = { blockType: "shape", shapeType: "line" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "line" };
     } else if (activeTool === "sticky") {
       shape = new IText("Sticky note", { left: 120, top: 140, fill: "#3f3f46", fontSize: 16, fontFamily: "Georgia", backgroundColor: "#fff59d" });
-      (shape as any).data = { blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46" };
     } else {
       // activeTool === "text" — add a new text block
       const tb = new Textbox("New text", {
@@ -821,7 +822,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         cornerSize: 8,
         transparentCorners: false,
       });
-      (tb as any).data = { blockType: "paragraph", shapeType: "textbox" };
+      (tb as FabricObjectWithMeta).data = { blockType: "paragraph", shapeType: "textbox" };
       canvas.add(tb);
       canvas.setActiveObject(tb);
       canvas.renderAll();
@@ -1000,7 +1001,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
                       const nextBlocks = (currentModelRef.current.blocks ?? []).map((b) => {
                         if (b.id !== activeTipTapBlock.blockId) return b;
                         let nextType = b.type;
-                        const rootType = String((richContent as any)?.content?.[0]?.type ?? "");
+                        const rootType = (richContent as TipTapJSON).content?.[0]?.type ?? "";
                         if (rootType === "bulletList") nextType = "bullet_list";
                         if (rootType === "orderedList") nextType = "ordered_list";
                         return { ...b, content: text, rich_content: richContent, type: nextType };

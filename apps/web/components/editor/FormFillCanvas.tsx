@@ -53,9 +53,9 @@ export function FormFillCanvas({ documentId, model }: FormFillCanvasProps) {
           {page.fields.map((field) => {
             const bbox = field.bounding_box ?? [0, 0, 160, 28];
             const [x0, y0, x1, y1] = bbox;
-            const fieldId = (field as any).field_id ?? field.id;
-            const fieldType = (field as any).field_type ?? "text";
-            const label = (field as any).label ?? "Field";
+            const fieldId = field.field_id ?? field.id;
+            const fieldType = field.field_type ?? "text";
+            const label = field.label ?? "Field";
             return (
               <div
                 key={fieldId}
@@ -83,7 +83,7 @@ export function FormFillCanvas({ documentId, model }: FormFillCanvasProps) {
                     className="h-8 w-full rounded border border-slate-300 bg-white px-2 text-xs"
                   >
                     <option value="">Select…</option>
-                    {((field as any).options as string[] | undefined)?.map((opt) => (
+                    {field.options?.map((opt) => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>
@@ -92,7 +92,7 @@ export function FormFillCanvas({ documentId, model }: FormFillCanvasProps) {
                     type={fieldType === "date" ? "date" : "text"}
                     value={values[fieldId] ?? ""}
                     onChange={(e) => setValues((prev) => ({ ...prev, [fieldId]: e.target.value }))}
-                    placeholder={(field as any).placeholder ?? ""}
+                    placeholder={field.placeholder ?? ""}
                     className="h-8 w-full rounded border border-slate-300 bg-white px-2 text-xs"
                   />
                 )}

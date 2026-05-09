@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as Y from "yjs";
 import { SupabaseProvider } from "y-supabase";
 import { IndexeddbPersistence } from "y-indexeddb";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DocumentModel } from "@olpdf/document-model";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -49,7 +50,7 @@ export function useCollaboration(documentId: string, model: DocumentModel) {
         sessionData.session?.user?.email ??
         "Collaborator";
 
-      provider = new SupabaseProvider(ydoc, supabase as any, {
+      provider = new SupabaseProvider(ydoc, supabase as SupabaseClient, {
         channel: `document:${documentId}`,
         tableName: "yjs_updates",
         columnName: "data",

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { RefObject } from "react";
 import * as Y from "yjs";
 import type { Canvas, Textbox } from "fabric";
+import type { FabricObjectWithMeta } from "@/types/editor";
 
 export function useCollaborationBridge(
   ydocRef: RefObject<Y.Doc | null>,
@@ -19,7 +20,7 @@ export function useCollaborationBridge(
     const observer = () => {
       for (const [, canvas] of fabricCanvasesRef.current.entries()) {
         for (const obj of canvas.getObjects()) {
-          const blockId = (obj as any).data?.blockId as string | undefined;
+          const blockId = (obj as FabricObjectWithMeta).data?.blockId;
           if (!blockId) continue;
           const yBlock = yBlocks.get(blockId);
           if (!yBlock) continue;
