@@ -33,8 +33,14 @@ const navItems = [
   { href: "/help", label: "Help", icon: HelpCircle, auth: 'required' },
 ];
 
+const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password"];
+
 export default function AppNavbar() {
   const pathname = usePathname();
+
+  if (AUTH_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+    return null;
+  }
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
