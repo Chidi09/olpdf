@@ -231,63 +231,59 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TECH STACK EXPLANATION - Redesigned as "The Binding" / Infrastructure */}
-      <section className="py-16 border-b border-[var(--border-subtle)] bg-[#fdfdfc] dark:bg-[#141415] relative overflow-hidden">
-        {/* Subtle spine line */}
-        <div className="absolute left-6 md:left-12 top-0 bottom-0 w-px bg-blue-500/20"></div>
-        <div className="absolute left-8 md:left-14 top-0 bottom-0 w-px bg-blue-500/10"></div>
-        
-        <div className="max-w-6xl mx-auto px-6 pl-12 md:pl-24">
-          <div className="text-left mb-8 animate-reveal opacity-0 relative" style={{ animationDelay: '80ms' }}>
-            <div className="absolute -left-10 md:-left-20 top-2 text-[var(--border-strong)] opacity-50 transform -rotate-90 origin-left text-xs font-mono tracking-[0.3em]">INFRASTRUCTURE</div>
-            <h2 className="text-4xl md:text-5xl font-mono font-bold tracking-tight mb-4 text-[var(--text-primary)]">Built on Open Foundations</h2>
-            <p className="text-[var(--text-secondary)] max-w-2xl text-lg font-medium">
-              OLPDF isn&apos;t just a tool; it&apos;s a stack of modern infrastructure optimized for document intelligence and robust publishing.
+      {/* TECH STACK */}
+      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[#fdfdfc] dark:bg-[#141415] animate-reveal opacity-0" style={{ animationDelay: '80ms' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-strong)] text-[var(--text-secondary)] text-[10px] font-mono font-bold uppercase tracking-widest mb-5">
+                Infrastructure
+              </div>
+              <h2 className="text-4xl md:text-5xl font-mono font-bold tracking-tight text-[var(--text-primary)]">Built on Open Foundations</h2>
+            </div>
+            <p className="text-[var(--text-secondary)] max-w-sm text-sm font-medium leading-relaxed md:text-right">
+              OLPDF isn&apos;t just a tool — it&apos;s modern infrastructure optimized for document intelligence and publishing.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
-            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
-              <div className="absolute top-0 right-8 w-8 h-4 bg-red-500/10 rounded-b-md" />
-              <div className="h-10 w-10 bg-[var(--text-primary)] rounded-lg flex items-center justify-center text-[var(--bg-base)] mb-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
+              <div className="h-11 w-11 bg-[var(--text-primary)] rounded-xl flex items-center justify-center text-[var(--bg-base)] mb-5">
                 <svg viewBox="0 0 116 100" fill="currentColor" className="h-5 w-5"><path d="M57.5 0L115 100H0L57.5 0z" /></svg>
               </div>
-              <h3 className="font-serif font-bold text-lg mb-3">Next.js & Vercel</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
-                The frontend is built with Next.js 15 for instant page transitions and server-side rendering, deployed on Vercel&apos;s edge network.
+              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Next.js & Vercel</h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
+                Next.js 15 with Turbopack on Vercel&apos;s edge network for instant page transitions and SSR.
               </p>
             </div>
 
-            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
-              <div className="absolute top-0 right-8 w-8 h-4 bg-blue-500/10 rounded-b-md" />
-              <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center text-white mb-6">
+            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
+              <div className="h-11 w-11 bg-blue-600 rounded-xl flex items-center justify-center text-white mb-5">
                 <svg viewBox="0 0 128 128" fill="currentColor" className="h-5 w-5"><path d="M64.6 2c-17.1 0-26.6 7.6-26.6 23.4v12.8h27.3V43H36.9C15.8 43 5.3 56.4 8.7 78.4c3.2 20.3 16.5 24.5 28.5 24.5h8.9V91.2c0-16.1 13.8-29.3 29.5-29.3h22.8V49.1C98.4 25.5 86.8 2 64.6 2zM52.3 16.3c3.2 0 5.8 2.6 5.8 5.8s-2.6 5.8-5.8 5.8-5.8-2.6-5.8-5.8 2.6-5.8 5.8-5.8z"/><path d="M64.6 126c17.1 0 26.6-7.6 26.6-23.4v-12.8H63.9v4.8h28.4C113.4 85 123.9 71.6 120.5 49.6c-3.2-20.3-16.5-24.5-28.5-24.5h-8.9v11.7c0 16.1-13.8 29.3-29.5 29.3H30.8v12.8C30.8 102.5 42.4 126 64.6 126zm12.3-14.3c-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8 5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8z"/></svg>
               </div>
-              <h3 className="font-serif font-bold text-lg mb-3">Python & FastAPI</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
-                Our extraction engine leverages Python&apos;s rich ecosystem for PDF parsing and heuristic structural reconstruction.
+              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Python & FastAPI</h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
+                Python&apos;s PDF ecosystem powers our extraction engine with heuristic structural reconstruction.
               </p>
             </div>
 
-            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
-              <div className="absolute top-0 right-8 w-8 h-4 bg-orange-500/10 rounded-b-md" />
-              <div className="h-10 w-10 bg-[#F6821F]/10 rounded-lg flex items-center justify-center mb-6">
+            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
+              <div className="h-11 w-11 bg-[#F6821F]/15 rounded-xl flex items-center justify-center mb-5">
                 <CloudflareIcon />
               </div>
-              <h3 className="font-serif font-bold text-lg mb-3">Cloudflare R2</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
-                S3-compatible object storage with zero egress fees to store processed documents and export artifacts securely.
+              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Cloudflare R2</h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
+                S3-compatible storage with zero egress fees for processed documents and export artifacts.
               </p>
             </div>
 
-            <div className="p-8 rounded bg-white dark:bg-[#1e1e20] shadow-[2px_4px_16px_rgba(0,0,0,0.05)] border border-[var(--border-subtle)] relative group hover:-translate-y-1 transition-transform">
-              <div className="absolute top-0 right-8 w-8 h-4 bg-emerald-500/10 rounded-b-md" />
-              <div className="h-10 w-10 bg-[#3ECF8E]/10 rounded-lg flex items-center justify-center mb-6">
+            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
+              <div className="h-11 w-11 bg-[#3ECF8E]/15 rounded-xl flex items-center justify-center mb-5">
                 <SupabaseIcon />
               </div>
-              <h3 className="font-serif font-bold text-lg mb-3">Supabase Auth</h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4 font-medium">
-                PostgreSQL with RLS ensures your data is private. Supabase Auth handles identity securely.
+              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Supabase Auth</h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
+                PostgreSQL with RLS keeps your data private. Supabase Auth handles identity end-to-end.
               </p>
             </div>
           </div>
@@ -508,52 +504,53 @@ export default function LandingPage() {
       <ApiSection />
 
       {/* FREE COMMITMENT SECTION */}
-      <section className="py-16 px-6 bg-[#fdfdfc] dark:bg-[#141415] animate-reveal opacity-0 relative border-b border-[var(--border-subtle)]" style={{ animationDelay: '320ms' }}>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-mono font-bold uppercase tracking-widest mb-6 shadow-sm bg-white dark:bg-[#1e1e20]">
-            <Bookmark className="h-3 w-3" /> 100% Free Forever
-          </div>
-          <h2 className="text-4xl md:text-6xl font-serif italic font-bold mb-8 tracking-tighter text-[var(--text-primary)]">
-              No Paywalls. <br/>
-              <span className="relative">
-                  Just Documents.
-                  <svg className="absolute -bottom-3 left-0 w-full h-4 text-blue-500 opacity-60" viewBox="0 0 100 20" preserveAspectRatio="none">
-                     <path d="M5,15 Q50,5 95,15" fill="none" stroke="currentColor" strokeWidth="4" />
-                  </svg>
+      <section className="py-24 px-6 bg-[var(--bg-surface)] animate-reveal opacity-0 relative border-b border-[var(--border-subtle)]" style={{ animationDelay: '320ms' }}>
+        <div className="max-w-5xl mx-auto">
+          {/* Heading */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-strong)] text-[var(--text-secondary)] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">
+              <Bookmark className="h-3 w-3" /> 100% Free Forever
+            </div>
+            <h2 className="text-5xl md:text-7xl font-serif italic font-bold tracking-tighter text-[var(--text-primary)] leading-none mb-6">
+              No Paywalls.<br />
+              <span className="relative inline-block">
+                Just Documents.
+                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 400 10" preserveAspectRatio="none" fill="none">
+                  <path d="M2,7 Q100,1 200,7 T398,7" stroke="currentColor" strokeWidth="3" className="text-blue-500/50" />
+                </svg>
               </span>
-          </h2>
-          <p className="text-xl text-[var(--text-secondary)] leading-relaxed mb-8 max-w-2xl mx-auto font-medium">
-            We believe that document intelligence should be a public good. OLPDF is committed to remaining free for individuals and open-source projects.
-          </p>
-          
-          <div className="grid md:grid-cols-3 gap-6 text-left">
-            <div className="bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-sm hover:shadow-md transition-shadow">
-               <h4 className="font-sans font-bold text-xl mb-3">Unlimited Projects</h4>
-               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Create as many documents or books as you need without hitting a cap.</p>
-            </div>
-            <div className="bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-sm hover:shadow-md transition-shadow">
-               <h4 className="font-sans font-bold text-xl mb-3">Full AI Access</h4>
-               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Use Gemini-powered structural editing without a subscription fee.</p>
-            </div>
-            <div className="bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-sm hover:shadow-md transition-shadow">
-               <h4 className="font-sans font-bold text-xl mb-3">Open API</h4>
-               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Integrate our extraction engine into your own apps for free.</p>
-            </div>
+            </h2>
+            <p className="text-lg text-[var(--text-secondary)] max-w-lg mx-auto font-medium leading-relaxed">
+              Document intelligence should be a public good. Free for individuals and open-source projects, always.
+            </p>
           </div>
 
-          <div className="mt-16 p-10 rounded border border-dashed border-[var(--border-strong)] bg-white dark:bg-[#1e1e20] relative">
-             <div className="absolute -top-3 -left-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
-             <div className="absolute -top-3 -right-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
-             <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
-             <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-[#fdfdfc] dark:bg-[#141415] border border-[var(--border-strong)] rounded-full"></div>
+          {/* Feature strip */}
+          <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--border-subtle)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden bg-[var(--bg-elevated)] mb-6">
+            {[
+              { label: "Unlimited Projects", desc: "No cap on documents or books. Create without limits." },
+              { label: "Full AI Access", desc: "Gemini-powered structural editing, no subscription needed." },
+              { label: "Open API", desc: "Integrate our extraction engine into your own apps for free." },
+            ].map(({ label, desc }) => (
+              <div key={label} className="p-8">
+                <div className="w-2 h-2 rounded-full bg-orange-500 mb-5" />
+                <h4 className="font-sans font-black text-base text-[var(--text-primary)] mb-2">{label}</h4>
+                <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
 
-             <h3 className="text-2xl font-serif font-bold mb-4">How do we survive?</h3>
-             <p className="text-[var(--text-secondary)] text-base leading-relaxed max-w-xl mx-auto mb-8 font-medium">
-                OLPDF is supported by infrastructure grants and a passionate community of contributors. We don&apos;t want your credit card; we want your feedback and your pull requests.
-             </p>
-             <Link href="/contribute" className="inline-flex items-center justify-center h-12 rounded bg-[var(--text-primary)] text-[var(--bg-base)] font-sans font-black uppercase tracking-widest px-10 hover:opacity-90 transition-opacity text-sm shadow-md">
-                Join the Community
-             </Link>
+          {/* How we survive */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 px-8 py-7 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+            <div>
+              <h3 className="font-serif font-bold text-lg text-[var(--text-primary)] mb-1.5">How do we survive?</h3>
+              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed max-w-md">
+                Supported by infrastructure grants and contributors. We don&apos;t want your credit card — we want your feedback and pull requests.
+              </p>
+            </div>
+            <Link href="/contribute" className="shrink-0 inline-flex items-center gap-2 h-11 px-7 rounded-xl bg-[var(--text-primary)] text-[var(--bg-base)] font-sans font-black uppercase tracking-widest text-xs hover:opacity-90 transition-opacity">
+              Join the Community <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </section>
