@@ -165,80 +165,26 @@ export default function SignupPage() {
       </div>
 
       {/* ── Right pane — visual ───────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col relative w-[48%] xl:w-[52%] min-h-screen overflow-hidden">
+      <div className="hidden lg:flex flex-col relative w-[48%] xl:w-[52%] min-h-screen overflow-hidden bg-[#fdf6ef]">
 
-        {/* Background photo */}
+        {/* Illustration */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80"
+          src="/auth-illustration.png"
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          className="absolute inset-0 w-full h-full object-contain object-center p-8"
         />
 
-        {/* Dark + orange gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0c]/90 via-[#0a0a0c]/70 to-orange-950/60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c]/95 via-transparent to-transparent" />
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col h-full p-12 xl:p-16">
-
-          <div className="flex-1 flex flex-col justify-center gap-4">
-
-            <div className="self-start bg-[#0f0f11]/80 border border-[#2a2a2e] backdrop-blur-sm rounded-2xl px-5 py-4 max-w-[230px]">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6b7280] mb-1">Formats supported</p>
-              <p className="text-2xl font-black text-white">PDF · EPUB · DOCX</p>
-              <p className="text-xs text-orange-400 font-semibold mt-0.5">import & export</p>
-            </div>
-
-            <div className="self-end bg-[#0f0f11]/80 border border-[#2a2a2e] backdrop-blur-sm rounded-2xl px-5 py-4 max-w-[240px]">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6b7280] mb-1">Layout fidelity</p>
-              <p className="text-2xl font-black text-white">Pixel-perfect</p>
-              <p className="text-xs text-orange-400 font-semibold mt-0.5">semantic reconstruction</p>
-            </div>
-
-            {/* Central doc illustration */}
-            <div className="relative self-center my-4">
-              <div className="w-44 h-56 rounded-2xl border border-[#2a2a2e] bg-[#111113]/90 shadow-2xl p-4 flex flex-col gap-2.5">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 rounded-lg bg-[#e21818] flex items-center justify-center">
-                    <span className="text-white text-[9px] font-black">PDF</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="h-1.5 w-16 rounded bg-[#2a2a2e]" />
-                    <div className="h-1 w-10 rounded bg-[#1e1e21] mt-1" />
-                  </div>
-                </div>
-                {[100, 80, 90, 70, 85, 60, 75].map((w, i) => (
-                  <div key={i} className="h-1.5 rounded-full bg-[#1e1e21]" style={{ width: `${w}%` }} />
-                ))}
-                <div className="mt-1 h-5 rounded-lg bg-orange-500/20 border border-orange-500/30 flex items-center px-2 gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  <div className="h-1 w-12 rounded bg-orange-400/40" />
-                </div>
-                <div className="h-1.5 rounded-full bg-[#1e1e21] w-4/5" />
-                <div className="h-1.5 rounded-full bg-[#1e1e21] w-3/5" />
-              </div>
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-28 h-6 bg-orange-500/30 blur-xl rounded-full" />
-            </div>
-
-            <div className="self-start bg-[#0f0f11]/80 border border-[#2a2a2e] backdrop-blur-sm rounded-2xl px-5 py-4 max-w-[220px]">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6b7280] mb-1">Community</p>
-              <p className="text-2xl font-black text-white">500+</p>
-              <p className="text-xs text-orange-400 font-semibold mt-0.5">developers & teams</p>
-            </div>
-
-          </div>
-
-          <div className="mt-auto">
-            <div className="w-8 h-0.5 bg-orange-500 rounded mb-4" />
-            <p className="text-xl font-black text-white leading-tight max-w-xs">
-              Your documents, finally under your control.
-            </p>
-            <p className="text-sm text-[#9ca3af] mt-2 max-w-xs leading-relaxed">
-              No paywalls. No uploads to third parties. Open source and free forever.
-            </p>
-          </div>
+        {/* Bottom tagline */}
+        <div className="relative z-10 mt-auto p-10">
+          <div className="w-8 h-0.5 bg-orange-500 rounded mb-3" />
+          <p className="text-xl font-sans font-black tracking-tight text-[#1a1a1a] leading-tight max-w-xs">
+            Your documents, finally under your control.
+          </p>
+          <p className="text-sm text-[#6b6b6b] mt-2 max-w-xs leading-relaxed">
+            No paywalls. No uploads to third parties. Open source and free forever.
+          </p>
         </div>
       </div>
 
