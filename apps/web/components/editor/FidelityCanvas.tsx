@@ -178,6 +178,36 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
   return shape;
 }
 
+function createFieldBlock(block: DocumentBlock, scale: number): Rect {
+  const bbox = block.bounding_box ?? [72, 72, 240, 100];
+  const x0 = bbox[0];
+  const y0 = bbox[1];
+  const x1 = bbox[2];
+  const y1 = bbox[3];
+  const w = (x1 - x0) * scale;
+  const h = Math.max((y1 - y0) * scale, 24);
+
+  const fieldRect = new Rect({
+    left: x0 * scale,
+    top: y0 * scale,
+    width: w,
+    height: h,
+    fill: "rgba(249,115,22,0.06)",
+    stroke: "#f97316",
+    strokeWidth: 1.5,
+    strokeDashArray: [4, 2],
+    rx: 4,
+    ry: 4,
+    selectable: true,
+  });
+  (fieldRect as any).data = {
+    blockId: block.id,
+    blockType: "field",
+    fieldType: (block as any).field_type ?? "text",
+  };
+  return fieldRect;
+}
+
 function renderCommentIndicators(
   canvas: Canvas,
   comments: EditorComment[],
@@ -228,9 +258,10 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const [openCommentThread, setOpenCommentThread] = useState<string | null>(null);
   const [awarenessUsers, setAwarenessUsers] = useState<Array<{ id: string; name: string; color: string; selectedBlockId?: string | null }>>([]);
   const [changes, setChanges] = useState<ChangeRecord[]>([]);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
-  const { activeTool, setActiveTool, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode } = useFidelityCanvasStore();
+  const { activeTool, setActiveTool, selectedBlock, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode, formMode, toggleFormMode } = useFidelityCanvasStore();
   const suggestModeRef = useRef(suggestMode);
   const { matches, currentMatchIndex } = useFindReplaceStore();
   const { ydocRef, providerRef } = useCollaboration(documentId, model);
@@ -310,6 +341,79 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         version_name: `Suggest mode ${new Date().toLocaleString()}`,
       }),
     });
+  };
+
+  const convertBlockToField = (blockId: string, fieldType: "text" | "multiline" | "checkbox" | "radio" | "select" | "date" | "signature") => {
+    const nextBlocks = (currentModelRef.current.blocks ?? []).map((b) => {
+      if (b.id !== blockId) return b;
+      const label = b.content || "Field";
+      return {
+        ...b,
+        type: "field",
+        field_type: fieldType,
+        field_id: `field_${blockId}`,
+        label,
+        required: false,
+        placeholder: label,
+        default_value: "",
+        content: "",
+      } as DocumentBlock;
+    });
+    const nextModel = { ...currentModelRef.current, blocks: nextBlocks };
+    pushToHistory(nextModel);
+    saveDebounced.current(nextModel);
+    currentModelRef.current = nextModel;
+  };
+
+  const addPendingChange = (change: ChangeRecord) => {
+    setChanges((prev) => [...prev, change]);
+  };
+
+  const aiRewrite = async (blockId: string, instruction: string) => {
+    const res = await fetch(`/api/bff/ai/documents/${documentId}/blocks/${blockId}/rewrite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instruction }),
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as { suggestion?: string; original?: string };
+    addPendingChange({
+      id: crypto.randomUUID(),
+      blockId,
+      field: "content",
+      oldValue: data.original ?? "",
+      newValue: data.suggestion ?? "",
+      userId: "ai",
+      userName: "AI",
+      timestamp: Date.now(),
+      status: "pending",
+    });
+  };
+
+  const triggerOcrVerify = async (blockId: string) => {
+    const res = await fetch(`/api/bff/ai/documents/${documentId}/blocks/${blockId}/ocr-verify`, { method: "POST" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { verified?: boolean; correction?: string | null };
+    if (data.verified || !data.correction) return;
+    const current = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
+    addPendingChange({
+      id: crypto.randomUUID(),
+      blockId,
+      field: "content",
+      oldValue: current?.content ?? "",
+      newValue: data.correction,
+      userId: "ai",
+      userName: "AI OCR",
+      timestamp: Date.now(),
+      status: "pending",
+    });
+  };
+
+  const summariseDoc = async () => {
+    const res = await fetch(`/api/bff/ai/documents/${documentId}/summarise`, { method: "POST" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { summary?: string };
+    setAiSummary(data.summary ?? null);
   };
 
   const undo = () => {
@@ -736,12 +840,32 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       let obj;
       if (block.type === "table") {
         obj = createTableBlock(block, scale);
+      } else if (block.type === "field") {
+        obj = createFieldBlock(block, scale);
       } else if (block.type === "shape") {
         obj = createShapeBlock(block, scale);
       } else {
         obj = createTextBlock(block, scale);
       }
       fcanvas.add(obj);
+
+      if ((block.confidence_score ?? 1) < 0.9) {
+        const bbox = block.bounding_box ?? [0, 0, 0, 0];
+        const badge = new IText("!", {
+          left: bbox[2] * scale + 2,
+          top: bbox[1] * scale,
+          fontSize: 10,
+          fill: "#f59e0b",
+          selectable: false,
+          evented: true,
+          hoverCursor: "pointer",
+        });
+        (badge as any).data = { isOcrBadge: true, blockId: block.id };
+        badge.on("mousedown", () => {
+          void triggerOcrVerify(block.id);
+        });
+        fcanvas.add(badge);
+      }
     }
 
     const sync = debounce(() => syncCanvasToModel(pageIndex, fcanvas), 400);
@@ -827,6 +951,22 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       target.set({ opacity: 0, evented: false, selectable: false });
       fcanvas.renderAll();
       setActiveTipTapBlock({ blockId, pageIndex });
+    });
+    fcanvas.on("mouse:down", (e) => {
+      const raw = (e as any).e as MouseEvent | undefined;
+      if (!raw || raw.button !== 2) return;
+      const target = e.target;
+      if (!target) return;
+      raw.preventDefault();
+      const blockId = (target as any).data?.blockId as string | undefined;
+      if (!blockId) return;
+      const action = window.prompt("AI tools: improve | shorten | formal | casual | ocr", "improve");
+      if (!action) return;
+      if (action.toLowerCase() === "ocr") {
+        void triggerOcrVerify(blockId);
+        return;
+      }
+      void aiRewrite(blockId, action.toLowerCase());
     });
     fcanvas.on("selection:created", () => {
       handleSelection(fcanvas);
@@ -948,6 +1088,32 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         </button>
 
         <button
+          onClick={toggleFormMode}
+          className={`rounded px-3 py-1.5 text-[10px] font-bold uppercase ${formMode ? "bg-orange-500 text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"}`}
+        >
+          Form {formMode ? "On" : "Off"}
+        </button>
+
+        <button
+          onClick={() => {
+            if (!selectedBlock?.blockId || !formMode) return;
+            convertBlockToField(selectedBlock.blockId, "text");
+          }}
+          className="rounded px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"
+        >
+          To Field
+        </button>
+
+        <button
+          onClick={() => {
+            void summariseDoc();
+          }}
+          className="rounded px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"
+        >
+          Summarise
+        </button>
+
+        <button
           onClick={() => {
             void saveVersionSnapshot();
           }}
@@ -1021,6 +1187,12 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
           currentModelRef.current = nextModel;
         }}
       />
+      {aiSummary && (
+        <div className="mx-auto mb-3 w-full max-w-[1200px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2 text-xs text-[var(--text-secondary)]">
+          <span className="mr-2 font-bold text-[var(--text-primary)]">AI Summary:</span>
+          {aiSummary}
+        </div>
+      )}
 
       {/* Pages */}
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8">

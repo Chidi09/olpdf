@@ -98,6 +98,7 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
             onCanvasReady(dim.page_index, node);
           }}
           className="absolute inset-0 z-10"
+          onContextMenu={(e) => e.preventDefault()}
         />
       )}
 

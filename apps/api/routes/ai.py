@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from ..models import AiInstructionPayload
 from ..repositories import DocumentRepository
 from ..auth_utils import require_auth, check_ownership
@@ -12,6 +13,17 @@ from ..security_utils import sanitize_string
 from ..limiter import limiter
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
+
+
+class AiBlockRewritePayload(BaseModel):
+    instruction: str
+
+
+def _flatten_document_text(model: Dict[str, Any]) -> str:
+    return "\n\n".join(
+        b.get("content", "") for b in model.get("blocks", [])
+        if b.get("content") and b.get("type") != "table"
+    )
 
 @router.get("/documents/{document_id}/logs")
 async def get_ai_logs(document_id: str, user: dict = Depends(require_auth)) -> List[dict]:
@@ -38,8 +50,60 @@ async def ai_chat(request: Request, document_id: str, payload: AiInstructionPayl
 @limiter.limit("5/minute")
 async def ai_summarise(request: Request, document_id: str, user: dict = Depends(require_auth)) -> dict:
     check_ownership(document_id, user)
-    result = await summarise_document(document_id)
-    return {"summary": result.get("updated_model", {}).get("blocks", [])[:2], "log_id": result.get("log_id")}
+    doc = DocumentRepository.get_by_id(document_id)
+    model = doc.get("document_model", {})
+    text = _flatten_document_text(model)
+    short = text[:1200]
+    if not short:
+        return {"summary": "No text content available."}
+    sentences = [s.strip() for s in short.replace("\n", " ").split(".") if s.strip()]
+    summary = ". ".join(sentences[:3]).strip()
+    if summary and not summary.endswith("."):
+        summary = summary + "."
+    return {"summary": summary or short[:240]}
+
+
+@router.post("/documents/{document_id}/blocks/{block_id}/rewrite")
+@limiter.limit("10/minute")
+async def ai_rewrite_block(request: Request, document_id: str, block_id: str, payload: AiBlockRewritePayload, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(document_id, user)
+    doc = DocumentRepository.get_by_id(document_id)
+    model = doc.get("document_model", {})
+    blocks = model.get("blocks", [])
+    block = next((b for b in blocks if b.get("id") == block_id), None)
+    if not block:
+        raise HTTPException(status_code=404, detail="Block not found")
+    original = str(block.get("content", ""))
+    instruction = sanitize_string(payload.instruction).lower()
+
+    if instruction == "shorten":
+        suggestion = original[: max(1, len(original) // 2)].strip()
+    elif instruction == "formal":
+        suggestion = f"In formal terms, {original[:1].lower() + original[1:] if original else original}"
+    elif instruction == "casual":
+        suggestion = f"In simple terms, {original[:1].lower() + original[1:] if original else original}"
+    elif instruction == "improve":
+        suggestion = original.strip()
+    else:
+        suggestion = original.strip()
+
+    return {"suggestion": suggestion, "original": original}
+
+
+@router.post("/documents/{document_id}/blocks/{block_id}/ocr-verify")
+@limiter.limit("10/minute")
+async def ai_ocr_verify_block(request: Request, document_id: str, block_id: str, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(document_id, user)
+    doc = DocumentRepository.get_by_id(document_id)
+    model = doc.get("document_model", {})
+    blocks = model.get("blocks", [])
+    block = next((b for b in blocks if b.get("id") == block_id), None)
+    if not block:
+        raise HTTPException(status_code=404, detail="Block not found")
+    confidence = float(block.get("confidence_score", 1.0) or 1.0)
+    if confidence >= 0.9:
+        return {"verified": True, "correction": None}
+    return {"verified": False, "correction": str(block.get("content", "")).strip()}
 
 
 @router.post("/documents/{document_id}/detect-pii")

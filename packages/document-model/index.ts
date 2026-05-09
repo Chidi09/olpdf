@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const BlockType = z.enum([
   "paragraph", "heading1", "heading2", "heading3", "callout", 
-  "table", "list", "divider", "page_break", "image", "shape", "bullet_list", "ordered_list"
+  "table", "list", "divider", "page_break", "image", "shape", "bullet_list", "ordered_list", "field"
 ]);
 
 export const FontMeta = z.object({
@@ -38,6 +38,14 @@ export const DocumentModel = z.object({
     style_overrides: z.record(z.any()).optional(),
     fabric_data: z.record(z.any()).optional(),
     table_data: z.record(z.any()).optional(),
+    field_type: z.enum(["text", "multiline", "checkbox", "radio", "select", "date", "signature"]).optional(),
+    field_id: z.string().optional(),
+    label: z.string().optional(),
+    required: z.boolean().optional(),
+    placeholder: z.string().optional(),
+    options: z.array(z.string()).optional(),
+    default_value: z.string().optional(),
+    validation: z.record(z.any()).optional(),
     font_meta: FontMeta.optional(),
     z_index: z.number().int().default(0),
     page_index: z.number().int().default(0),
