@@ -98,6 +98,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>
           <LayoutShell>{children}</LayoutShell>

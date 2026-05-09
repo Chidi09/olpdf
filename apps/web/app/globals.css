@@ -3,6 +3,11 @@
 @config "../tailwind.config.ts";
 @import "../../../packages/ui/globals.css";
 
+/* Adobe Fonts — body default */
+body {
+  font-family: 'mr-eaves-sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
 /* TipTap Editor Styles */
 .ProseMirror {
   outline: none;
