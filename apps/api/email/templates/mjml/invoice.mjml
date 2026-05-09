@@ -1,0 +1,114 @@
+<mjml>
+  <mj-head>
+    <mj-title>Invoice {{ invoice_number }} — OLPDF</mj-title>
+    <mj-preview>Your OLPDF invoice #{{ invoice_number }} for {{ amount }} is available.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text color="#f0f0f0" font-size="15px" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#0a0a0c">
+
+    <!-- Header: Logo -->
+    <mj-section background-color="#0a0a0c" padding="28px 0 20px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="24px" font-weight="900" letter-spacing="4px" padding="0">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Orange accent line -->
+    <mj-section background-color="#f97316" padding="0">
+      <mj-column>
+        <mj-spacer height="3px" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Main card header -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="40px 32px 24px">
+      <mj-column>
+        <mj-text font-size="13px" font-weight="700" color="#f97316" letter-spacing="2px" padding-bottom="8px">
+          INVOICE
+        </mj-text>
+        <mj-text font-size="28px" font-weight="700" color="#f0f0f0" padding-bottom="8px">
+          Invoice
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="24px">
+          Hi {{ name }}, here is your invoice for your OLPDF subscription. Thank you for your continued support.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Invoice details box -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 24px">
+      <mj-column background-color="#1a1a1d" border-left="3px solid #f97316" padding="16px 20px" border-radius="4px">
+        <mj-text font-size="13px" color="#9ca3af" padding-bottom="2px" padding-top="0">Invoice Number</mj-text>
+        <mj-text font-size="14px" color="#f0f0f0" font-weight="600" padding-top="0" padding-bottom="12px">{{ invoice_number }}</mj-text>
+
+        <mj-text font-size="13px" color="#9ca3af" padding-bottom="2px" padding-top="0">Date</mj-text>
+        <mj-text font-size="14px" color="#f0f0f0" font-weight="600" padding-top="0" padding-bottom="12px">{{ billing_date }}</mj-text>
+
+        <mj-text font-size="13px" color="#9ca3af" padding-bottom="2px" padding-top="0">Plan</mj-text>
+        <mj-text font-size="14px" color="#f0f0f0" font-weight="600" padding-top="0" padding-bottom="0">{{ plan }}</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Line items table -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 24px">
+      <mj-column>
+        <!-- Table header -->
+        <mj-text font-size="12px" color="#6b7280" font-weight="700" letter-spacing="1px" padding-bottom="8px" padding-top="0">
+          DESCRIPTION &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AMOUNT
+        </mj-text>
+        <mj-divider border-color="#2a2a2e" border-width="1px" padding="0 0 12px" />
+
+        <!-- Line item -->
+        <mj-text font-size="14px" color="#f0f0f0" padding-top="0" padding-bottom="4px">
+          <strong>{{ plan }} Subscription</strong>
+        </mj-text>
+        <mj-text font-size="13px" color="#9ca3af" padding-top="0" padding-bottom="12px">
+          {{ period_start }} – {{ period_end }}
+        </mj-text>
+        <mj-divider border-color="#2a2a2e" border-width="1px" padding="0 0 12px" />
+
+        <!-- Total row -->
+        <mj-text font-size="15px" color="#f97316" font-weight="700" padding-top="4px" padding-bottom="0">
+          Total: {{ amount }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="8px 32px 40px">
+      <mj-column>
+        <mj-button background-color="#f97316" color="#ffffff" border-radius="6px" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14px" inner-padding="14px 28px" href="{{ app_url }}/billing" align="center">
+          View Invoice
+        </mj-button>
+        <mj-text color="#6b7280" font-size="13px" align="center" padding-top="20px">
+          Thank you for your support — it means a lot to us and helps keep OLPDF running and improving.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#0a0a0c" padding="24px 0 36px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="13px" font-weight="900" letter-spacing="4px" padding-bottom="8px">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding="0">
+          <a href="{{ app_url }}" style="color:#6b7280; text-decoration:none;">olpdf.xyz</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/settings" style="color:#6b7280; text-decoration:none;">Account Settings</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/unsubscribe" style="color:#6b7280; text-decoration:none;">Unsubscribe</a>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding-top="8px">
+          &copy; 2025 OLPDF. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

@@ -1,0 +1,84 @@
+<mjml>
+  <mj-head>
+    <mj-title>Document fully signed — OLPDF</mj-title>
+    <mj-preview>{{ doc_title }} has been signed by all parties. Download your certified PDF.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text color="#f0f0f0" font-size="15px" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#0a0a0c">
+
+    <!-- Header: Logo -->
+    <mj-section background-color="#0a0a0c" padding="28px 0 20px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="24px" font-weight="900" letter-spacing="4px" padding="0">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Orange accent line -->
+    <mj-section background-color="#f97316" padding="0">
+      <mj-column>
+        <mj-spacer height="3px" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Main card -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="40px 32px 24px">
+      <mj-column>
+        <mj-text font-size="13px" font-weight="700" color="#22c55e" letter-spacing="2px" padding-bottom="8px">
+          &#10003; SIGNING COMPLETE
+        </mj-text>
+        <mj-text font-size="28px" font-weight="700" color="#f0f0f0" padding-bottom="8px">
+          Document fully signed
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="24px">
+          Hi {{ name }}, <strong style="color:#f0f0f0;">{{ doc_title }}</strong> has been reviewed and signed by all required parties. Your certified PDF is ready for download.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Info box -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 24px">
+      <mj-column background-color="#1a1a1d" border-left="3px solid #22c55e" padding="16px 20px" border-radius="4px">
+        <mj-text font-size="14px" color="#f0f0f0" font-weight="600" padding-bottom="8px" padding-top="0">
+          {{ doc_title }}
+        </mj-text>
+        <mj-text font-size="13px" color="#9ca3af" padding-top="0" padding-bottom="0">
+          A digital signature certificate with signing timestamps and signer identifiers has been embedded directly into the certified PDF for verification purposes.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="8px 32px 40px">
+      <mj-column>
+        <mj-button background-color="#f97316" color="#ffffff" border-radius="6px" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14px" inner-padding="14px 28px" href="{{ certified_url }}" align="center">
+          Download Certified PDF
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#0a0a0c" padding="24px 0 36px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="13px" font-weight="900" letter-spacing="4px" padding-bottom="8px">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding="0">
+          <a href="{{ app_url }}" style="color:#6b7280; text-decoration:none;">olpdf.xyz</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/settings" style="color:#6b7280; text-decoration:none;">Account Settings</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/unsubscribe" style="color:#6b7280; text-decoration:none;">Unsubscribe</a>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding-top="8px">
+          &copy; 2025 OLPDF. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

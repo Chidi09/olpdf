@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="und" dir="auto" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
-    <title>Partial OCR complete — OLPDF</title>
+    <title>Your {{ month }} usage summary — OLPDF</title>
     <!--[if !mso]><!-->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!--<![endif]-->
@@ -34,10 +34,12 @@
     <style type="text/css">
       @media only screen and (min-width:480px) {
         .mj-column-per-100 { width:100% !important; max-width: 100%; }
+.mj-column-per-33-333333333333336 { width:33.333333333333336% !important; max-width: 33.333333333333336%; }
       }
     </style>
     <style media="screen and (min-width:480px)">
       .moz-text-html .mj-column-per-100 { width:100% !important; max-width: 100%; }
+.moz-text-html .mj-column-per-33-333333333333336 { width:33.333333333333336% !important; max-width: 33.333333333333336%; }
     </style>
     
     
@@ -49,10 +51,10 @@
   
       <body  style="word-spacing:normal;background-color:#0a0a0c;">
         
-    <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">{{ doc_title }} is ready. Some pages required OCR and may have lower accuracy.</div>
+    <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Here's how you used OLPDF in {{ month }}. Docs processed, API calls, storage &amp; more.</div>
   
         <div
-           aria-label="Partial OCR complete — OLPDF" aria-roledescription="email" role="article" lang="und" dir="auto" style="word-spacing:normal;background-color:#0a0a0c;"
+           aria-label="Your {{ month }} usage summary — OLPDF" aria-roledescription="email" role="article" lang="und" dir="auto" style="word-spacing:normal;background-color:#0a0a0c;"
         >
         <!-- Header: Logo -->
       
@@ -162,7 +164,7 @@
       
       <!--[if mso | IE]></td></tr></table><![endif]-->
     
-    <!-- Main card -->
+    <!-- Main card header -->
       
       <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" bgcolor="#111113" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
     
@@ -194,8 +196,8 @@
                 >
                   
       <div
-         style="font-family:Arial, Helvetica, sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;line-height:1.6;text-align:left;color:#f59e0b;"
-      >&#9888; PARTIAL OCR</div>
+         style="font-family:Arial, Helvetica, sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;line-height:1.6;text-align:left;color:#f97316;"
+      >MONTHLY REPORT</div>
     
                 </td>
               </tr>
@@ -207,19 +209,19 @@
                   
       <div
          style="font-family:Arial, Helvetica, sans-serif;font-size:28px;font-weight:700;line-height:1.6;text-align:left;color:#f0f0f0;"
-      >Partial OCR complete</div>
+      >Your {{ month }} usage summary</div>
     
                 </td>
               </tr>
             
               <tr>
                 <td
-                   align="left" style="font-size:0px;padding:10px 25px;padding-bottom:24px;word-break:break-word;"
+                   align="left" style="font-size:0px;padding:10px 25px;padding-bottom:8px;word-break:break-word;"
                 >
                   
       <div
          style="font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:1.6;text-align:left;color:#9ca3af;"
-      >Hi {{ name }}, your document <strong style="color:#f0f0f0;">{{ doc_title }}</strong> is ready, but please note that <strong style="color:#f59e0b;">{{ pages_ocr }} pages</strong> required optical character recognition (OCR) and may have slightly lower text accuracy compared to native PDF text.</div>
+      >Hi {{ name }}, here's a summary of your OLPDF activity for {{ month }}. You're currently on the <strong style="color:#f97316;">{{ plan }}</strong> plan.</div>
     
                 </td>
               </tr>
@@ -240,7 +242,267 @@
       
       <!--[if mso | IE]></td></tr></table><![endif]-->
     
-    <!-- Warning box -->
+    <!-- 3-column metric cards: Documents / API Calls / Storage -->
+      
+      <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" bgcolor="#111113" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
+    
+      
+      <div  style="background:#111113;background-color:#111113;margin:0px auto;max-width:600px;">
+        
+        <table
+           align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#111113;background-color:#111113;width:100%;"
+        >
+          <tbody>
+            <tr>
+              <td
+                 style="border-left:1px solid #2a2a2e;border-right:1px solid #2a2a2e;direction:ltr;font-size:0px;padding:0 24px 24px;text-align:center;"
+              >
+                <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><![endif]-->
+      <!-- Documents Processed -->
+          <!--[if mso | IE]><td class="" style="vertical-align:top;width:183.33333333333337px;" ><![endif]-->
+            
+      <div
+         class="mj-column-per-33-333333333333336 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;"
+      >
+        
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse:separate;"
+      >
+        <tbody>
+          <tr>
+            <td  style="background-color:#1a1a1d;border:1px solid #2a2a2e;border-radius:8px;vertical-align:top;border-collapse:separate;padding:20px 16px;">
+              
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%"
+      >
+        <tbody>
+          
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:8px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;line-height:1.6;text-align:center;color:#6b7280;"
+      >DOCUMENTS</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:4px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:26px;font-weight:700;line-height:1.6;text-align:center;color:#f97316;"
+      >{{ docs_processed }}</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:4px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;text-align:center;color:#6b7280;"
+      >of {{ quota_docs }}</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:0;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:11px;line-height:1.6;text-align:center;color:#9ca3af;"
+      >processed</div>
+    
+                </td>
+              </tr>
+            
+        </tbody>
+      </table>
+    
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    
+      </div>
+    
+          <!--[if mso | IE]></td><![endif]-->
+    <!-- API Calls -->
+          <!--[if mso | IE]><td class="" style="vertical-align:top;width:183.33333333333337px;" ><![endif]-->
+            
+      <div
+         class="mj-column-per-33-333333333333336 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;"
+      >
+        
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse:separate;"
+      >
+        <tbody>
+          <tr>
+            <td  style="background-color:#1a1a1d;border:1px solid #2a2a2e;border-radius:8px;vertical-align:top;border-collapse:separate;padding:20px 16px;">
+              
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%"
+      >
+        <tbody>
+          
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:8px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;line-height:1.6;text-align:center;color:#6b7280;"
+      >API CALLS</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:4px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:26px;font-weight:700;line-height:1.6;text-align:center;color:#f97316;"
+      >{{ api_calls }}</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:4px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;text-align:center;color:#6b7280;"
+      >of {{ quota_api }}</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:0;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:11px;line-height:1.6;text-align:center;color:#9ca3af;"
+      >total requests</div>
+    
+                </td>
+              </tr>
+            
+        </tbody>
+      </table>
+    
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    
+      </div>
+    
+          <!--[if mso | IE]></td><![endif]-->
+    <!-- Storage -->
+          <!--[if mso | IE]><td class="" style="vertical-align:top;width:183.33333333333337px;" ><![endif]-->
+            
+      <div
+         class="mj-column-per-33-333333333333336 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;"
+      >
+        
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse:separate;"
+      >
+        <tbody>
+          <tr>
+            <td  style="background-color:#1a1a1d;border:1px solid #2a2a2e;border-radius:8px;vertical-align:top;border-collapse:separate;padding:20px 16px;">
+              
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%"
+      >
+        <tbody>
+          
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:8px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;line-height:1.6;text-align:center;color:#6b7280;"
+      >STORAGE</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:4px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:26px;font-weight:700;line-height:1.6;text-align:center;color:#f97316;"
+      >{{ storage_used }}</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:4px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.6;text-align:center;color:#6b7280;"
+      >&nbsp;</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="center" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:0;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:11px;line-height:1.6;text-align:center;color:#9ca3af;"
+      >used this month</div>
+    
+                </td>
+              </tr>
+            
+        </tbody>
+      </table>
+    
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    
+      </div>
+    
+          <!--[if mso | IE]></td></tr></table><![endif]-->
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+      </div>
+    
+      
+      <!--[if mso | IE]></td></tr></table><![endif]-->
+    
+    <!-- Additional stats -->
       
       <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" bgcolor="#111113" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
     
@@ -254,6 +516,96 @@
             <tr>
               <td
                  style="border-left:1px solid #2a2a2e;border-right:1px solid #2a2a2e;direction:ltr;font-size:0px;padding:0 32px 24px;text-align:center;"
+              >
+                <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:534px;" ><![endif]-->
+            
+      <div
+         class="mj-column-per-100 mj-outlook-group-fix" style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;"
+      >
+        
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse:separate;"
+      >
+        <tbody>
+          <tr>
+            <td  style="background-color:#1a1a1d;border-left:3px solid #f97316;border-radius:4px;vertical-align:top;border-collapse:separate;padding:16px 20px;">
+              
+      <table
+         border="0" cellpadding="0" cellspacing="0" role="presentation" style="" width="100%"
+      >
+        <tbody>
+          
+              <tr>
+                <td
+                   align="left" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:12px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:600;line-height:1.6;text-align:left;color:#f0f0f0;"
+      >Additional stats</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="left" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:6px;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:1.6;text-align:left;color:#9ca3af;"
+      >&#128196;&nbsp; <strong style="color:#f0f0f0;">Exports generated:</strong> {{ exports_count }}</div>
+    
+                </td>
+              </tr>
+            
+              <tr>
+                <td
+                   align="left" style="font-size:0px;padding:10px 25px;padding-top:0;padding-bottom:0;word-break:break-word;"
+                >
+                  
+      <div
+         style="font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:1.6;text-align:left;color:#9ca3af;"
+      >&#9889;&nbsp; <strong style="color:#f0f0f0;">Current plan:</strong> <span style="color:#f97316;">{{ plan }}</span></div>
+    
+                </td>
+              </tr>
+            
+        </tbody>
+      </table>
+    
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    
+      </div>
+    
+          <!--[if mso | IE]></td></tr></table><![endif]-->
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+      </div>
+    
+      
+      <!--[if mso | IE]></td></tr></table><![endif]-->
+    
+    <!-- Upgrade nudge (shown when quota is high — rendered by Jinja2 conditionally) -->
+      
+      <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" bgcolor="#111113" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
+    
+      
+      <div  style="background:#111113;background-color:#111113;margin:0px auto;max-width:600px;">
+        
+        <table
+           align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#111113;background-color:#111113;width:100%;"
+        >
+          <tbody>
+            <tr>
+              <td
+                 style="border-left:1px solid #2a2a2e;border-right:1px solid #2a2a2e;direction:ltr;font-size:0px;padding:0 32px 16px;text-align:center;"
               >
                 <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:534px;" ><![endif]-->
             
@@ -280,7 +632,8 @@
                   
       <div
          style="font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:1.6;text-align:left;color:#fbbf24;"
-      >We recommend reviewing the OCR'd pages for any transcription errors, especially for numbers, tables, or specialized terminology.</div>
+      ><strong>&#9888; You're approaching your plan limits.</strong> Consider upgrading to avoid throttling and keep your workflows running smoothly.
+          <a href="{{ app_url }}/billing/upgrade" style="color:#f97316; text-decoration:none;"> Upgrade now &rarr;</a></div>
     
                 </td>
               </tr>
@@ -319,7 +672,7 @@
           <tbody>
             <tr>
               <td
-                 style="border-left:1px solid #2a2a2e;border-right:1px solid #2a2a2e;direction:ltr;font-size:0px;padding:8px 32px 40px;text-align:center;"
+                 style="border-left:1px solid #2a2a2e;border-right:1px solid #2a2a2e;direction:ltr;font-size:0px;padding:16px 32px 40px;text-align:center;"
               >
                 <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:534px;" ><![endif]-->
             
@@ -346,9 +699,9 @@
                align="center" bgcolor="#f97316" role="presentation" style="border:none;border-radius:6px;cursor:auto;mso-padding-alt:14px 28px;background:#f97316;" valign="middle"
             >
               <a
-                 href="{{ app_url }}/documents/{{ doc_id }}" style="display:inline-block;background:#f97316;color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:700;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:14px 28px;mso-padding-alt:0px;border-radius:6px;" target="_blank"
+                 href="{{ app_url }}/dashboard" style="display:inline-block;background:#f97316;color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:700;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:14px 28px;mso-padding-alt:0px;border-radius:6px;" target="_blank"
               >
-                Review Document
+                View Full Dashboard
               </a>
             </td>
           </tr>

@@ -1,0 +1,150 @@
+<mjml>
+  <mj-head>
+    <mj-title>Your {{ month }} usage summary — OLPDF</mj-title>
+    <mj-preview>Here's how you used OLPDF in {{ month }}. Docs processed, API calls, storage &amp; more.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text color="#f0f0f0" font-size="15px" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#0a0a0c">
+
+    <!-- Header: Logo -->
+    <mj-section background-color="#0a0a0c" padding="28px 0 20px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="24px" font-weight="900" letter-spacing="4px" padding="0">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Orange accent line -->
+    <mj-section background-color="#f97316" padding="0">
+      <mj-column>
+        <mj-spacer height="3px" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Main card header -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="40px 32px 24px">
+      <mj-column>
+        <mj-text font-size="13px" font-weight="700" color="#f97316" letter-spacing="2px" padding-bottom="8px">
+          MONTHLY REPORT
+        </mj-text>
+        <mj-text font-size="28px" font-weight="700" color="#f0f0f0" padding-bottom="8px">
+          Your {{ month }} usage summary
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="8px">
+          Hi {{ name }}, here's a summary of your OLPDF activity for {{ month }}. You're currently on the <strong style="color:#f97316;">{{ plan }}</strong> plan.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- 3-column metric cards: Documents / API Calls / Storage -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 24px 24px">
+      <!-- Documents Processed -->
+      <mj-column background-color="#1a1a1d" border="1px solid #2a2a2e" border-radius="8px" padding="20px 16px">
+        <mj-text font-size="11px" font-weight="700" color="#6b7280" letter-spacing="1px" padding-bottom="8px" padding-top="0" align="center">
+          DOCUMENTS
+        </mj-text>
+        <mj-text font-size="26px" font-weight="700" color="#f97316" align="center" padding-top="0" padding-bottom="4px">
+          {{ docs_processed }}
+        </mj-text>
+        <mj-text font-size="12px" color="#6b7280" align="center" padding-top="0" padding-bottom="4px">
+          of {{ quota_docs }}
+        </mj-text>
+        <mj-text font-size="11px" color="#9ca3af" align="center" padding-top="0" padding-bottom="0">
+          processed
+        </mj-text>
+      </mj-column>
+
+      <!-- API Calls -->
+      <mj-column background-color="#1a1a1d" border="1px solid #2a2a2e" border-radius="8px" padding="20px 16px">
+        <mj-text font-size="11px" font-weight="700" color="#6b7280" letter-spacing="1px" padding-bottom="8px" padding-top="0" align="center">
+          API CALLS
+        </mj-text>
+        <mj-text font-size="26px" font-weight="700" color="#f97316" align="center" padding-top="0" padding-bottom="4px">
+          {{ api_calls }}
+        </mj-text>
+        <mj-text font-size="12px" color="#6b7280" align="center" padding-top="0" padding-bottom="4px">
+          of {{ quota_api }}
+        </mj-text>
+        <mj-text font-size="11px" color="#9ca3af" align="center" padding-top="0" padding-bottom="0">
+          total requests
+        </mj-text>
+      </mj-column>
+
+      <!-- Storage -->
+      <mj-column background-color="#1a1a1d" border="1px solid #2a2a2e" border-radius="8px" padding="20px 16px">
+        <mj-text font-size="11px" font-weight="700" color="#6b7280" letter-spacing="1px" padding-bottom="8px" padding-top="0" align="center">
+          STORAGE
+        </mj-text>
+        <mj-text font-size="26px" font-weight="700" color="#f97316" align="center" padding-top="0" padding-bottom="4px">
+          {{ storage_used }}
+        </mj-text>
+        <mj-text font-size="12px" color="#6b7280" align="center" padding-top="0" padding-bottom="4px">
+          &nbsp;
+        </mj-text>
+        <mj-text font-size="11px" color="#9ca3af" align="center" padding-top="0" padding-bottom="0">
+          used this month
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Additional stats -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 24px">
+      <mj-column background-color="#1a1a1d" border-left="3px solid #f97316" padding="16px 20px" border-radius="4px">
+        <mj-text font-size="14px" color="#f0f0f0" font-weight="600" padding-bottom="12px" padding-top="0">
+          Additional stats
+        </mj-text>
+        <mj-text font-size="14px" color="#9ca3af" padding-bottom="6px" padding-top="0">
+          &#128196;&nbsp; <strong style="color:#f0f0f0;">Exports generated:</strong> {{ exports_count }}
+        </mj-text>
+        <mj-text font-size="14px" color="#9ca3af" padding-bottom="0" padding-top="0">
+          &#9889;&nbsp; <strong style="color:#f0f0f0;">Current plan:</strong> <span style="color:#f97316;">{{ plan }}</span>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Upgrade nudge (shown when quota is high — rendered by Jinja2 conditionally) -->
+    {% if docs_processed | int > (quota_docs | int * 0.8) or api_calls | int > (quota_api | int * 0.8) %}
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 16px">
+      <mj-column background-color="#1f1a0e" border-left="3px solid #f59e0b" padding="14px 18px" border-radius="4px">
+        <mj-text font-size="13px" color="#fbbf24" padding="0">
+          <strong>&#9888; You're approaching your plan limits.</strong> Consider upgrading to avoid throttling and keep your workflows running smoothly.
+          <a href="{{ app_url }}/billing/upgrade" style="color:#f97316; text-decoration:none;"> Upgrade now &rarr;</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    {% endif %}
+
+    <!-- CTA -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="16px 32px 40px">
+      <mj-column>
+        <mj-button background-color="#f97316" color="#ffffff" border-radius="6px" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14px" inner-padding="14px 28px" href="{{ app_url }}/dashboard" align="center">
+          View Full Dashboard
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#0a0a0c" padding="24px 0 36px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="13px" font-weight="900" letter-spacing="4px" padding-bottom="8px">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding="0">
+          <a href="{{ app_url }}" style="color:#6b7280; text-decoration:none;">olpdf.xyz</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/settings" style="color:#6b7280; text-decoration:none;">Account Settings</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/unsubscribe" style="color:#6b7280; text-decoration:none;">Unsubscribe</a>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding-top="8px">
+          &copy; 2025 OLPDF. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

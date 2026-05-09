@@ -1,0 +1,90 @@
+<mjml>
+  <mj-head>
+    <mj-title>Plan changed — OLPDF</mj-title>
+    <mj-preview>Your OLPDF plan will change to {{ new_plan }} on {{ effective_date }}.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text color="#f0f0f0" font-size="15px" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#0a0a0c">
+
+    <!-- Header: Logo -->
+    <mj-section background-color="#0a0a0c" padding="28px 0 20px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="24px" font-weight="900" letter-spacing="4px" padding="0">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Orange accent line -->
+    <mj-section background-color="#f97316" padding="0">
+      <mj-column>
+        <mj-spacer height="3px" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Main card -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="40px 32px 24px">
+      <mj-column>
+        <mj-text font-size="13px" font-weight="700" color="#9ca3af" letter-spacing="2px" padding-bottom="8px">
+          &#11015; PLAN CHANGE SCHEDULED
+        </mj-text>
+        <mj-text font-size="28px" font-weight="700" color="#f0f0f0" padding-bottom="8px">
+          Plan changed
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="24px">
+          Hi {{ name }}, your OLPDF plan will change from <strong style="color:#f0f0f0;">{{ old_plan }}</strong> to <strong style="color:#f0f0f0;">{{ new_plan }}</strong> on <strong style="color:#f97316;">{{ effective_date }}</strong>. You'll continue to have access to your current plan features until then.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- What will be affected -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 24px">
+      <mj-column background-color="#1a1a1d" border-left="3px solid #6b7280" padding="16px 20px" border-radius="4px">
+        <mj-text font-size="14px" color="#f0f0f0" font-weight="600" padding-bottom="12px" padding-top="0">
+          What will change on {{ effective_date }}:
+        </mj-text>
+        <mj-text font-size="14px" color="#9ca3af" padding-bottom="8px" padding-top="0">
+          &#8595;&nbsp; <strong style="color:#f0f0f0;">Rate limits reduced</strong> — API calls and document processing will be capped at {{ new_plan }} limits.
+        </mj-text>
+        <mj-text font-size="14px" color="#9ca3af" padding-bottom="0" padding-top="0">
+          &#8595;&nbsp; <strong style="color:#f0f0f0;">Priority processing removed</strong> — jobs will enter the standard processing queue.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="8px 32px 40px">
+      <mj-column>
+        <mj-button background-color="#f97316" color="#ffffff" border-radius="6px" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14px" inner-padding="14px 28px" href="{{ app_url }}/billing" align="center">
+          Manage Subscription
+        </mj-button>
+        <mj-text color="#6b7280" font-size="13px" align="center" padding-top="16px">
+          Changed your mind? <a href="{{ app_url }}/billing/upgrade" style="color:#f97316; text-decoration:none;">Re-upgrade your plan</a> at any time and keep your current benefits.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#0a0a0c" padding="24px 0 36px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="13px" font-weight="900" letter-spacing="4px" padding-bottom="8px">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding="0">
+          <a href="{{ app_url }}" style="color:#6b7280; text-decoration:none;">olpdf.xyz</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/settings" style="color:#6b7280; text-decoration:none;">Account Settings</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/unsubscribe" style="color:#6b7280; text-decoration:none;">Unsubscribe</a>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding-top="8px">
+          &copy; 2025 OLPDF. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

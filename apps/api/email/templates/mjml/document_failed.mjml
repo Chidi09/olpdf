@@ -1,0 +1,105 @@
+<mjml>
+  <mj-head>
+    <mj-title>Processing failed — OLPDF</mj-title>
+    <mj-preview>We couldn't process {{ doc_title }}. See the error details and try again.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text color="#f0f0f0" font-size="15px" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#0a0a0c">
+
+    <!-- Header: Logo -->
+    <mj-section background-color="#0a0a0c" padding="28px 0 20px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="24px" font-weight="900" letter-spacing="4px" padding="0">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Orange accent line -->
+    <mj-section background-color="#f97316" padding="0">
+      <mj-column>
+        <mj-spacer height="3px" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Main card -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="40px 32px 24px">
+      <mj-column>
+        <mj-text font-size="13px" font-weight="700" color="#ef4444" letter-spacing="2px" padding-bottom="8px">
+          &#10060; PROCESSING FAILED
+        </mj-text>
+        <mj-text font-size="28px" font-weight="700" color="#f0f0f0" padding-bottom="8px">
+          Processing failed
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="24px">
+          Hi {{ name }}, we were unable to process <strong style="color:#f0f0f0;">{{ doc_title }}</strong>. Here's what went wrong:
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Error details box -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 24px">
+      <mj-column background-color="#1a0e0e" border-left="3px solid #ef4444" padding="16px 20px" border-radius="4px">
+        <mj-text font-size="13px" color="#9ca3af" padding-bottom="6px" padding-top="0">
+          <strong style="color:#f87171;">Error details</strong>
+        </mj-text>
+        <mj-text font-size="13px" color="#f0f0f0" font-family="Courier New, Courier, monospace" padding-top="0" padding-bottom="0">
+          {{ error_message }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Common causes -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="0 32px 24px">
+      <mj-column>
+        <mj-text color="#9ca3af" font-size="14px" padding-bottom="8px">
+          <strong style="color:#f0f0f0;">Common causes:</strong>
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="4px" padding-top="0" font-size="14px">
+          &#9642;&nbsp; Password-protected PDFs (remove protection before uploading)
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="4px" padding-top="0" font-size="14px">
+          &#9642;&nbsp; Corrupted or malformed PDF files
+        </mj-text>
+        <mj-text color="#9ca3af" padding-bottom="0" padding-top="0" font-size="14px">
+          &#9642;&nbsp; Files exceeding the 100MB size limit
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA -->
+    <mj-section background-color="#111113" border-left="1px solid #2a2a2e" border-right="1px solid #2a2a2e" padding="8px 32px 40px">
+      <mj-column>
+        <mj-button background-color="#f97316" color="#ffffff" border-radius="6px" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14px" inner-padding="14px 28px" href="{{ app_url }}/dashboard" align="center">
+          Try Again
+        </mj-button>
+        <mj-text color="#6b7280" font-size="13px" align="center" padding-top="16px">
+          Still having trouble? <a href="{{ app_url }}/support" style="color:#f97316; text-decoration:none;">Contact our support team</a> and we'll help you get it sorted.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#0a0a0c" padding="24px 0 36px">
+      <mj-column>
+        <mj-text align="center" font-family="Georgia, serif" font-size="13px" font-weight="900" letter-spacing="4px" padding-bottom="8px">
+          <span style="color:#f97316;">OL</span><span style="color:#f0f0f0;">PDF</span>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding="0">
+          <a href="{{ app_url }}" style="color:#6b7280; text-decoration:none;">olpdf.xyz</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/settings" style="color:#6b7280; text-decoration:none;">Account Settings</a>
+          &nbsp;&bull;&nbsp;
+          <a href="{{ app_url }}/unsubscribe" style="color:#6b7280; text-decoration:none;">Unsubscribe</a>
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#6b7280" padding-top="8px">
+          &copy; 2025 OLPDF. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>
