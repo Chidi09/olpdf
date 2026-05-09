@@ -1,7 +1,5 @@
-"""PDF import routing: classify pages, extract native text, dispatch OCR via QStash."""
-import json
+"""PDF import routing: classify pages, extract native text, dispatch OCR worker."""
 import os
-import uuid
 from io import BytesIO
 from typing import Any, Dict, List
 
@@ -9,6 +7,7 @@ import pdfplumber
 
 from ...core.supabase_client import supabase
 from ...core.security import sanitize_document_model
+from ...engine.extractor import extract_page_blocks_from_pdf
 
 
 def classify_page(page: Any) -> dict:
@@ -41,24 +40,6 @@ def classify_page(page: Any) -> dict:
     }
 
 
-def extract_native_page(page: Any, page_idx: int) -> List[Dict[str, Any]]:
-    blocks = []
-    for line_idx, line in enumerate(page.extract_text_lines() or []):
-        text = line.get("text", "").strip()
-        if not text:
-            continue
-        height = line.get("bottom", 0) - line.get("top", 0)
-        btype = "heading1" if height > 18 else "heading2" if height > 14 else "paragraph"
-        blocks.append({
-            "id": f"blk_native_{page_idx}_{line_idx}",
-            "type": btype,
-            "content": text,
-            "confidence_score": 1.0,
-            "needs_review": False,
-            "bounding_box": [line.get("x0"), line.get("top"), line.get("x1"), line.get("bottom")],
-            "style_overrides": {},
-        })
-    return blocks
 
 
 def _safe_update_document(document_id: str, payload: dict) -> None:
@@ -100,7 +81,7 @@ async def route_pdf_import(
             metadata_rows.append({"document_id": document_id, "page_number": idx + 1, **classification})
 
             if classification["extraction_strategy"] == "native":
-                native_blocks.extend(extract_native_page(page, idx))
+                native_blocks.extend(extract_page_blocks_from_pdf(file_bytes, idx))
             else:
                 pages_needing_ocr.append(idx)
 
@@ -116,24 +97,23 @@ async def route_pdf_import(
         })
 
     if pages_needing_ocr:
-        qstash_token = os.environ.get("QSTASH_TOKEN")
-        worker_url = os.environ.get("MODAL_WORKER_URL")
-        if qstash_token and worker_url:
+        ocr_worker_url = os.environ.get("OCR_WORKER_URL")
+        worker_secret = os.environ.get("WORKER_SECRET", "")
+        if ocr_worker_url:
             import httpx
-            destination = f"{worker_url.rstrip('/')}/worker/process-ocr"
             headers = {
-                "Authorization": f"Bearer {qstash_token}",
                 "Content-Type": "application/json",
-                "Upstash-Idempotency-Key": f"ocr-{document_id}",
+                "X-Worker-Secret": worker_secret,
             }
-            if request_id:
-                headers["Upstash-Forward-X-Request-ID"] = request_id
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    f"https://qstash.upstash.io/v2/publish/{destination}",
-                    headers=headers,
-                    json={"document_id": document_id, "page_indices": pages_needing_ocr, "source": "qstash"},
-                )
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    await client.post(
+                        f"{ocr_worker_url.rstrip('/')}/worker/process-ocr",
+                        headers=headers,
+                        json={"document_id": document_id, "page_indices": pages_needing_ocr},
+                    )
+            except Exception as e:
+                print(f"[import] OCR worker dispatch failed: {e}")
 
     final_status = "partial" if pages_needing_ocr else "ready"
     _safe_update_document(document_id, {"status": final_status, "import_progress": 100})

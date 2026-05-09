@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Spinner, EmptyState } from "@olpdf/ui";
 import BackLink from "@/components/BackLink";
+import { useTemplatesStore } from "@/store/useTemplatesStore";
 
 type Template = {
   id: string;
@@ -42,9 +43,7 @@ const categoryMap = [
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const { activeCategory, searchQuery, applyingId, setActiveCategory, setSearchQuery, setApplyingId } = useTemplatesStore();
 
   const query = useQuery<Template[]>({
     queryKey: ["templates-library"],

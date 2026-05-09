@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Search, 
@@ -12,6 +11,7 @@ import {
 import { Spinner, EmptyState } from "@olpdf/ui";
 import BackLink from "@/components/BackLink";
 import { PluginCard } from "@/components/marketplace/PluginCard";
+import { usePluginsStore } from "@/store/usePluginsStore";
 
 interface Plugin {
   id: string;
@@ -27,9 +27,7 @@ interface Plugin {
 const categories = ["All", "Editor", "Export", "AI", "UI", "Utility"];
 
 export default function PluginMarketplacePage() {
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [installingId, setInstallingId] = useState<string | null>(null);
+  const { activeCategory, searchQuery, installingId, setActiveCategory, setSearchQuery, setInstallingId } = usePluginsStore();
 
   const { data: plugins, isLoading } = useQuery<Plugin[]>({
     queryKey: ["plugins-marketplace", activeCategory],
@@ -56,7 +54,6 @@ export default function PluginMarketplacePage() {
 
   const handleInstall = async (id: string) => {
     setInstallingId(id);
-    // Simulate install
     await new Promise(r => setTimeout(r, 1000));
     setInstallingId(null);
     alert('Plugin added to your workspace!');
@@ -65,7 +62,7 @@ export default function PluginMarketplacePage() {
   const filtered = plugins?.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.description.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  ) ?? [];
 
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] pb-24">
