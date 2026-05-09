@@ -8,6 +8,14 @@ import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useFidelityCanvasStore, type ShapeTool, type SelectedBlockMeta } from "@/store/useFidelityCanvasStore";
 import FormatBar from "@/components/editor/FormatBar";
+import { reflow } from "@/engine/reflow";
+import { TipTapOverlay } from "@/components/editor/TipTapOverlay";
+import { VirtualizedPage } from "@/components/editor/VirtualizedPage";
+import { FindReplaceBar } from "@/components/editor/FindReplaceBar";
+import { useFindReplaceStore } from "@/store/useFindReplaceStore";
+import { useCollaboration } from "@/hooks/useCollaboration";
+import { CommentSidebar, type EditorComment } from "@/components/editor/CommentSidebar";
+import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -21,7 +29,13 @@ const DEFAULT_PAGE = { page_index: 0, width: 595.28, height: 841.89 };
 
 function createTextBlock(block: DocumentBlock, scale: number) {
   const bbox = block.bounding_box ?? [72, 72, 540, 86];
-  const fm = block.font_meta ?? {};
+  const fm = (block.font_meta ?? {}) as Partial<{
+    family: string;
+    size: number;
+    is_bold: boolean;
+    is_italic: boolean;
+    color: string;
+  }>;
   const left = bbox[0] * scale;
   const top = bbox[1] * scale;
   const width = Math.max((bbox[2] - bbox[0]) * scale, 20);
@@ -151,17 +165,65 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
   return shape;
 }
 
+function renderCommentIndicators(
+  canvas: Canvas,
+  comments: EditorComment[],
+  pageIndex: number,
+  scale: number,
+  onOpenThread: (threadKey: string) => void,
+) {
+  const existing = canvas.getObjects().filter((o) => (o as any).data?.isCommentIndicator);
+  for (const obj of existing) canvas.remove(obj);
+
+  const pageComments = comments.filter((c) => c.page_index === pageIndex && !c.resolved);
+  const byBlock = new Map<string, EditorComment[]>();
+  for (const c of pageComments) {
+    const key = c.block_id ?? `page_${pageIndex}`;
+    byBlock.set(key, [...(byBlock.get(key) ?? []), c]);
+  }
+
+  for (const [key, group] of byBlock.entries()) {
+    const y = (group[0]?.position?.y ?? 50) * scale;
+    const circle = new Ellipse({
+      left: (canvas.width ?? 0) - 20,
+      top: y,
+      rx: 8,
+      ry: 8,
+      fill: "#f97316",
+      selectable: false,
+      evented: true,
+      hoverCursor: "pointer",
+    });
+    (circle as any).data = { isCommentIndicator: true, blockId: key, commentIds: group.map((c) => c.id) };
+    circle.on("mousedown", () => onOpenThread(key));
+    canvas.add(circle);
+  }
+  canvas.renderAll();
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function FidelityCanvas({ documentId, model, onModelChange }: FidelityCanvasProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(900);
-  const yDocRef = useRef<Y.Doc | null>(null);
-  const yMapRef = useRef<Y.Map<string> | null>(null);
   const fabricCanvasesRef = useRef<Map<number, Canvas>>(new Map());
   const saveMutation = useSaveDocumentMutation(documentId);
+  const currentModelRef = useRef(model);
+  const [activeTipTapBlock, setActiveTipTapBlock] = useState<{ blockId: string; pageIndex: number } | null>(null);
+  const [comments, setComments] = useState<EditorComment[]>([]);
+  const commentsRef = useRef<EditorComment[]>([]);
+  const [openCommentThread, setOpenCommentThread] = useState<string | null>(null);
+  const [awarenessUsers, setAwarenessUsers] = useState<Array<{ id: string; name: string; color: string; selectedBlockId?: string | null }>>([]);
 
   const { activeTool, setActiveTool, setSelectedBlock, pendingFormat, clearPendingFormat } = useFidelityCanvasStore();
+  const { matches, currentMatchIndex } = useFindReplaceStore();
+  const { ydocRef, providerRef } = useCollaboration(documentId, model);
+
+  useEffect(() => {
+    currentModelRef.current = model;
+  }, [model]);
+
+  commentsRef.current = comments;
 
   // Undo / redo kept local — large model snapshots, component-scoped
   const [history, setHistory] = useState<DocumentModel[]>([]);
@@ -244,42 +306,44 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     debounce((m: DocumentModel) => void saveMutation.mutateAsync(m), 700)
   );
 
-  // ── Yjs (text content sync for collaboration — Phase 10) ─────────────────
+  // ── Yjs collaboration bridge (Phase 13) ───────────────────────────────────
 
   useEffect(() => {
-    const ydoc = new Y.Doc();
-    const ymap = ydoc.getMap<string>(`fidelity-${documentId}`);
-    yDocRef.current = ydoc;
-    yMapRef.current = ymap;
-
-    for (const block of model.blocks ?? []) {
-      if (block.content) ymap.set(block.id, block.content);
-    }
+    const ydoc = ydocRef.current;
+    if (!ydoc) return;
+    const yBlocks = ydoc.getMap<Y.Map<unknown>>("blocks");
 
     const observer = () => {
-      // Sync Yjs text changes into Fabric Textbox objects
-      const map = yMapRef.current;
-      if (!map) return;
-      for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
+      for (const [_, canvas] of fabricCanvasesRef.current.entries()) {
         for (const obj of canvas.getObjects()) {
-          const blockId = (obj as any).data?.blockId;
-          if (!blockId || obj.type !== "textbox") continue;
-          const newText = map.get(blockId);
-          if (newText !== undefined && (obj as Textbox).text !== newText) {
-            (obj as Textbox).set("text", newText);
-            canvas.renderAll();
+          const blockId = (obj as any).data?.blockId as string | undefined;
+          if (!blockId) continue;
+          const yBlock = yBlocks.get(blockId);
+          if (!yBlock) continue;
+
+          const bbox = yBlock.get("bounding_box") as number[] | undefined;
+          if (bbox?.length === 4) {
+            obj.set({ left: bbox[0] * scale, top: bbox[1] * scale });
+            obj.setCoords();
           }
+
+          if (obj.type === "textbox") {
+            const content = yBlock.get("content") as string | undefined;
+            if (content !== undefined && (obj as Textbox).text !== content) {
+              (obj as Textbox).set("text", content);
+            }
+          }
+          canvas.renderAll();
         }
       }
     };
 
-    ymap.observe(observer);
+    yBlocks.observeDeep(observer);
     return () => {
-      ymap.unobserve(observer);
-      ydoc.destroy();
+      yBlocks.unobserveDeep(observer);
       saveDebounced.current.cancel();
     };
-  }, [documentId]);
+  }, [ydocRef, scale]);
 
   // ── Apply format commands from the FormatBar ─────────────────────────────
 
@@ -321,6 +385,88 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       }
     }
   }, [model.blocks]);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const res = await fetch(`/api/bff/documents/${documentId}/comments`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as EditorComment[];
+        setComments(data);
+      } catch {
+        setComments([]);
+      }
+    };
+    void run();
+  }, [documentId]);
+
+  useEffect(() => {
+    const provider = providerRef.current;
+    if (!provider) return;
+    const onAwareness = () => {
+      const states = Array.from(provider.awareness.getStates().entries());
+      const users = states
+        .map(([id, state]) => ({
+          id: String(id),
+          name: String((state as any)?.user?.name ?? "?"),
+          color: String((state as any)?.user?.color ?? "#64748b"),
+          selectedBlockId: (state as any)?.user?.selectedBlockId ?? null,
+        }))
+        .filter((u) => u.id !== String(provider.awareness.clientID));
+      setAwarenessUsers(users);
+    };
+
+    provider.awareness.on("change", onAwareness);
+    onAwareness();
+    return () => {
+      provider.awareness.off("change", onAwareness);
+    };
+  }, [providerRef]);
+
+  useEffect(() => {
+    for (const [, canvas] of fabricCanvasesRef.current.entries()) {
+      const highlights = canvas.getObjects().filter((o) => (o as any).data?.isHighlight);
+      for (const h of highlights) canvas.remove(h);
+    }
+
+    if (!matches.length) return;
+
+    for (const match of matches) {
+      const canvas = fabricCanvasesRef.current.get(match.pageIndex);
+      if (!canvas) continue;
+      const block = model.blocks?.find((b) => b.id === match.blockId);
+      if (!block) continue;
+      const bbox = block.bounding_box ?? [0, 0, 0, 0];
+      const [x0, y0, x1, y1] = bbox;
+      const isCurrent =
+        matches[currentMatchIndex]?.blockId === match.blockId &&
+        matches[currentMatchIndex]?.startOffset === match.startOffset;
+      const highlightRect = new Rect({
+        left: x0 * scale,
+        top: y0 * scale,
+        width: (x1 - x0) * scale,
+        height: (y1 - y0) * scale,
+        fill: isCurrent ? "rgba(249,115,22,0.35)" : "rgba(253,224,71,0.35)",
+        selectable: false,
+        evented: false,
+      });
+      (highlightRect as any).data = { isHighlight: true };
+      canvas.add(highlightRect);
+      canvas.bringObjectToFront(highlightRect);
+      canvas.renderAll();
+    }
+  }, [matches, currentMatchIndex, model.blocks, scale]);
+
+  useEffect(() => {
+    for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
+      renderCommentIndicators(canvas, comments, pageIndex, scale, setOpenCommentThread);
+    }
+  }, [comments, scale]);
 
   // ── Sync all Fabric objects → model ─────────────────────────────────────
 
@@ -400,6 +546,38 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     const nextModel: DocumentModel = { ...model, blocks: [...otherPages, ...updatedBlocks] };
     pushToHistory(nextModel);
     saveDebounced.current(nextModel);
+    currentModelRef.current = nextModel;
+    return nextModel;
+  };
+
+  const applyReflowToCanvases = (nextModel: DocumentModel) => {
+    for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
+      for (const obj of canvas.getObjects()) {
+        const blockId = (obj as any).data?.blockId;
+        if (!blockId) continue;
+        const block = nextModel.blocks?.find((b) => b.id === blockId);
+        if (!block || (block.page_index ?? 0) !== pageIndex) continue;
+        const bbox = block.bounding_box ?? [0, 0, 0, 0];
+        const [x0, y0, x1, y1] = bbox;
+        obj.set({ left: x0 * scale, top: y0 * scale });
+        if (obj.type === "textbox") {
+          (obj as Textbox).set({ width: (x1 - x0) * scale, height: (y1 - y0) * scale });
+        }
+      }
+      canvas.renderAll();
+    }
+  };
+
+  const restoreFabricTextbox = (blockId: string, pageIndex: number, text: string) => {
+    const canvas = fabricCanvasesRef.current.get(pageIndex);
+    if (!canvas) return;
+    const fabricObj = canvas
+      .getObjects()
+      .find((o) => (o as any).data?.blockId === blockId) as Textbox | undefined;
+    if (!fabricObj) return;
+    fabricObj.set({ text, opacity: 1, evented: true, selectable: true });
+    fabricObj.setCoords();
+    canvas.renderAll();
   };
 
   // ── Selection → store (feeds Phase 3 toolbar) ────────────────────────────
@@ -490,15 +668,96 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     }
 
     const sync = debounce(() => syncCanvasToModel(pageIndex, fcanvas), 400);
+    const reflowDebounced = debounce((blockId: string) => {
+      const sourceModel = currentModelRef.current;
+      const reflowed = reflow(sourceModel, blockId, fabricCanvasesRef.current, sourceModel.page_dimensions ?? pageDimensions);
+      if (reflowed !== sourceModel) {
+        pushToHistory(reflowed);
+        saveDebounced.current(reflowed);
+        currentModelRef.current = reflowed;
+        applyReflowToCanvases(reflowed);
+      }
+    }, 100);
+
     fcanvas.on("object:added", sync);
-    fcanvas.on("object:modified", sync);
+    fcanvas.on("object:modified", (e) => {
+      const syncedModel = syncCanvasToModel(pageIndex, fcanvas);
+      if (syncedModel) currentModelRef.current = syncedModel;
+      if (e.target && ydocRef.current) {
+        const blockId = (e.target as any).data?.blockId as string | undefined;
+        if (blockId) {
+          const yBlocks = ydocRef.current.getMap<Y.Map<unknown>>("blocks");
+          const yBlock = yBlocks.get(blockId);
+          if (yBlock) {
+            const obj = e.target;
+            const left = (obj.left ?? 0) / scale;
+            const top = (obj.top ?? 0) / scale;
+            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
+            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+            ydocRef.current.transact(() => {
+              yBlock.set("bounding_box", [left, top, left + w, top + h]);
+              if (obj.type === "textbox") yBlock.set("content", (obj as Textbox).text ?? "");
+            });
+          }
+        }
+      }
+      if (!e.target || (e.target as any).data?.blockType === "shape") return;
+      const blockId = (e.target as any).data?.blockId as string | undefined;
+      if (!blockId) return;
+      reflowDebounced(blockId);
+    });
     fcanvas.on("object:removed", sync);
     fcanvas.on("path:created", sync);
-    fcanvas.on("selection:created", () => handleSelection(fcanvas));
-    fcanvas.on("selection:updated", () => handleSelection(fcanvas));
-    fcanvas.on("selection:cleared", () => setSelectedBlock(null));
+    fcanvas.on("mouse:dblclick", (e) => {
+      const target = e.target;
+      if (!target) {
+        addShape(pageIndex);
+        return;
+      }
+      if (target.type !== "textbox") return;
+      const blockId = (target as any).data?.blockId as string | undefined;
+      if (!blockId) return;
+      target.set({ opacity: 0, evented: false, selectable: false });
+      fcanvas.renderAll();
+      setActiveTipTapBlock({ blockId, pageIndex });
+    });
+    fcanvas.on("selection:created", () => {
+      handleSelection(fcanvas);
+      const obj = fcanvas.getActiveObject();
+      const blockId = obj ? (obj as any).data?.blockId : null;
+      providerRef.current?.awareness.setLocalStateField("user", {
+        ...(providerRef.current?.awareness.getLocalState() as any)?.user,
+        selectedBlockId: blockId,
+      });
+    });
+    fcanvas.on("selection:updated", () => {
+      handleSelection(fcanvas);
+      const obj = fcanvas.getActiveObject();
+      const blockId = obj ? (obj as any).data?.blockId : null;
+      providerRef.current?.awareness.setLocalStateField("user", {
+        ...(providerRef.current?.awareness.getLocalState() as any)?.user,
+        selectedBlockId: blockId,
+      });
+    });
+    fcanvas.on("selection:cleared", () => {
+      setSelectedBlock(null);
+      providerRef.current?.awareness.setLocalStateField("user", {
+        ...(providerRef.current?.awareness.getLocalState() as any)?.user,
+        selectedBlockId: null,
+      });
+    });
 
     fabricCanvasesRef.current.set(pageIndex, fcanvas);
+
+    // Draw any already-loaded comment indicators on this newly live canvas.
+    renderCommentIndicators(fcanvas, commentsRef.current, pageIndex, scale, setOpenCommentThread);
+  };
+
+  const destroyFabricCanvas = (pageIndex: number) => {
+    const existing = fabricCanvasesRef.current.get(pageIndex);
+    if (!existing) return;
+    existing.dispose();
+    fabricCanvasesRef.current.delete(pageIndex);
   };
 
   // ── Add new shape via toolbar ─────────────────────────────────────────────
@@ -590,32 +849,134 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
           <span className="text-[10px] text-[var(--text-tertiary)] hidden sm:inline mr-2 font-mono">⌘Z / ⌘⇧Z</span>
           <button onClick={undo} disabled={history.length === 0} className="px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] disabled:opacity-30 hover:text-[var(--text-primary)] transition-colors">Undo</button>
           <button onClick={redo} disabled={redoStack.length === 0} className="px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] disabled:opacity-30 hover:text-[var(--text-primary)] transition-colors">Redo</button>
+          <div className="ml-2 flex -space-x-2">
+            {awarenessUsers.slice(0, 5).map((user) => (
+              <div
+                key={user.id}
+                title={user.name}
+                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[9px] font-bold text-white"
+                style={{ backgroundColor: user.color }}
+              >
+                {(user.name || "?")[0]?.toUpperCase()}
+              </div>
+            ))}
+            {awarenessUsers.length > 5 && (
+              <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-gray-400 text-[9px] font-bold text-white">
+                +{awarenessUsers.length - 5}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Format Bar — appears when a text block is selected */}
       <FormatBar />
+      <FindReplaceBar
+        model={model}
+        onModelChange={(nextModel) => {
+          pushToHistory(nextModel);
+          saveDebounced.current(nextModel);
+          currentModelRef.current = nextModel;
+        }}
+      />
 
       {/* Pages */}
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8">
         {pageDimensions.map((dim) => (
-          <div
+          <VirtualizedPage
             key={dim.page_index}
-            className="relative mx-auto rounded-sm bg-white shadow-[0_8px_30px_rgba(0,0,0,0.14)]"
-            style={{ width: `${dim.width * scale}px`, height: `${dim.height * scale}px` }}
+            dim={dim}
+            scale={scale}
+            onCanvasReady={(pageIndex, node) => setupFabricCanvas(pageIndex, node, dim.width * scale, dim.height * scale)}
+            onCanvasDestroy={destroyFabricCanvas}
           >
-            {/* Single Fabric canvas covers the full page — handles all blocks */}
-            <canvas
-              className="absolute inset-0 z-10"
-              ref={(node) => {
-                if (!node) return;
-                setupFabricCanvas(dim.page_index, node, dim.width * scale, dim.height * scale);
-              }}
-              onDoubleClick={() => addShape(dim.page_index)}
-            />
-          </div>
+            {activeTipTapBlock?.pageIndex === dim.page_index && (() => {
+              const block = model.blocks?.find((b) => b.id === activeTipTapBlock.blockId);
+              if (!block) return null;
+              return (
+                <TipTapOverlay
+                  block={block}
+                  scale={scale}
+                  canvasLeft={0}
+                  canvasTop={0}
+                  onCommit={(text, richContent) => {
+                    const nextBlocks = (currentModelRef.current.blocks ?? []).map((b) => {
+                      if (b.id !== activeTipTapBlock.blockId) return b;
+                      let nextType = b.type;
+                      const rootType = String((richContent as any)?.content?.[0]?.type ?? "");
+                      if (rootType === "bulletList") nextType = "bullet_list";
+                      if (rootType === "orderedList") nextType = "ordered_list";
+                      return { ...b, content: text, rich_content: richContent, type: nextType };
+                    });
+                    const nextModel = { ...currentModelRef.current, blocks: nextBlocks };
+                    restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, text);
+                    setActiveTipTapBlock(null);
+                    pushToHistory(nextModel);
+                    saveDebounced.current(nextModel);
+                    currentModelRef.current = nextModel;
+                    const reflowed = reflow(nextModel, activeTipTapBlock.blockId, fabricCanvasesRef.current, nextModel.page_dimensions ?? pageDimensions);
+                    if (reflowed !== nextModel) {
+                      pushToHistory(reflowed);
+                      saveDebounced.current(reflowed);
+                      currentModelRef.current = reflowed;
+                      applyReflowToCanvases(reflowed);
+                    }
+                  }}
+                  onCancel={() => {
+                    restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, block.content ?? "");
+                    setActiveTipTapBlock(null);
+                  }}
+                />
+              );
+            })()}
+          </VirtualizedPage>
         ))}
       </div>
+
+      <CommentSidebar
+        openThreadKey={openCommentThread}
+        comments={comments}
+        onClose={() => setOpenCommentThread(null)}
+        onResolveThread={async (commentIds) => {
+          const supabase = createSupabaseBrowserClient();
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData.session?.access_token;
+          await Promise.all(
+            commentIds.map((id) =>
+              fetch(`/api/bff/documents/${documentId}/comments/${id}/resolve`, {
+                method: "PATCH",
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              }),
+            ),
+          );
+          setComments((prev) => prev.map((c) => (commentIds.includes(c.id) ? { ...c, resolved: true } : c)));
+        }}
+        onAddReply={async (body, parentId) => {
+          const supabase = createSupabaseBrowserClient();
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData.session?.access_token;
+          const anchorComment = comments.find((c) => (c.block_id ?? `page_${c.page_index}`) === openCommentThread);
+          if (!anchorComment) return;
+          const res = await fetch(`/api/bff/documents/${documentId}/comments`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({
+              block_id: anchorComment.block_id ?? null,
+              page_index: anchorComment.page_index,
+              anchor: null,
+              position: anchorComment.position ?? { x: 0, y: 0, width: 0, height: 0 },
+              body,
+              parent_id: parentId ?? null,
+            }),
+          });
+          if (!res.ok) return;
+          const created = (await res.json()) as EditorComment;
+          setComments((prev) => [...prev, created]);
+        }}
+      />
     </div>
   );
 }

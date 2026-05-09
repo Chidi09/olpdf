@@ -1,1 +1,1 @@
-from . import documents, books, ai, pdf, worker, templates, annotations
+from . import documents, books, ai, pdf, worker, templates, annotations, comments
