@@ -46,7 +46,7 @@ export default function SignupPage() {
       <div className="relative flex flex-col w-full lg:w-[52%] xl:w-[48%] min-h-screen px-8 sm:px-14 py-10">
 
         {/* Logo */}
-        <div className="mb-auto">
+        <div className="mb-auto flex justify-center">
           <Link href="/" className="inline-flex items-baseline select-none">
             <span className="font-sans font-black tracking-tighter text-orange-500 text-xl">O</span>
             <span className="font-serif italic font-light text-white -ml-0.5 mr-0.5 text-xl">L</span>
