@@ -17,6 +17,9 @@ import { useCollaboration } from "@/hooks/useCollaboration";
 import { CommentSidebar, type EditorComment } from "@/components/editor/CommentSidebar";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { SMART_STYLE_PRESETS, applySmartStyle } from "@/engine/styles";
+import { PageErrorBoundary } from "@/components/editor/PageErrorBoundary";
+import { ShortcutMap } from "@/components/editor/ShortcutMap";
+import { trackEdit } from "@/lib/analytics";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -249,6 +252,7 @@ function renderCommentIndicators(
 export default function FidelityCanvas({ documentId, model, onModelChange }: FidelityCanvasProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(900);
+  const containerWidthRef = useRef(900);
   const fabricCanvasesRef = useRef<Map<number, Canvas>>(new Map());
   const saveMutation = useSaveDocumentMutation(documentId);
   const currentModelRef = useRef(model);
@@ -259,6 +263,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const [awarenessUsers, setAwarenessUsers] = useState<Array<{ id: string; name: string; color: string; selectedBlockId?: string | null }>>([]);
   const [changes, setChanges] = useState<ChangeRecord[]>([]);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
   const { activeTool, setActiveTool, selectedBlock, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode, formMode, toggleFormMode } = useFidelityCanvasStore();
@@ -461,6 +466,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         }
         if (deleted) e.preventDefault();
       }
+      if (e.key === "?") {
+        setShowShortcuts((v) => !v);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -474,7 +482,11 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
   useEffect(() => {
     const update = () => {
-      if (rootRef.current) setContainerWidth(rootRef.current.clientWidth - 64);
+      if (rootRef.current) {
+        const w = rootRef.current.clientWidth - 64;
+        setContainerWidth(w);
+        containerWidthRef.current = w;
+      }
     };
     update();
     window.addEventListener("resize", update);
@@ -815,6 +827,20 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     }
   }, [activeTool]);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = (isDark: boolean) => {
+      for (const canvas of fabricCanvasesRef.current.values()) {
+        canvas.set({ backgroundColor: isDark ? "#1e1e1e" : "transparent" });
+        canvas.renderAll();
+      }
+    };
+    apply(mq.matches);
+    const listener = (e: MediaQueryListEvent) => apply(e.matches);
+    mq.addEventListener("change", listener);
+    return () => mq.removeEventListener("change", listener);
+  }, []);
+
   // ── Canvas setup ─────────────────────────────────────────────────────────
 
   const setupFabricCanvas = (pageIndex: number, el: HTMLCanvasElement, width: number, height: number) => {
@@ -824,11 +850,12 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       return;
     }
 
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const fcanvas = new Canvas(el, {
       width,
       height,
       selection: true,
-      backgroundColor: "transparent",
+      backgroundColor: prefersDark ? "#1e1e1e" : "transparent",
     });
 
     // Load ALL blocks for this page as Fabric objects
@@ -968,6 +995,30 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       }
       void aiRewrite(blockId, action.toLowerCase());
     });
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    fcanvas.on("touch:gesture", (e) => {
+      const gesture = (e as any)?.self;
+      if (!gesture || gesture.touches !== 2) return;
+      const currentWidth = containerWidthRef.current;
+      const currentScale = Math.max(0.4, Math.min(2, currentWidth / primaryPage.width));
+      const gestureScale = Number(gesture.scale || 1);
+      const next = Math.max(0.3, Math.min(3, currentScale * gestureScale));
+      const nextWidth = currentWidth * (next / currentScale);
+      containerWidthRef.current = nextWidth;
+      setContainerWidth(nextWidth);
+    });
+    fcanvas.on("mouse:down", () => {
+      longPressTimer = setTimeout(() => {
+        const obj = fcanvas.getActiveObject();
+        const blockId = obj ? (obj as any).data?.blockId : null;
+        if (blockId) {
+          void aiRewrite(String(blockId), "improve");
+        }
+      }, 500);
+    });
+    fcanvas.on("mouse:up", () => {
+      if (longPressTimer) clearTimeout(longPressTimer);
+    });
     fcanvas.on("selection:created", () => {
       handleSelection(fcanvas);
       const obj = fcanvas.getActiveObject();
@@ -1081,14 +1132,20 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         <div className="mx-2 h-6 w-px bg-[var(--border-subtle)] hidden md:block" />
 
         <button
-          onClick={toggleSuggestMode}
+          onClick={() => {
+            toggleSuggestMode();
+            trackEdit("suggest_mode_toggled", { enabled: !suggestMode });
+          }}
           className={`rounded px-3 py-1.5 text-[10px] font-bold uppercase ${suggestMode ? "bg-amber-500 text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"}`}
         >
           Suggest {suggestMode ? "On" : "Off"}
         </button>
 
         <button
-          onClick={toggleFormMode}
+          onClick={() => {
+            toggleFormMode();
+            trackEdit("form_mode_toggled", { enabled: !formMode });
+          }}
           className={`rounded px-3 py-1.5 text-[10px] font-bold uppercase ${formMode ? "bg-orange-500 text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"}`}
         >
           Form {formMode ? "On" : "Off"}
@@ -1132,6 +1189,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
             pushToHistory(nextModel);
             saveDebounced.current(nextModel);
             currentModelRef.current = nextModel;
+            trackEdit("style_applied", { style: preset.id });
             e.currentTarget.value = "";
           }}
         >
@@ -1197,55 +1255,72 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       {/* Pages */}
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8">
         {pageDimensions.map((dim) => (
-          <VirtualizedPage
-            key={dim.page_index}
-            dim={dim}
-            scale={scale}
-            onCanvasReady={(pageIndex, node) => setupFabricCanvas(pageIndex, node, dim.width * scale, dim.height * scale)}
-            onCanvasDestroy={destroyFabricCanvas}
-          >
-            {activeTipTapBlock?.pageIndex === dim.page_index && (() => {
-              const block = model.blocks?.find((b) => b.id === activeTipTapBlock.blockId);
-              if (!block) return null;
-              return (
-                <TipTapOverlay
-                  block={block}
-                  scale={scale}
-                  canvasLeft={0}
-                  canvasTop={0}
-                  onCommit={(text, richContent) => {
-                    const nextBlocks = (currentModelRef.current.blocks ?? []).map((b) => {
-                      if (b.id !== activeTipTapBlock.blockId) return b;
-                      let nextType = b.type;
-                      const rootType = String((richContent as any)?.content?.[0]?.type ?? "");
-                      if (rootType === "bulletList") nextType = "bullet_list";
-                      if (rootType === "orderedList") nextType = "ordered_list";
-                      return { ...b, content: text, rich_content: richContent, type: nextType };
-                    });
-                    const nextModel = { ...currentModelRef.current, blocks: nextBlocks };
-                    restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, text);
-                    setActiveTipTapBlock(null);
-                    pushToHistory(nextModel);
-                    saveDebounced.current(nextModel);
-                    currentModelRef.current = nextModel;
-                    const reflowed = reflow(nextModel, activeTipTapBlock.blockId, fabricCanvasesRef.current, nextModel.page_dimensions ?? pageDimensions);
-                    if (reflowed !== nextModel) {
-                      pushToHistory(reflowed);
-                      saveDebounced.current(reflowed);
-                      currentModelRef.current = reflowed;
-                      applyReflowToCanvases(reflowed);
-                    }
-                  }}
-                  onCancel={() => {
-                    restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, block.content ?? "");
-                    setActiveTipTapBlock(null);
-                  }}
-                />
-              );
-            })()}
-          </VirtualizedPage>
+          <PageErrorBoundary key={dim.page_index} pageIndex={dim.page_index}>
+            <VirtualizedPage
+              dim={dim}
+              scale={scale}
+              onCanvasReady={(pageIndex, node) => setupFabricCanvas(pageIndex, node, dim.width * scale, dim.height * scale)}
+              onCanvasDestroy={destroyFabricCanvas}
+            >
+              {activeTipTapBlock?.pageIndex === dim.page_index && (() => {
+                const block = model.blocks?.find((b) => b.id === activeTipTapBlock.blockId);
+                if (!block) return null;
+                return (
+                  <TipTapOverlay
+                    block={block}
+                    scale={scale}
+                    canvasLeft={0}
+                    canvasTop={0}
+                    onCommit={(text, richContent) => {
+                      const nextBlocks = (currentModelRef.current.blocks ?? []).map((b) => {
+                        if (b.id !== activeTipTapBlock.blockId) return b;
+                        let nextType = b.type;
+                        const rootType = String((richContent as any)?.content?.[0]?.type ?? "");
+                        if (rootType === "bulletList") nextType = "bullet_list";
+                        if (rootType === "orderedList") nextType = "ordered_list";
+                        return { ...b, content: text, rich_content: richContent, type: nextType };
+                      });
+                      const nextModel = { ...currentModelRef.current, blocks: nextBlocks };
+                      restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, text);
+                      setActiveTipTapBlock(null);
+                      pushToHistory(nextModel);
+                      saveDebounced.current(nextModel);
+                      currentModelRef.current = nextModel;
+                      const reflowed = reflow(nextModel, activeTipTapBlock.blockId, fabricCanvasesRef.current, nextModel.page_dimensions ?? pageDimensions);
+                      if (reflowed !== nextModel) {
+                        pushToHistory(reflowed);
+                        saveDebounced.current(reflowed);
+                        currentModelRef.current = reflowed;
+                        applyReflowToCanvases(reflowed);
+                      }
+                    }}
+                    onCancel={() => {
+                      restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, block.content ?? "");
+                      setActiveTipTapBlock(null);
+                    }}
+                  />
+                );
+              })()}
+              <div className="sr-only" aria-label={`Page ${dim.page_index + 1} content`}>
+                {(model.blocks ?? [])
+                  .filter((b) => (b.page_index ?? 0) === dim.page_index)
+                  .map((block) => (
+                    <div
+                      key={block.id}
+                      role={String(block.type).startsWith("heading") ? "heading" : undefined}
+                      aria-level={block.type === "heading1" ? 1 : block.type === "heading2" ? 2 : block.type === "heading3" ? 3 : undefined}
+                      tabIndex={0}
+                    >
+                      {block.content}
+                    </div>
+                  ))}
+              </div>
+            </VirtualizedPage>
+          </PageErrorBoundary>
         ))}
       </div>
+
+      <ShortcutMap open={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
       {suggestMode && changes.filter((c) => c.status === "pending").length > 0 && (
         <div className="fixed bottom-4 left-4 z-50 w-[360px] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3 shadow-xl">
