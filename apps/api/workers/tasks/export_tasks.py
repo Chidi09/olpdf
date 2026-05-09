@@ -1,13 +1,42 @@
-"""Background export tasks — dispatched via QStash or called directly by workers."""
+"""Background export tasks — Go service handles all PDF formats."""
 import logging
+import os
 from typing import Any, Dict
 
 logger = logging.getLogger("olpdf-api")
 
+EXPORT_SERVICE_URL = os.environ.get("EXPORT_SERVICE_URL", "").rstrip("/")
+WORKER_SECRET = os.environ.get("WORKER_SECRET", "")
+
+
+async def _export_via_go(doc_model: Dict[str, Any], format_type: str) -> bytes:
+    """Call the Go export service. Raises on failure."""
+    if not EXPORT_SERVICE_URL:
+        raise RuntimeError("EXPORT_SERVICE_URL is not configured")
+    import httpx
+    headers = {
+        "Content-Type": "application/json",
+        "X-Worker-Secret": WORKER_SECRET,
+    }
+    payload = {
+        "document_model": doc_model,
+        "color_space": doc_model.get("meta", {}).get("color_space", "rgb"),
+    }
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(
+            f"{EXPORT_SERVICE_URL}/export/{format_type}",
+            headers=headers,
+            json=payload,
+        )
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"Go export service returned {resp.status_code} for {format_type}: {resp.text}"
+        )
+    return resp.content
+
 
 async def run_export_and_notify(doc_id: str, format_type: str, user_id: str) -> None:
     from ...core.supabase_client import supabase
-    from ...engine.exporter import export_fidelity, export_pdfa, export_tagged_pdf
     from ...services.storage_service import upload_export
     from ...services.notification_service import send_export_ready_notification
 
@@ -18,20 +47,19 @@ async def run_export_and_notify(doc_id: str, format_type: str, user_id: str) -> 
         return
 
     doc_model = doc["document_model"]
-    meta = doc_model.get("meta", {})
-    color_space = meta.get("color_space", "rgb")
 
     try:
-        if format_type == "fidelity":
-            pdf_bytes = export_fidelity(doc_model, color_space)
-        elif format_type == "tagged":
-            pdf_bytes = export_tagged_pdf(doc_model)
-        else:
-            pdf_bytes = export_pdfa(doc_model)
+        pdf_bytes = await _export_via_go(doc_model, format_type)
     except Exception as exc:
-        logger.error("Export failed for doc %s: %s", doc_id, exc)
+        logger.error("Export failed for doc %s (format=%s): %s", doc_id, format_type, exc)
+        return
+
+    if not pdf_bytes:
+        logger.error("Export produced no bytes for doc %s", doc_id)
         return
 
     export_url = upload_export(doc_id, format_type, pdf_bytes)
     if export_url:
-        send_export_ready_notification(user_id, doc.get("title", "Your document"), export_url, format_type)
+        send_export_ready_notification(
+            user_id, doc.get("title", "Your document"), export_url, format_type
+        )
