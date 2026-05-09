@@ -145,10 +145,13 @@ export default function LoginPage() {
         {/* Bottom tagline */}
         <div className="relative z-10 mt-auto p-10">
           <div className="w-8 h-0.5 bg-orange-500 rounded mb-3" />
-          <p className="text-xl font-sans font-black tracking-tight text-[#1a1a1a] leading-tight max-w-xs">
+          <p
+            className="text-xl font-sans font-black tracking-tight leading-tight max-w-xs"
+            style={{ WebkitTextStroke: "1.5px #f97316", color: "transparent" }}
+          >
             Parse, edit, and export any PDF — without the pain.
           </p>
-          <p className="text-sm text-[#6b6b6b] mt-2 max-w-xs leading-relaxed">
+          <p className="text-sm text-[#3d3d3d] mt-2 max-w-xs leading-relaxed font-semibold">
             Semantic block extraction, AI rewrites, EPUB3 export. Open and free.
           </p>
         </div>
