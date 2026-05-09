@@ -7,6 +7,7 @@ import { Canvas, Ellipse, IText, Line, PencilBrush, Rect, Textbox } from "fabric
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useFidelityCanvasStore, type ShapeTool, type SelectedBlockMeta } from "@/store/useFidelityCanvasStore";
+import FormatBar from "@/components/editor/FormatBar";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -100,7 +101,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const fabricCanvasesRef = useRef<Map<number, Canvas>>(new Map());
   const saveMutation = useSaveDocumentMutation(documentId);
 
-  const { activeTool, setActiveTool, setSelectedBlock } = useFidelityCanvasStore();
+  const { activeTool, setActiveTool, setSelectedBlock, pendingFormat, clearPendingFormat } = useFidelityCanvasStore();
 
   // Undo / redo kept local — large model snapshots, component-scoped
   const [history, setHistory] = useState<DocumentModel[]>([]);
@@ -219,6 +220,31 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       saveDebounced.current.cancel();
     };
   }, [documentId]);
+
+  // ── Apply format commands from the FormatBar ─────────────────────────────
+
+  useEffect(() => {
+    if (!pendingFormat) return;
+    for (const [, canvas] of fabricCanvasesRef.current.entries()) {
+      const obj = canvas.getActiveObject();
+      if (!obj || obj.type !== "textbox") continue;
+      const tb = obj as Textbox;
+      if (pendingFormat.fontFamily !== undefined) tb.set("fontFamily", pendingFormat.fontFamily);
+      if (pendingFormat.fontSize !== undefined) tb.set("fontSize", pendingFormat.fontSize * scale);
+      if (pendingFormat.isBold !== undefined) tb.set("fontWeight", pendingFormat.isBold ? "bold" : "normal");
+      if (pendingFormat.isItalic !== undefined) tb.set("fontStyle", pendingFormat.isItalic ? "italic" : "normal");
+      if (pendingFormat.color !== undefined) tb.set("fill", pendingFormat.color);
+      if (pendingFormat.alignment !== undefined) tb.set("textAlign", pendingFormat.alignment);
+      if (pendingFormat.left !== undefined) tb.set("left", pendingFormat.left * scale);
+      if (pendingFormat.top !== undefined) tb.set("top", pendingFormat.top * scale);
+      if (pendingFormat.width !== undefined) tb.set("width", pendingFormat.width * scale);
+      canvas.renderAll();
+      // fire a modified event so syncCanvasToModel picks it up
+      canvas.fire("object:modified", { target: tb });
+      break;
+    }
+    clearPendingFormat();
+  }, [pendingFormat]);
 
   // ── Sync model changes (e.g. AI edits) into live Fabric objects ──────────
 
@@ -485,6 +511,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
           <button onClick={redo} disabled={redoStack.length === 0} className="px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] disabled:opacity-30 hover:text-[var(--text-primary)] transition-colors">Redo</button>
         </div>
       </div>
+
+      {/* Format Bar — appears when a text block is selected */}
+      <FormatBar />
 
       {/* Pages */}
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8">
