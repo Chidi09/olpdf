@@ -1,8 +1,8 @@
-"""PyMuPDF rich extraction pipeline -> DocumentModel blocks.
+"""PyMuPDF + pdfplumber extraction pipeline -> DocumentModel blocks.
 
-Uses page.get_text("dict") to capture the full span tree: font family, size,
-bold, italic, color, line spacing, and alignment — everything needed for
-Word-level editing fidelity in the FidelityCanvas.
+Uses page.get_text("dict") for full span tree (font family, size, bold, italic,
+color, line spacing, alignment). pdfplumber finds tables first; text blocks that
+fall inside a table region are suppressed to avoid double-extraction.
 """
 
 from collections import defaultdict
@@ -60,27 +60,102 @@ def _dominant_span(spans: List[Dict[str, Any]]) -> Dict[str, Any]:
     return max(spans, key=lambda s: len(s.get("text", "")), default={})
 
 
-# ── Core extraction ───────────────────────────────────────────────────────────
+def _bbox_overlaps(b1: List[float], b2: List[float], threshold: float = 0.5) -> bool:
+    """True if b1 overlaps b2 by at least `threshold` fraction of b1's area."""
+    ix0 = max(b1[0], b2[0])
+    iy0 = max(b1[1], b2[1])
+    ix1 = min(b1[2], b2[2])
+    iy1 = min(b1[3], b2[3])
+    if ix1 <= ix0 or iy1 <= iy0:
+        return False
+    intersection = (ix1 - ix0) * (iy1 - iy0)
+    area1 = max((b1[2] - b1[0]) * (b1[3] - b1[1]), 1)
+    return (intersection / area1) >= threshold
+
+
+# ── Table extraction (pdfplumber) ─────────────────────────────────────────────
+
+def _extract_page_tables(pdf_bytes: bytes, page_index: int) -> List[Dict[str, Any]]:
+    """Detect and extract structured tables using pdfplumber."""
+    try:
+        import pdfplumber
+        import io
+    except ImportError:
+        return []
+
+    tables: List[Dict[str, Any]] = []
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        if page_index >= len(pdf.pages):
+            return []
+        page = pdf.pages[page_index]
+        for tbl_idx, table in enumerate(page.find_tables()):
+            cells = table.extract()
+            if not cells:
+                continue
+            bbox = table.bbox  # (x0, top, x1, bottom) — same origin as PyMuPDF
+            x0, y0, x1, y1 = float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])
+
+            headers = [str(c or "").strip() for c in cells[0]] if cells else []
+            rows = [
+                [str(c or "").strip() for c in row]
+                for row in cells[1:]
+            ] if len(cells) > 1 else []
+
+            tables.append({
+                "id": f"blk_table_{page_index}_{tbl_idx}",
+                "type": "table",
+                "content": "",
+                "page_index": page_index,
+                "bounding_box": [x0, y0, x1, y1],
+                "table_data": {
+                    "headers": headers,
+                    "rows": rows,
+                },
+                "font_meta": None,
+                "spacing": None,
+                "alignment": "left",
+                "column_index": 0,
+                "confidence_score": 1.0,
+                "needs_review": False,
+                "style_overrides": {},
+                "z_index": 0,
+            })
+    return tables
+
+
+# ── Core text extraction ───────────────────────────────────────────────────────
 
 def _extract_page_blocks(
     page: fitz.Page,
     page_index: int,
     page_avg_font_size: float,
+    table_bboxes: Optional[List[List[float]]] = None,
 ) -> List[Dict[str, Any]]:
-    """Extract all text blocks from a page with full font and layout metadata."""
+    """Extract all text blocks from a page with full font and layout metadata.
+
+    Blocks that fall inside a known table region are skipped — the table block
+    already captures that content as structured cell data.
+    """
     page_width = page.rect.width
     raw = page.get_text("dict", flags=fitz.TEXT_PRESERVE_WHITESPACE)
     result_blocks: List[Dict[str, Any]] = []
+    table_bboxes = table_bboxes or []
 
     for block_idx, block in enumerate(raw.get("blocks", [])):
-        if block.get("type") != 0:  # 0 = text block, 1 = image block
+        if block.get("type") != 0:  # 0 = text, 1 = image
             continue
 
         lines = block.get("lines", [])
         if not lines:
             continue
 
-        # Collect all spans across all lines in this block
+        bbox = block.get("bbox", [72, 72, 540, 86])
+        x0, y0, x1, y1 = float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])
+
+        # Skip blocks that live inside a table region
+        if any(_bbox_overlaps([x0, y0, x1, y1], tb) for tb in table_bboxes):
+            continue
+
         all_spans: List[Dict[str, Any]] = []
         for line in lines:
             all_spans.extend(line.get("spans", []))
@@ -89,22 +164,16 @@ def _extract_page_blocks(
         if not full_text:
             continue
 
-        # Use the dominant span for block-level font metadata
         dom = _dominant_span(all_spans)
         font_raw = dom.get("font", "Unknown")
         font_name = _clean_font_name(font_raw)
         font_size = float(dom.get("size", 11.0) or 11.0)
         font_flags = int(dom.get("flags", 0))
-        is_bold = bool(font_flags & 2**4)     # bit 4 = bold
-        is_italic = bool(font_flags & 2**1)   # bit 1 = italic
+        is_bold = bool(font_flags & 2**4)
+        is_italic = bool(font_flags & 2**1)
         color_int = int(dom.get("color", 0))
         color_hex = _rgb_to_hex(color_int)
 
-        # Block bounding box
-        bbox = block.get("bbox", [72, 72, 540, 86])
-        x0, y0, x1, y1 = float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])
-
-        # Line spacing: gap between consecutive line origins
         line_heights = []
         for i in range(1, len(lines)):
             prev_y = lines[i - 1]["bbox"][1]
@@ -113,8 +182,6 @@ def _extract_page_blocks(
             if gap > 0:
                 line_heights.append(gap)
         line_height = round(sum(line_heights) / len(line_heights), 2) if line_heights else round(font_size * 1.2, 2)
-
-        # Paragraph spacing: estimate from font size
         margin_top = round(font_size * 0.4, 2)
         margin_bottom = round(font_size * 0.4, 2)
 
@@ -180,9 +247,15 @@ def extract_document_model_from_pdf(pdf_bytes: bytes) -> Dict[str, Any]:
             "width": float(rect.width),
             "height": float(rect.height),
         })
+
+        table_blocks = _extract_page_tables(pdf_bytes, page_index)
+        table_bboxes = [tb["bounding_box"] for tb in table_blocks]
+
         avg_size = _compute_page_avg_font_size(page)
-        page_blocks = _extract_page_blocks(page, page_index, avg_size)
-        blocks.extend(page_blocks)
+        text_blocks = _extract_page_blocks(page, page_index, avg_size, table_bboxes)
+
+        blocks.extend(table_blocks)
+        blocks.extend(text_blocks)
 
     doc.close()
     return {"blocks": blocks, "page_dimensions": page_dimensions}
@@ -195,7 +268,12 @@ def extract_page_blocks_from_pdf(pdf_bytes: bytes, page_index: int) -> List[Dict
         doc.close()
         return []
     page = doc[page_index]
+
+    table_blocks = _extract_page_tables(pdf_bytes, page_index)
+    table_bboxes = [tb["bounding_box"] for tb in table_blocks]
+
     avg_size = _compute_page_avg_font_size(page)
-    result = _extract_page_blocks(page, page_index, avg_size)
+    text_blocks = _extract_page_blocks(page, page_index, avg_size, table_bboxes)
     doc.close()
-    return result
+
+    return table_blocks + text_blocks

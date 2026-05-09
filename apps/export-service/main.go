@@ -39,15 +39,21 @@ type Spacing struct {
 }
 
 type Block struct {
-	ID          string    `json:"id"`
-	Type        string    `json:"type"`
-	Content     string    `json:"content"`
-	PageIndex   int       `json:"page_index"`
-	BoundingBox []float64 `json:"bounding_box"`
-	FontMeta    *FontMeta `json:"font_meta"`
-	Spacing     *Spacing  `json:"spacing"`
-	Alignment   string    `json:"alignment"`
-	ZIndex      int       `json:"z_index"`
+	ID          string     `json:"id"`
+	Type        string     `json:"type"`
+	Content     string     `json:"content"`
+	PageIndex   int        `json:"page_index"`
+	BoundingBox []float64  `json:"bounding_box"`
+	FontMeta    *FontMeta  `json:"font_meta"`
+	Spacing     *Spacing   `json:"spacing"`
+	Alignment   string     `json:"alignment"`
+	ZIndex      int        `json:"z_index"`
+	TableData   *TableData `json:"table_data"`
+}
+
+type TableData struct {
+	Headers []string   `json:"headers"`
+	Rows    [][]string `json:"rows"`
 }
 
 type PageDimension struct {
@@ -153,6 +159,71 @@ func setFont(pdf *fpdf.Fpdf, fm *FontMeta) {
 	pdf.SetFont(family, fontStyle(fm), fontSize(fm))
 }
 
+// ── Table renderer ────────────────────────────────────────────────────────────
+
+func renderTable(pdf *fpdf.Fpdf, td *TableData, x0, y0, tableW, tableH float64) {
+	if td == nil {
+		return
+	}
+	allRows := [][]string{}
+	if len(td.Headers) > 0 {
+		allRows = append(allRows, td.Headers)
+	}
+	allRows = append(allRows, td.Rows...)
+	if len(allRows) == 0 {
+		return
+	}
+
+	numRows := len(allRows)
+	numCols := 0
+	for _, row := range allRows {
+		if len(row) > numCols {
+			numCols = len(row)
+		}
+	}
+	if numCols == 0 {
+		return
+	}
+
+	cellW := tableW / float64(numCols)
+	cellH := tableH / float64(numRows)
+	if cellH < 10 {
+		cellH = 10
+	}
+
+	for rowIdx, row := range allRows {
+		isHeader := rowIdx == 0 && len(td.Headers) > 0
+		for colIdx := 0; colIdx < numCols; colIdx++ {
+			cx := x0 + float64(colIdx)*cellW
+			cy := y0 + float64(rowIdx)*cellH
+
+			pdf.SetDrawColor(148, 163, 184)
+			if isHeader {
+				pdf.SetFillColor(226, 232, 240)
+			} else {
+				pdf.SetFillColor(255, 255, 255)
+			}
+			pdf.Rect(cx, cy, cellW, cellH, "FD")
+
+			cell := ""
+			if colIdx < len(row) {
+				cell = row[colIdx]
+			}
+			if cell == "" {
+				continue
+			}
+			pdf.SetTextColor(17, 24, 39)
+			style := ""
+			if isHeader {
+				style = "B"
+			}
+			pdf.SetFont("Helvetica", style, 8)
+			pdf.SetXY(cx+2, cy+cellH/2-4)
+			pdf.CellFormat(cellW-4, 8, cell, "", 0, "L", false, 0, "")
+		}
+	}
+}
+
 // ── Fidelity export (coordinate-based — preserves exact bounding boxes) ───────
 
 func exportFidelity(model DocumentModel) ([]byte, error) {
@@ -162,10 +233,13 @@ func exportFidelity(model DocumentModel) ([]byte, error) {
 		dims[d.PageIndex] = d
 	}
 
-	// Group text blocks by page (skip shapes — no server-side vector rendering needed)
+	// Group content blocks by page (shapes skipped — no server-side vector rendering)
 	byPage := map[int][]Block{}
 	for _, b := range model.Blocks {
-		if b.Type == "shape" || strings.TrimSpace(b.Content) == "" {
+		if b.Type == "shape" {
+			continue
+		}
+		if b.Type != "table" && strings.TrimSpace(b.Content) == "" {
 			continue
 		}
 		byPage[b.PageIndex] = append(byPage[b.PageIndex], b)
@@ -209,6 +283,21 @@ func exportFidelity(model DocumentModel) ([]byte, error) {
 			x0 := block.BoundingBox[0]
 			y0 := block.BoundingBox[1]
 			x1 := block.BoundingBox[2]
+			y1 := block.BoundingBox[3]
+
+			if block.Type == "table" {
+				tableW := x1 - x0
+				tableH := y1 - y0
+				if tableW <= 0 {
+					tableW = sz.Wd - x0 - 36
+				}
+				if tableH <= 0 {
+					tableH = 80
+				}
+				renderTable(pdf, block.TableData, x0, y0, tableW, tableH)
+				continue
+			}
+
 			cellW := x1 - x0
 			if cellW <= 0 {
 				cellW = sz.Wd - x0 - 36
@@ -268,10 +357,13 @@ func exportFlow(model DocumentModel, mode string) ([]byte, error) {
 
 	usableW := first.Wd - marginL - marginR
 
-	// Sort all blocks by page then y
+	// Sort all content blocks by page then y
 	sorted := make([]Block, 0, len(model.Blocks))
 	for _, b := range model.Blocks {
-		if b.Type == "shape" || strings.TrimSpace(b.Content) == "" {
+		if b.Type == "shape" {
+			continue
+		}
+		if b.Type != "table" && strings.TrimSpace(b.Content) == "" {
 			continue
 		}
 		sorted = append(sorted, b)
@@ -291,6 +383,22 @@ func exportFlow(model DocumentModel, mode string) ([]byte, error) {
 	})
 
 	for _, block := range sorted {
+		if block.Type == "table" && block.TableData != nil {
+			// Estimate table height: min 10pt per row, up to page usable height
+			numRows := len(block.TableData.Rows)
+			if len(block.TableData.Headers) > 0 {
+				numRows++
+			}
+			if numRows == 0 {
+				numRows = 1
+			}
+			tableH := float64(numRows) * 14.0
+			x, y := pdf.GetXY()
+			renderTable(pdf, block.TableData, x, y, usableW, tableH)
+			pdf.SetY(y + tableH + 8)
+			continue
+		}
+
 		setFont(pdf, block.FontMeta)
 		setTextColor(pdf, block.FontMeta)
 

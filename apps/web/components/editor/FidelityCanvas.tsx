@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as Y from "yjs";
 import debounce from "lodash/debounce";
-import { Canvas, Ellipse, IText, Line, PencilBrush, Rect, Textbox } from "fabric";
+import { Canvas, Ellipse, Group, IText, Line, PencilBrush, Rect, Textbox } from "fabric";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useFidelityCanvasStore, type ShapeTool, type SelectedBlockMeta } from "@/store/useFidelityCanvasStore";
@@ -49,6 +49,66 @@ function createTextBlock(block: DocumentBlock, scale: number) {
   });
   (tb as any).data = { blockId: block.id, blockType: block.type };
   return tb;
+}
+
+function createTableBlock(block: DocumentBlock, scale: number): Group {
+  const tableData = (block as any).table_data ?? { headers: [], rows: [] };
+  const bbox = block.bounding_box ?? [72, 72, 400, 200];
+  const left = bbox[0] * scale;
+  const top = bbox[1] * scale;
+  const tableW = Math.max((bbox[2] - bbox[0]) * scale, 80);
+  const tableH = Math.max((bbox[3] - bbox[1]) * scale, 40);
+
+  const allRows: string[][] = tableData.headers?.length > 0
+    ? [tableData.headers, ...(tableData.rows ?? [])]
+    : (tableData.rows ?? []);
+
+  const numCols = Math.max(...allRows.map((r: string[]) => r.length), 1);
+  const numRows = Math.max(allRows.length, 1);
+  const cellW = tableW / numCols;
+  const cellH = tableH / numRows;
+
+  const objects: (Rect | IText)[] = [];
+
+  // Table background
+  objects.push(new Rect({ left: 0, top: 0, width: tableW, height: tableH, fill: "#f8fafc", stroke: "#64748b", strokeWidth: 1.5 }));
+
+  allRows.forEach((row: string[], rowIdx: number) => {
+    const isHeader = rowIdx === 0 && tableData.headers?.length > 0;
+    row.forEach((cell: string, colIdx: number) => {
+      const cx = colIdx * cellW;
+      const cy = rowIdx * cellH;
+      objects.push(new Rect({
+        left: cx, top: cy,
+        width: cellW, height: cellH,
+        fill: isHeader ? "#e2e8f0" : "transparent",
+        stroke: "#94a3b8", strokeWidth: 0.75,
+      }));
+      if (cell) {
+        objects.push(new IText(cell, {
+          left: cx + 3, top: cy + Math.max(cellH / 2 - 6, 2),
+          fontSize: Math.max(8 * scale, 6),
+          fontFamily: "Georgia, serif",
+          fontWeight: isHeader ? "bold" : "normal",
+          fill: "#111827",
+          selectable: false,
+          evented: false,
+        }));
+      }
+    });
+  });
+
+  const group = new Group(objects as any, {
+    left, top,
+    selectable: true,
+    hasControls: true,
+    borderColor: "#f97316",
+    cornerColor: "#f97316",
+    cornerSize: 8,
+    transparentCorners: false,
+  });
+  (group as any).data = { blockId: block.id, blockType: "table", table_data: tableData };
+  return group;
 }
 
 function createShapeBlock(block: DocumentBlock, scale: number) {
@@ -302,6 +362,22 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         } as DocumentBlock;
       }
 
+      if (obj.type === "group") {
+        const data = (obj as any).data ?? {};
+        return {
+          id: blockId,
+          type: "table",
+          content: "",
+          bounding_box: bbox,
+          table_data: data.table_data ?? { headers: [], rows: [] },
+          style_overrides: {},
+          z_index: idx,
+          page_index: pageIndex,
+          confidence_score: 1,
+          needs_review: false,
+        } as DocumentBlock;
+      }
+
       return {
         id: blockId,
         type: "shape",
@@ -402,9 +478,14 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       .sort((a, b) => (a.z_index ?? 0) - (b.z_index ?? 0));
 
     for (const block of pageBlocks) {
-      const obj = block.type === "shape"
-        ? createShapeBlock(block, scale)
-        : createTextBlock(block, scale);
+      let obj;
+      if (block.type === "table") {
+        obj = createTableBlock(block, scale);
+      } else if (block.type === "shape") {
+        obj = createShapeBlock(block, scale);
+      } else {
+        obj = createTextBlock(block, scale);
+      }
       fcanvas.add(obj);
     }
 
