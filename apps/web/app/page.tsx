@@ -30,15 +30,16 @@ const jsonLd = {
     "OLPDF is a free AI-powered PDF editor that reconstructs semantic layouts from raw PDF coordinates, letting you edit PDFs like a Word document.",
   creator: { "@type": "Organization", name: "OLPDF", url: APP_URL },
 };
-import { 
-  FileJson, 
-  Layers, 
-  Wand2, 
-  Download, 
-  Server, 
-  Cpu, 
-  ShieldCheck, 
-  Terminal, 
+import ApiSection from "@/components/ApiSection";
+import {
+  FileJson,
+  Layers,
+  Wand2,
+  Download,
+  Server,
+  Cpu,
+  ShieldCheck,
+  Terminal,
   Github, 
   Users, 
   ArrowRight, 
@@ -504,41 +505,7 @@ export default function LandingPage() {
       </section>
 
       {/* EASY INTEGRATION / API */}
-      <section className="py-16 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] animate-reveal opacity-0" style={{ animationDelay: '280ms' }}>
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-sans font-black tracking-tight mb-6 text-[var(--text-primary)]">Integrate in Minutes</h2>
-          <p className="text-lg text-[var(--text-secondary)] mb-8 max-w-2xl mx-auto font-medium">
-            You don&apos;t need to use our UI. Hook into our public API endpoint using the free rate-limited key and parse documents directly in your backend.
-          </p>
-          
-          <div className="text-left bg-[#0a0a0c] rounded border border-[#2a2a2c] overflow-hidden shadow-2xl max-w-3xl mx-auto animate-slideUp relative">
-            {/* Syntax highlight decorative bar */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500/50"></div>
-            
-            <div className="flex items-center justify-between px-4 py-3 bg-[#121214] border-b border-[#2a2a2c]">
-              <div className="flex gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#3a3a3c]"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#3a3a3c]"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#3a3a3c]"></div>
-              </div>
-              <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">extract.sh</div>
-            </div>
-            <div className="p-6 overflow-x-auto text-sm font-mono text-blue-400/90 leading-relaxed">
-              <pre><code>
-<span className="text-pink-400/90">curl</span> -X POST https://api.olpdf.xyz/v1/extract \
-  -H <span className="text-amber-300/90">&quot;Authorization: Bearer free_beta_key&quot;</span> \
-  -H <span className="text-amber-300/90">&quot;Content-Type: application/json&quot;</span> \
-  -d <span className="text-amber-300/90">{`'{ "url": "https://example.com/invoice.pdf", "mode": "semantic" }'`}</span>
-              </code></pre>
-            </div>
-          </div>
-          <div className="mt-10">
-             <Link href="/docs" className="text-[var(--text-primary)] hover:text-blue-500 font-mono font-bold inline-flex items-center gap-2 text-lg transition-colors">
-                Read Full API Documentation <ArrowRight className="h-5 w-5" />
-             </Link>
-          </div>
-        </div>
-      </section>
+      <ApiSection />
 
       {/* FREE COMMITMENT SECTION */}
       <section className="py-16 px-6 bg-[#fdfdfc] dark:bg-[#141415] animate-reveal opacity-0 relative border-b border-[var(--border-subtle)]" style={{ animationDelay: '320ms' }}>
