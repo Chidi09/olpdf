@@ -3,9 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
-import { DEFAULT_BRAND } from "@/lib/branding";
 import { ArrowRight, Check } from "lucide-react";
 
 export default function SignupPage() {
@@ -48,26 +46,23 @@ export default function SignupPage() {
       <div className="relative flex flex-col w-full lg:w-[52%] xl:w-[48%] min-h-screen px-8 sm:px-14 py-10">
 
         {/* Logo */}
-        <div className="flex justify-center mb-10">
-          <Link href="/" className="inline-flex items-baseline select-none group">
-            <div className="relative h-9 w-9 mr-2.5 self-center group-hover:scale-105 transition-transform duration-300 shrink-0">
-              <Image src={DEFAULT_BRAND.icon192} alt="OLPDF Logo" fill className="object-contain" priority />
-            </div>
-            <span className="font-sans font-black tracking-tighter text-orange-500 text-xl">O</span>
-            <span className="font-serif font-light text-white -ml-0.5 mr-0.5 text-xl">L</span>
-            <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded-md inline-flex items-baseline relative">
+        <div className="flex justify-center mb-8">
+          <Link href="/" className="inline-flex items-baseline select-none">
+            <span className="font-sans font-black tracking-tighter text-orange-500 text-2xl">O</span>
+            <span className="font-serif font-light text-white -ml-0.5 mr-0.5 text-2xl">L</span>
+            <span className="bg-[#e21818] text-white px-2 py-0.5 rounded-md inline-flex items-baseline relative">
               <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-md pointer-events-none" />
-              <span className="font-mono font-bold text-base opacity-90 relative z-10">P</span>
-              <span className="font-serif font-black text-base -ml-0.5 relative z-10">D</span>
-              <span className="font-sans font-thin italic text-base ml-0.5 relative z-10">F</span>
+              <span className="font-mono font-bold text-lg opacity-90 relative z-10">P</span>
+              <span className="font-serif font-black text-lg -ml-0.5 relative z-10">D</span>
+              <span className="font-sans font-thin italic text-lg ml-0.5 relative z-10">F</span>
             </span>
           </Link>
         </div>
 
         {/* Form container */}
         <div className="flex flex-col flex-1 justify-center max-w-sm w-full mx-auto">
-          <h1 className="text-3xl font-sans font-black tracking-tight text-white mb-1">Create account.</h1>
-          <p className="text-sm text-[#9ca3af] mb-8">Start editing PDFs like Word documents — free.</p>
+          <h1 className="text-4xl font-sans font-black tracking-tight text-white mb-2">Create account.</h1>
+          <p className="text-base text-[#9ca3af] mb-8">Start editing PDFs like Word documents — free.</p>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
@@ -77,7 +72,7 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-sm font-medium text-white placeholder:text-[#6b7280]"
+                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-base font-medium text-white placeholder:text-[#6b7280]"
                 required
               />
             </div>
@@ -89,7 +84,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-sm font-medium text-white placeholder:text-[#6b7280]"
+                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-base font-medium text-white placeholder:text-[#6b7280]"
                 required
               />
             </div>
@@ -101,7 +96,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 8 characters"
-                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-sm font-medium text-white placeholder:text-[#6b7280]"
+                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-base font-medium text-white placeholder:text-[#6b7280]"
                 required
                 minLength={8}
               />
@@ -116,7 +111,7 @@ export default function SignupPage() {
 
             <button
               disabled={loading}
-              className="w-full rounded-xl bg-orange-500 hover:bg-orange-400 transition-colors px-4 py-3.5 font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2 group mt-2"
+              className="w-full rounded-xl bg-orange-500 hover:bg-orange-400 transition-colors px-4 py-4 font-bold text-base text-white disabled:opacity-50 flex items-center justify-center gap-2 group mt-2"
             >
               {loading ? "Creating account…" : "Sign up free"}
               {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />}
@@ -129,7 +124,7 @@ export default function SignupPage() {
 
           <button
             onClick={signInWithGoogle}
-            className="w-full rounded-xl border border-[#2a2a2e] hover:border-[#3a3a3e] bg-[#111113] hover:bg-[#161618] transition-all px-4 py-3 font-semibold text-sm flex items-center justify-center gap-3 text-[#d1d5db]"
+            className="w-full rounded-xl border border-[#2a2a2e] hover:border-[#3a3a3e] bg-[#111113] hover:bg-[#161618] transition-all px-4 py-3.5 font-semibold text-base flex items-center justify-center gap-3 text-[#d1d5db]"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57C21.08 18.45 22.56 15.52 22.56 12.25z" fill="#4285F4" />
