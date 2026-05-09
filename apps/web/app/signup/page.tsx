@@ -3,7 +3,9 @@
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
+import { DEFAULT_BRAND } from "@/lib/branding";
 import { ArrowRight, Check } from "lucide-react";
 
 export default function SignupPage() {
@@ -47,14 +49,11 @@ export default function SignupPage() {
 
         {/* Logo */}
         <div className="mb-auto flex justify-center">
-          <Link href="/" className="inline-flex items-baseline select-none">
-            <span className="font-sans font-black tracking-tighter text-orange-500 text-xl">O</span>
-            <span className="font-serif italic font-light text-white -ml-0.5 mr-0.5 text-xl">L</span>
-            <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded-md inline-flex items-baseline">
-              <span className="font-mono font-bold text-base opacity-90">P</span>
-              <span className="font-serif font-black text-base -ml-0.5">D</span>
-              <span className="font-sans font-thin italic text-base ml-0.5">F</span>
-            </span>
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative h-10 w-10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+              <Image src={DEFAULT_BRAND.icon192} alt="OLPDF Logo" fill className="object-contain" priority />
+            </div>
+            <span className="text-xl font-extrabold tracking-tighter text-white">OLPDF</span>
           </Link>
         </div>
 
