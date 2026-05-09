@@ -25,7 +25,8 @@ export class OlPDFEmbed {
   }
 
   post(type, data) {
-    this.iframe?.contentWindow?.postMessage({ type, data }, "*");
+    const targetOrigin = this.host ? new URL(this.host).origin : "*";
+    this.iframe?.contentWindow?.postMessage({ type, data }, targetOrigin);
   }
 
   load(buffer) {
@@ -44,6 +45,10 @@ export class OlPDFEmbed {
     const list = this.handlers.get(event) || [];
     list.push(handler);
     this.handlers.set(event, list);
+    return () => {
+      const current = this.handlers.get(event) || [];
+      this.handlers.set(event, current.filter((fn) => fn !== handler));
+    };
   }
 
   destroy() {
