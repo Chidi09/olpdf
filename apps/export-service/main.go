@@ -43,6 +43,7 @@ type Block struct {
 	Type        string     `json:"type"`
 	Content     string     `json:"content"`
 	PageIndex   int        `json:"page_index"`
+	ColumnIndex int        `json:"column_index"`
 	BoundingBox []float64  `json:"bounding_box"`
 	FontMeta    *FontMeta  `json:"font_meta"`
 	Spacing     *Spacing   `json:"spacing"`
@@ -369,15 +370,19 @@ func exportFlow(model DocumentModel, mode string) ([]byte, error) {
 		sorted = append(sorted, b)
 	}
 	sort.Slice(sorted, func(i, j int) bool {
-		if sorted[i].PageIndex != sorted[j].PageIndex {
-			return sorted[i].PageIndex < sorted[j].PageIndex
+		bi, bj := sorted[i], sorted[j]
+		if bi.PageIndex != bj.PageIndex {
+			return bi.PageIndex < bj.PageIndex
+		}
+		if bi.ColumnIndex != bj.ColumnIndex {
+			return bi.ColumnIndex < bj.ColumnIndex
 		}
 		yi, yj := 0.0, 0.0
-		if len(sorted[i].BoundingBox) >= 2 {
-			yi = sorted[i].BoundingBox[1]
+		if len(bi.BoundingBox) >= 2 {
+			yi = bi.BoundingBox[1]
 		}
-		if len(sorted[j].BoundingBox) >= 2 {
-			yj = sorted[j].BoundingBox[1]
+		if len(bj.BoundingBox) >= 2 {
+			yj = bj.BoundingBox[1]
 		}
 		return yi < yj
 	})

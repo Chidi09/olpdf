@@ -60,6 +60,83 @@ def _dominant_span(spans: List[Dict[str, Any]]) -> Dict[str, Any]:
     return max(spans, key=lambda s: len(s.get("text", "")), default={})
 
 
+def _detect_columns(blocks: List[Dict[str, Any]], page_width: float) -> List[Dict[str, Any]]:
+    """Assign column_index to each block using a gap histogram on x-positions.
+
+    Algorithm:
+    1. Build a 5pt-bin histogram of block left-edge x positions (body blocks only).
+    2. Find contiguous zero-bin gaps in the middle 80% of page width.
+    3. Gaps wider than 20pt are treated as column separators.
+    4. Each block's midpoint is mapped to the nearest column boundary.
+    Tables get column_index=0 (they span columns); heading1 blocks are excluded
+    from the analysis but still receive a column assignment afterward.
+    """
+    if len(blocks) < 4:
+        return blocks
+
+    # Only body blocks for analysis — headings and tables usually span columns
+    analysis_blocks = [
+        b for b in blocks
+        if b["type"] not in ("heading1", "table")
+        and (b["bounding_box"][2] - b["bounding_box"][0]) < page_width * 0.75
+    ]
+    if len(analysis_blocks) < 3:
+        return blocks
+
+    bin_size = 5.0
+    num_bins = max(int(page_width / bin_size) + 1, 1)
+    histogram = [0] * num_bins
+
+    for b in analysis_blocks:
+        x0 = b["bounding_box"][0]
+        bi = min(int(x0 / bin_size), num_bins - 1)
+        histogram[bi] += 1
+
+    # Scan for gaps in the middle 80% of the page
+    margin_bins = max(int(page_width * 0.10 / bin_size), 2)
+    gap_regions: List[tuple] = []
+    in_gap = False
+    gap_start = 0
+
+    for i in range(margin_bins, num_bins - margin_bins):
+        if histogram[i] == 0:
+            if not in_gap:
+                in_gap = True
+                gap_start = i
+        else:
+            if in_gap:
+                in_gap = False
+                gap_end = i
+                if (gap_end - gap_start) * bin_size >= 20.0:
+                    gap_regions.append((gap_start * bin_size, gap_end * bin_size))
+
+    if not gap_regions:
+        return blocks  # single-column page
+
+    # Build column x-ranges from the gaps
+    col_boundaries: List[tuple] = []
+    prev = 0.0
+    for gs, ge in gap_regions:
+        col_boundaries.append((prev, gs))
+        prev = ge
+    col_boundaries.append((prev, page_width))
+
+    for block in blocks:
+        if block["type"] == "table":
+            block["column_index"] = 0
+            continue
+        bbox = block["bounding_box"]
+        mid_x = (bbox[0] + bbox[2]) / 2.0
+        col = 0
+        for ci, (cs, ce) in enumerate(col_boundaries):
+            if cs <= mid_x < ce:
+                col = ci
+                break
+        block["column_index"] = col
+
+    return blocks
+
+
 def _bbox_overlaps(b1: List[float], b2: List[float], threshold: float = 0.5) -> bool:
     """True if b1 overlaps b2 by at least `threshold` fraction of b1's area."""
     ix0 = max(b1[0], b2[0])
@@ -254,8 +331,10 @@ def extract_document_model_from_pdf(pdf_bytes: bytes) -> Dict[str, Any]:
         avg_size = _compute_page_avg_font_size(page)
         text_blocks = _extract_page_blocks(page, page_index, avg_size, table_bboxes)
 
-        blocks.extend(table_blocks)
-        blocks.extend(text_blocks)
+        page_blocks = table_blocks + text_blocks
+        page_width = float(page.rect.width)
+        page_blocks = _detect_columns(page_blocks, page_width)
+        blocks.extend(page_blocks)
 
     doc.close()
     return {"blocks": blocks, "page_dimensions": page_dimensions}
@@ -274,6 +353,8 @@ def extract_page_blocks_from_pdf(pdf_bytes: bytes, page_index: int) -> List[Dict
 
     avg_size = _compute_page_avg_font_size(page)
     text_blocks = _extract_page_blocks(page, page_index, avg_size, table_bboxes)
+    page_width = float(page.rect.width)
     doc.close()
 
-    return table_blocks + text_blocks
+    page_blocks = table_blocks + text_blocks
+    return _detect_columns(page_blocks, page_width)
