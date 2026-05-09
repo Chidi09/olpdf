@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import dynamic from "next/dynamic";
 import ExportButton from "@/components/ExportButton";
@@ -9,6 +9,7 @@ import AiHistoryPanel from "@/components/editor/AiHistoryPanel";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useInstalledPlugins } from "@/hooks/usePlugins";
 import { PluginHost } from "./PluginHost";
+import { useEditorStore } from "@/store/useEditorStore";
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -48,14 +49,20 @@ interface DocumentWorkspaceProps {
 }
 
 export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps) {
-  const [instruction, setInstruction] = useState("");
-  const [currentModel, setCurrentModel] = useState<DocumentModel | null>(null);
-  const [isRunningAi, setIsRunningAi] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [activeAiLog, setActiveAiLog] = useState<AiLog | null>(null);
-  const saveMutation = useSaveDocumentMutation(documentId);
+  const {
+    instruction,
+    currentModel,
+    isRunningAi,
+    showHistory,
+    activeAiLog,
+    setInstruction,
+    setCurrentModel,
+    setIsRunningAi,
+    setShowHistory,
+    setActiveAiLog,
+  } = useEditorStore();
 
-  // Fetch installed plugins for the workspace
+  const saveMutation = useSaveDocumentMutation(documentId);
   const workspaceId = "default-workspace";
   const { data: installedPlugins } = useInstalledPlugins(workspaceId);
 
@@ -110,10 +117,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     if (!currentModel || currentModel.meta.layout_mode === mode) return;
     const nextModel: DocumentModel = {
       ...currentModel,
-      meta: {
-        ...currentModel.meta,
-        layout_mode: mode,
-      },
+      meta: { ...currentModel.meta, layout_mode: mode },
     };
     setCurrentModel(nextModel);
     await saveMutation.mutateAsync(nextModel);
@@ -133,7 +137,6 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         />
       )}
 
-      {/* Plugin Sandbox Hosts */}
       {installedPlugins?.map((p: any) => (
         <PluginHost
           key={p.id}
@@ -142,7 +145,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           blocks={currentModel?.blocks || []}
           onUpdateBlock={(id, content) => {
             if (!currentModel) return;
-            const nextBlocks = currentModel.blocks.map(b => b.id === id ? { ...b, content } : b);
+            const nextBlocks = currentModel.blocks.map((b) => (b.id === id ? { ...b, content } : b));
             const nextModel = { ...currentModel, blocks: nextBlocks };
             setCurrentModel(nextModel);
             saveMutation.mutate(nextModel);
@@ -173,7 +176,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         </div>
         <textarea
           value={instruction}
-          onChange={(event) => setInstruction(event.target.value)}
+          onChange={(e) => setInstruction(e.target.value)}
           placeholder="Rewrite this section to be more concise..."
           className="w-full min-h-20 rounded bg-black/20 border border-white/10 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
         />

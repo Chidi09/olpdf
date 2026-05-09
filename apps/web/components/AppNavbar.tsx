@@ -3,17 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { 
-  Home, 
-  LayoutDashboard, 
+import { useEffect } from "react";
+import {
+  LayoutDashboard,
   FileEdit,
   BookOpen,
-  LayoutTemplate, 
-  Wrench, 
-  Settings, 
+  LayoutTemplate,
+  Wrench,
+  Settings,
   HelpCircle,
-  Menu, 
+  Menu,
   X,
   LogOut,
 } from "lucide-react";
@@ -21,16 +20,16 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { DEFAULT_BRAND } from "@/lib/branding";
+import { useNavStore } from "@/store/useNavStore";
 
-// Canonical top-level nav metadata
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, auth: 'required' },
-  { href: "/editor", label: "Editor", icon: FileEdit, auth: 'required' },
-  { href: "/books", label: "Books", icon: BookOpen, auth: 'required' },
-  { href: "/templates", label: "Templates", icon: LayoutTemplate, auth: 'required' },
-  { href: "/toolkit", label: "Toolkit", icon: Wrench, auth: 'required' },
-  { href: "/settings", label: "Settings", icon: Settings, auth: 'required' },
-  { href: "/help", label: "Help", icon: HelpCircle, auth: 'required' },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, auth: "required" },
+  { href: "/editor", label: "Editor", icon: FileEdit, auth: "required" },
+  { href: "/books", label: "Books", icon: BookOpen, auth: "required" },
+  { href: "/templates", label: "Templates", icon: LayoutTemplate, auth: "required" },
+  { href: "/toolkit", label: "Toolkit", icon: Wrench, auth: "required" },
+  { href: "/settings", label: "Settings", icon: Settings, auth: "required" },
+  { href: "/help", label: "Help", icon: HelpCircle, auth: "required" },
 ];
 
 const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password"];
@@ -41,41 +40,39 @@ export default function AppNavbar() {
   if (AUTH_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
     return null;
   }
+
   const router = useRouter();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { scrolled, mobileMenuOpen, setScrolled, toggleMobileMenu, setMobileMenuOpen } = useNavStore();
   const { session, user, loading, signOut } = useAuth();
   const { branding, isLoading: tenantLoading } = useTenant();
 
   const isAuthenticated = !!session;
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [setScrolled]);
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/login");
   };
 
-  const filteredItems = navItems.filter(item => {
-    if (item.auth === 'always') return true;
-    if (item.auth === 'required') return isAuthenticated;
-    if (item.auth === 'public') return !isAuthenticated || pathname === '/';
+  const filteredItems = navItems.filter((item) => {
+    if (item.auth === "always") return true;
+    if (item.auth === "required") return isAuthenticated;
+    if (item.auth === "public") return !isAuthenticated || pathname === "/";
     return true;
   });
 
   return (
     <>
-      <header className={`fixed inset-x-0 top-0 z-[100] border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md transition-all duration-300 ${
-        scrolled 
-          ? "py-2 shadow-sm" 
-          : "py-4"
-      }`}>
+      <header
+        className={`fixed inset-x-0 top-0 z-[100] border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md transition-all duration-300 ${
+          scrolled ? "py-2 shadow-sm" : "py-4"
+        }`}
+      >
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex items-center gap-8">
             <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-3 group">
@@ -118,9 +115,9 @@ export default function AppNavbar() {
                   <div className="h-2 w-2 rounded-full bg-[var(--status-ok)] animate-pulse" />
                   Live Sync
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="rounded-full h-10 w-10 p-0 hover:bg-[var(--status-error)]/10 hover:text-[var(--status-error)]"
                   onClick={handleSignOut}
                   title="Sign Out"
@@ -128,7 +125,7 @@ export default function AppNavbar() {
                 >
                   <LogOut className="h-5 w-5" aria-hidden="true" />
                 </Button>
-                <div 
+                <div
                   className="h-10 w-10 relative rounded-full overflow-hidden border-2 border-[var(--bg-base)] shadow-md cursor-pointer bg-[var(--bg-elevated)] flex items-center justify-center"
                   role="button"
                   tabIndex={0}
@@ -157,10 +154,10 @@ export default function AppNavbar() {
                 </Link>
               </div>
             ) : null}
-            
-            <button 
+
+            <button
               className="lg:hidden p-2 text-[var(--text-primary)]"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={toggleMobileMenu}
               aria-label={mobileMenuOpen ? "Close mobile menu" : "Open mobile menu"}
               aria-expanded={mobileMenuOpen}
             >
@@ -170,34 +167,33 @@ export default function AppNavbar() {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[90] bg-[var(--bg-base)] lg:hidden animate-fadeIn">
           <div className="flex flex-col p-8 pt-24 gap-6">
-             {filteredItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-4 text-2xl font-bold text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors"
-                  >
-                    <div className="h-12 w-12 rounded-2xl bg-[var(--bg-surface)] flex items-center justify-center">
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    {item.label}
-                  </Link>
-                );
-             })}
-             <hr className="border-[var(--border-subtle)]" />
-             {!isAuthenticated && !loading && (
-               <Link href="/signup" className="w-full">
-                 <Button className="w-full h-14 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-base)] text-lg font-bold">
-                   Get Started
-                 </Button>
-               </Link>
-             )}
+            {filteredItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-4 text-2xl font-bold text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors"
+                >
+                  <div className="h-12 w-12 rounded-2xl bg-[var(--bg-surface)] flex items-center justify-center">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  {item.label}
+                </Link>
+              );
+            })}
+            <hr className="border-[var(--border-subtle)]" />
+            {!isAuthenticated && !loading && (
+              <Link href="/signup" className="w-full">
+                <Button className="w-full h-14 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-base)] text-lg font-bold">
+                  Get Started
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       )}

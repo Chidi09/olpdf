@@ -44,7 +44,8 @@
     "tw-animate-css": "^1.3.0",
     "y-indexeddb": "^9.0.12",
     "y-supabase": "^0.0.4-7-alpha",
-    "yjs": "^13.6.24"
+    "yjs": "^13.6.24",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.5",

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import { useEffect, useMemo } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
+import { useAuthStore } from "@/store/useAuthStore";
 
 function isDevMockMode() {
   if (typeof process === "undefined") return false;
@@ -11,6 +11,8 @@ function isDevMockMode() {
 }
 
 export function useAuth() {
+  const { user, session, loading, setUser, setSession, setLoading } = useAuthStore();
+
   const supabase = useMemo(() => {
     try {
       return createSupabaseBrowserClient();
@@ -18,9 +20,6 @@ export function useAuth() {
       return null;
     }
   }, []);
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isDevMockMode()) {
@@ -31,7 +30,7 @@ export function useAuth() {
         app_metadata: {},
         aud: "authenticated",
         created_at: new Date().toISOString(),
-      } as unknown as User;
+      } as Parameters<typeof setUser>[0];
 
       const mockSession = {
         access_token: "dev-mock-token",
@@ -39,7 +38,7 @@ export function useAuth() {
         expires_in: 3600,
         token_type: "bearer",
         user: mockUser,
-      } as unknown as Session;
+      } as Parameters<typeof setSession>[0];
 
       Promise.resolve().then(() => {
         setUser(mockUser);
@@ -75,7 +74,7 @@ export function useAuth() {
       mounted = false;
       data.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, setUser, setSession, setLoading]);
 
   const signOut = async () => {
     if (isDevMockMode() && !supabase) {

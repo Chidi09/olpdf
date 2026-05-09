@@ -1,13 +1,13 @@
-
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import BookSidebar from "./BookSidebar";
 import BookInspector from "./BookInspector";
 import CollaborativeEditor from "../CollaborativeEditor";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { BookModel, BookChapter } from "@olpdf/document-model";
+import { useBookStore } from "@/store/useBookStore";
 
 interface BookWorkspaceProps {
   bookId: string;
@@ -15,14 +15,9 @@ interface BookWorkspaceProps {
   userColor: string;
 }
 
-export default function BookWorkspace({
-  bookId,
-  userName,
-  userColor,
-}: BookWorkspaceProps) {
+export default function BookWorkspace({ bookId, userName, userColor }: BookWorkspaceProps) {
   const queryClient = useQueryClient();
-  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { activeDocumentId, isSidebarOpen, setActiveDocumentId, toggleSidebar } = useBookStore();
 
   const { data: book, isLoading } = useQuery<BookModel>({
     queryKey: ["book", bookId],
@@ -47,11 +42,7 @@ export default function BookWorkspace({
 
   const updateChapterMutation = useMutation({
     mutationFn: async ({ chapterId, updates }: { chapterId: string; updates: Partial<BookChapter> }) => {
-      const payload: Partial<BookChapter> = {
-        ...(activeChapter ?? {}),
-        ...updates,
-      };
-
+      const payload: Partial<BookChapter> = { ...(activeChapter ?? {}), ...updates };
       const res = await fetch(`/api/bff/books/${bookId}/chapters/${chapterId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -60,9 +51,7 @@ export default function BookWorkspace({
       if (!res.ok) throw new Error("Failed to update chapter");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["book", bookId] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["book", bookId] }),
   });
 
   const addChapterMutation = useMutation({
@@ -71,12 +60,7 @@ export default function BookWorkspace({
       const res = await fetch(`/api/bff/books/${bookId}/chapters`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chapter_number: nextNumber,
-          title: `Chapter ${nextNumber}`,
-          status: "draft",
-          word_count: 0,
-        }),
+        body: JSON.stringify({ chapter_number: nextNumber, title: `Chapter ${nextNumber}`, status: "draft", word_count: 0 }),
       });
       if (!res.ok) throw new Error("Failed to add chapter");
       return res.json() as Promise<{ document_id?: string }>;
@@ -109,13 +93,8 @@ export default function BookWorkspace({
 
   return (
     <div className="h-screen w-full flex bg-[var(--bg-base)] overflow-hidden">
-      {/* LEFT: Book Sidebar */}
-      <div 
-        className={`transition-all duration-300 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] ${
-          isSidebarOpen ? "w-64" : "w-0 overflow-hidden"
-        }`}
-      >
-        <BookSidebar 
+      <div className={`transition-all duration-300 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] ${isSidebarOpen ? "w-64" : "w-0 overflow-hidden"}`}>
+        <BookSidebar
           book={safeBook}
           activeChapterId={selectedDocumentId}
           onSelectChapter={setActiveDocumentId}
@@ -124,14 +103,9 @@ export default function BookWorkspace({
         />
       </div>
 
-      {/* MAIN: Chapter Editor */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Toolbar Placeholder */}
         <div className="h-12 border-b border-[var(--border-subtle)] flex items-center px-4 bg-[var(--bg-surface)]/50 backdrop-blur-sm">
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-1 hover:bg-white/5 rounded text-[var(--text-secondary)]"
-          >
+          <button onClick={toggleSidebar} className="p-1 hover:bg-white/5 rounded text-[var(--text-secondary)]">
             {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
           </button>
           <div className="ml-4 flex-1">
@@ -140,41 +114,36 @@ export default function BookWorkspace({
             </h1>
           </div>
           <div className="flex gap-2">
-             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-               activeChapter?.status === 'final' ? 'bg-green-500/10 text-green-400' :
-               activeChapter?.status === 'review' ? 'bg-amber-500/10 text-amber-400' :
-               'bg-white/5 text-[var(--text-secondary)]'
-             }`}>
-               {activeChapter?.status || "draft"}
-             </span>
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+              activeChapter?.status === "final" ? "bg-green-500/10 text-green-400" :
+              activeChapter?.status === "review" ? "bg-amber-500/10 text-amber-400" :
+              "bg-white/5 text-[var(--text-secondary)]"
+            }`}>
+              {activeChapter?.status || "draft"}
+            </span>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 flex justify-center bg-[var(--bg-base)]">
           {selectedDocumentId ? (
             <div className="w-full max-w-3xl bg-white shadow-2xl min-h-[1056px] rounded-sm overflow-hidden">
-                <CollaborativeEditor 
-                    documentId={selectedDocumentId} 
-                    userName={userName} 
-                    userColor={userColor} 
-                />
+              <CollaborativeEditor documentId={selectedDocumentId} userName={userName} userColor={userColor} />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-[var(--text-tertiary)]">
-                <p>Select a chapter to start writing.</p>
+              <p>Select a chapter to start writing.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* RIGHT: Book Inspector */}
       <div className="w-80 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] flex flex-col">
-        <BookInspector 
-            book={safeBook}
-            activeChapter={activeChapter}
-            onUpdateChapter={(chapterId, updates) => updateChapterMutation.mutate({ chapterId, updates })}
-            onExportBook={exportBook}
-            onCheckConsistency={checkConsistency}
+        <BookInspector
+          book={safeBook}
+          activeChapter={activeChapter}
+          onUpdateChapter={(chapterId, updates) => updateChapterMutation.mutate({ chapterId, updates })}
+          onExportBook={exportBook}
+          onCheckConsistency={checkConsistency}
         />
       </div>
     </div>

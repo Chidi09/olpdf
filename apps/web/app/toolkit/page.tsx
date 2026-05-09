@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import type { ComponentType } from "react";
 import { Combine, Scissors, Minimize2, RotateCw, Droplets, Lock, Eraser, ScanText, Images, FileText, Edit3 } from "lucide-react";
 import BackLink from "@/components/BackLink";
+import { useToolkitStore } from "@/store/useToolkitStore";
 
 type ToolkitOperation = {
   id: string;
@@ -27,10 +27,9 @@ const operations: ToolkitOperation[] = [
 ];
 
 export default function ToolkitPage() {
-  const [active, setActive] = useState<ToolkitOperation>(operations[0]);
-  const [inputValue, setInputValue] = useState("");
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<{ output_url?: string; status?: string; pages_processed?: number } | null>(null);
+  const { activeOperationId, inputValue, running, result, setActiveOperationId, setInputValue, setRunning, setResult } = useToolkitStore();
+
+  const active = operations.find((o) => o.id === activeOperationId) ?? operations[0];
 
   const runOperation = async () => {
     setRunning(true);
@@ -62,7 +61,7 @@ export default function ToolkitPage() {
           {operations.map((operation) => (
             <button
               key={operation.id}
-              onClick={() => setActive(operation)}
+              onClick={() => setActiveOperationId(operation.id)}
               className={`rounded-xl border p-5 text-left transition ${
                 active.id === operation.id
                   ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
@@ -82,7 +81,7 @@ export default function ToolkitPage() {
 
           <textarea
             value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
+            onChange={(e) => setInputValue(e.target.value)}
             className="mt-4 w-full min-h-24 rounded bg-black/20 border border-white/10 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             placeholder="Input payload for operation..."
           />
@@ -101,7 +100,9 @@ export default function ToolkitPage() {
           {result?.output_url && (
             <div className="mt-4 rounded border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
               <div>Output: <span className="text-emerald-200">{result.output_url}</span></div>
-              {typeof result.pages_processed === "number" && <div className="mt-1 text-[var(--text-secondary)]">Pages processed: {result.pages_processed}</div>}
+              {typeof result.pages_processed === "number" && (
+                <div className="mt-1 text-[var(--text-secondary)]">Pages processed: {result.pages_processed}</div>
+              )}
             </div>
           )}
         </div>
