@@ -129,6 +129,16 @@ export default function LandingPage() {
                         See how it works <ArrowRight className="h-4 w-4 rotate-90" />
                     </a>
                 </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex">
+                    {[0,1,2,3,4].map((i) => (
+                      <svg key={i} className="w-4 h-4 fill-amber-400" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Loved by <span className="font-bold text-[var(--text-primary)]">500+</span> developers</span>
+                </div>
             </div>
 
             {/* Highly Detailed AI DOM Illustration - Enhanced for 'Word' feel */}
@@ -290,42 +300,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* MISSION / SOCIAL PROOF REPLACEMENT */}
-      <section className="py-16 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] relative">
-        {/* Decorative flourish */}
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 opacity-20">
-            <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
-                <path d="M10 12 Q 30 0, 60 12 T 110 12" />
-                <path d="M50 8 L 60 16 L 70 8" />
-            </svg>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-6 text-center animate-reveal opacity-0 mt-8" style={{ animationDelay: '120ms' }}>
-          <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-8 text-[var(--text-primary)]">
-              One Mission: <span className="relative inline-block text-blue-600 dark:text-blue-400">Accessible
-                 <svg className="absolute -bottom-2 left-0 w-full h-3 text-blue-500 opacity-60" viewBox="0 0 100 20" preserveAspectRatio="none">
-                     <path d="M5,15 Q30,5 50,15 T95,10" fill="none" stroke="currentColor" strokeWidth="4" />
-                 </svg>
-              </span> Document Intelligence
-          </h2>
-          <p className="text-lg md:text-xl text-[var(--text-secondary)] leading-relaxed mb-8 font-medium">
-            Most PDFs are <span className="underline decoration-wavy decoration-[var(--border-strong)] underline-offset-4">&ldquo;digital paper&rdquo;</span>—unstructured and hard to edit. OLPDF is our attempt to turn every document into a semantic, machine-readable, and human-editable data structure.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="flex flex-col gap-3 relative">
-              <div className="absolute -left-4 top-2 text-blue-500 opacity-10"><Bookmark className="h-12 w-12" /></div>
-              <div className="font-mono font-bold text-3xl z-10">Open Source</div>
-              <p className="text-sm text-[var(--text-secondary)] z-10 font-medium leading-relaxed">The core extraction heuristics are public. No black boxes or hidden fees.</p>
+      {/* MISSION */}
+      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] animate-reveal opacity-0" style={{ animationDelay: '120ms' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-5 text-[var(--text-primary)]">
+              One Mission: Accessible<br />Document Intelligence
+            </h2>
+            <p className="text-lg text-[var(--text-secondary)] leading-relaxed font-medium max-w-2xl mx-auto">
+              Most PDFs are &ldquo;digital paper&rdquo; — unstructured and hard to edit. OLPDF turns every document into a semantic, machine-readable, human-editable data structure.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--border-subtle)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden bg-[var(--bg-elevated)]">
+            <div className="p-8">
+              <div className="font-mono font-bold text-xl mb-3 text-[var(--text-primary)]">Open Source</div>
+              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">The core extraction heuristics are public. No black boxes or hidden fees.</p>
             </div>
-            <div className="flex flex-col gap-3 relative">
-              <div className="absolute -left-4 top-2 text-blue-500 opacity-10"><Bookmark className="h-12 w-12" /></div>
-              <div className="font-sans font-black tracking-tighter text-3xl z-10">Structure-First</div>
-              <p className="text-sm text-[var(--text-secondary)] z-10 font-medium leading-relaxed">We don&apos;t just OCR text; we reconstruct the hierarchy of headers, lists, and tables.</p>
+            <div className="p-8">
+              <div className="font-sans font-black tracking-tight text-xl mb-3 text-[var(--text-primary)]">Structure-First</div>
+              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">We don&apos;t just OCR text — we reconstruct headers, lists, and table hierarchies.</p>
             </div>
-            <div className="flex flex-col gap-3 relative">
-              <div className="absolute -left-4 top-2 text-blue-500 opacity-10"><Bookmark className="h-12 w-12" /></div>
-              <div className="font-serif font-bold text-3xl z-10">AI-Native</div>
-              <p className="text-sm text-[var(--text-secondary)] z-10 font-medium leading-relaxed">Built specifically to leverage LLM reasoning for non-destructive document editing.</p>
+            <div className="p-8">
+              <div className="font-serif font-bold text-xl mb-3 text-[var(--text-primary)]">AI-Native</div>
+              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Built specifically to leverage LLM reasoning for non-destructive document editing.</p>
             </div>
           </div>
         </div>
