@@ -14,12 +14,16 @@ import { VirtualizedPage } from "@/components/editor/VirtualizedPage";
 import { FindReplaceBar } from "@/components/editor/FindReplaceBar";
 import { useFindReplaceStore } from "@/store/useFindReplaceStore";
 import { useCollaboration } from "@/hooks/useCollaboration";
+import { useCollaborationBridge } from "@/hooks/useCollaborationBridge";
 import { CommentSidebar, type EditorComment } from "@/components/editor/CommentSidebar";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { SMART_STYLE_PRESETS, applySmartStyle } from "@/engine/styles";
 import { PageErrorBoundary } from "@/components/editor/PageErrorBoundary";
 import { ShortcutMap } from "@/components/editor/ShortcutMap";
 import { trackEdit } from "@/lib/analytics";
+import { useCommentIndicators, renderCommentIndicators } from "@/hooks/useCommentIndicators";
+import { useDarkModeCanvas } from "@/hooks/useDarkModeCanvas";
+import { useAiTools } from "@/hooks/useAiTools";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -211,42 +215,6 @@ function createFieldBlock(block: DocumentBlock, scale: number): Rect {
   return fieldRect;
 }
 
-function renderCommentIndicators(
-  canvas: Canvas,
-  comments: EditorComment[],
-  pageIndex: number,
-  scale: number,
-  onOpenThread: (threadKey: string) => void,
-) {
-  const existing = canvas.getObjects().filter((o) => (o as any).data?.isCommentIndicator);
-  for (const obj of existing) canvas.remove(obj);
-
-  const pageComments = comments.filter((c) => c.page_index === pageIndex && !c.resolved);
-  const byBlock = new Map<string, EditorComment[]>();
-  for (const c of pageComments) {
-    const key = c.block_id ?? `page_${pageIndex}`;
-    byBlock.set(key, [...(byBlock.get(key) ?? []), c]);
-  }
-
-  for (const [key, group] of byBlock.entries()) {
-    const y = (group[0]?.position?.y ?? 50) * scale;
-    const circle = new Ellipse({
-      left: (canvas.width ?? 0) - 20,
-      top: y,
-      rx: 8,
-      ry: 8,
-      fill: "#f97316",
-      selectable: false,
-      evented: true,
-      hoverCursor: "pointer",
-    });
-    (circle as any).data = { isCommentIndicator: true, blockId: key, commentIds: group.map((c) => c.id) };
-    circle.on("mousedown", () => onOpenThread(key));
-    canvas.add(circle);
-  }
-  canvas.renderAll();
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function FidelityCanvas({ documentId, model, onModelChange }: FidelityCanvasProps) {
@@ -258,11 +226,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const currentModelRef = useRef(model);
   const [activeTipTapBlock, setActiveTipTapBlock] = useState<{ blockId: string; pageIndex: number } | null>(null);
   const [comments, setComments] = useState<EditorComment[]>([]);
-  const commentsRef = useRef<EditorComment[]>([]);
   const [openCommentThread, setOpenCommentThread] = useState<string | null>(null);
   const [awarenessUsers, setAwarenessUsers] = useState<Array<{ id: string; name: string; color: string; selectedBlockId?: string | null }>>([]);
   const [changes, setChanges] = useState<ChangeRecord[]>([]);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
@@ -278,8 +244,6 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   useEffect(() => {
     suggestModeRef.current = suggestMode;
   }, [suggestMode]);
-
-  commentsRef.current = comments;
 
   // Undo / redo kept local — large model snapshots, component-scoped
   const [history, setHistory] = useState<DocumentModel[]>([]);
@@ -373,53 +337,11 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const addPendingChange = (change: ChangeRecord) => {
     setChanges((prev) => [...prev, change]);
   };
-
-  const aiRewrite = async (blockId: string, instruction: string) => {
-    const res = await fetch(`/api/bff/ai/documents/${documentId}/blocks/${blockId}/rewrite`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instruction }),
-    });
-    if (!res.ok) return;
-    const data = (await res.json()) as { suggestion?: string; original?: string };
-    addPendingChange({
-      id: crypto.randomUUID(),
-      blockId,
-      field: "content",
-      oldValue: data.original ?? "",
-      newValue: data.suggestion ?? "",
-      userId: "ai",
-      userName: "AI",
-      timestamp: Date.now(),
-      status: "pending",
-    });
-  };
-
-  const triggerOcrVerify = async (blockId: string) => {
-    const res = await fetch(`/api/bff/ai/documents/${documentId}/blocks/${blockId}/ocr-verify`, { method: "POST" });
-    if (!res.ok) return;
-    const data = (await res.json()) as { verified?: boolean; correction?: string | null };
-    if (data.verified || !data.correction) return;
-    const current = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
-    addPendingChange({
-      id: crypto.randomUUID(),
-      blockId,
-      field: "content",
-      oldValue: current?.content ?? "",
-      newValue: data.correction,
-      userId: "ai",
-      userName: "AI OCR",
-      timestamp: Date.now(),
-      status: "pending",
-    });
-  };
-
-  const summariseDoc = async () => {
-    const res = await fetch(`/api/bff/ai/documents/${documentId}/summarise`, { method: "POST" });
-    if (!res.ok) return;
-    const data = (await res.json()) as { summary?: string };
-    setAiSummary(data.summary ?? null);
-  };
+  const { aiSummary, aiRewrite, triggerOcrVerify, summariseDoc } = useAiTools(
+    documentId,
+    () => currentModelRef.current.blocks ?? [],
+    addPendingChange,
+  );
 
   const undo = () => {
     if (history.length === 0) return;
@@ -499,44 +421,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     debounce((m: DocumentModel) => void saveMutation.mutateAsync(m), 700)
   );
 
-  // ── Yjs collaboration bridge (Phase 13) ───────────────────────────────────
-
-  useEffect(() => {
-    const ydoc = ydocRef.current;
-    if (!ydoc) return;
-    const yBlocks = ydoc.getMap<Y.Map<unknown>>("blocks");
-
-    const observer = () => {
-      for (const [_, canvas] of fabricCanvasesRef.current.entries()) {
-        for (const obj of canvas.getObjects()) {
-          const blockId = (obj as any).data?.blockId as string | undefined;
-          if (!blockId) continue;
-          const yBlock = yBlocks.get(blockId);
-          if (!yBlock) continue;
-
-          const bbox = yBlock.get("bounding_box") as number[] | undefined;
-          if (bbox?.length === 4) {
-            obj.set({ left: bbox[0] * scale, top: bbox[1] * scale });
-            obj.setCoords();
-          }
-
-          if (obj.type === "textbox") {
-            const content = yBlock.get("content") as string | undefined;
-            if (content !== undefined && (obj as Textbox).text !== content) {
-              (obj as Textbox).set("text", content);
-            }
-          }
-          canvas.renderAll();
-        }
-      }
-    };
-
-    yBlocks.observeDeep(observer);
-    return () => {
-      yBlocks.unobserveDeep(observer);
-      saveDebounced.current.cancel();
-    };
-  }, [ydocRef, scale]);
+  useCollaborationBridge(ydocRef, fabricCanvasesRef, scale, saveDebounced);
 
   // ── Apply format commands from the FormatBar ─────────────────────────────
 
@@ -655,11 +540,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     }
   }, [matches, currentMatchIndex, model.blocks, scale]);
 
-  useEffect(() => {
-    for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
-      renderCommentIndicators(canvas, comments, pageIndex, scale, setOpenCommentThread);
-    }
-  }, [comments, scale]);
+  useCommentIndicators(fabricCanvasesRef, comments, scale, setOpenCommentThread);
 
   // ── Sync all Fabric objects → model ─────────────────────────────────────
 
@@ -827,19 +708,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     }
   }, [activeTool]);
 
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const apply = (isDark: boolean) => {
-      for (const canvas of fabricCanvasesRef.current.values()) {
-        canvas.set({ backgroundColor: isDark ? "#1e1e1e" : "transparent" });
-        canvas.renderAll();
-      }
-    };
-    apply(mq.matches);
-    const listener = (e: MediaQueryListEvent) => apply(e.matches);
-    mq.addEventListener("change", listener);
-    return () => mq.removeEventListener("change", listener);
-  }, []);
+  useDarkModeCanvas(fabricCanvasesRef);
 
   // ── Canvas setup ─────────────────────────────────────────────────────────
 
@@ -1047,8 +916,8 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
     fabricCanvasesRef.current.set(pageIndex, fcanvas);
 
-    // Draw any already-loaded comment indicators on this newly live canvas.
-    renderCommentIndicators(fcanvas, commentsRef.current, pageIndex, scale, setOpenCommentThread);
+    // Apply any already-loaded comment indicators to this newly-live canvas.
+    renderCommentIndicators(fcanvas, comments, pageIndex, scale, setOpenCommentThread);
   };
 
   const destroyFabricCanvas = (pageIndex: number) => {
