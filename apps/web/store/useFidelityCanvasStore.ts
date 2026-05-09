@@ -42,18 +42,22 @@ interface FidelityCanvasState {
   activeTool: ShapeTool;
   selectedBlock: SelectedBlockMeta | null;
   pendingFormat: FormatCommand | null;
+  suggestMode: boolean;
   setActiveTool: (tool: ShapeTool) => void;
   setSelectedBlock: (block: SelectedBlockMeta | null) => void;
   applyFormat: (cmd: FormatCommand) => void;
   clearPendingFormat: () => void;
+  toggleSuggestMode: () => void;
 }
 
 export const useFidelityCanvasStore = create<FidelityCanvasState>()((set) => ({
   activeTool: "select",
   selectedBlock: null,
   pendingFormat: null,
+  suggestMode: false,
   setActiveTool: (activeTool) => set({ activeTool }),
   setSelectedBlock: (selectedBlock) => set({ selectedBlock }),
   applyFormat: (cmd) => set({ pendingFormat: cmd }),
   clearPendingFormat: () => set({ pendingFormat: null }),
+  toggleSuggestMode: () => set((s) => ({ suggestMode: !s.suggestMode })),
 }));

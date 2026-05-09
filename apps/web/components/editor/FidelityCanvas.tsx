@@ -16,11 +16,24 @@ import { useFindReplaceStore } from "@/store/useFindReplaceStore";
 import { useCollaboration } from "@/hooks/useCollaboration";
 import { CommentSidebar, type EditorComment } from "@/components/editor/CommentSidebar";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
+import { SMART_STYLE_PRESETS, applySmartStyle } from "@/engine/styles";
 
 type FidelityCanvasProps = {
   documentId: string;
   model: DocumentModel;
   onModelChange?: (model: DocumentModel) => void;
+};
+
+type ChangeRecord = {
+  id: string;
+  blockId: string;
+  field: "content" | "bounding_box" | "font_meta" | "alignment";
+  oldValue: unknown;
+  newValue: unknown;
+  userId: string;
+  userName: string;
+  timestamp: number;
+  status: "pending" | "accepted" | "rejected";
 };
 
 const DEFAULT_PAGE = { page_index: 0, width: 595.28, height: 841.89 };
@@ -214,14 +227,21 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const commentsRef = useRef<EditorComment[]>([]);
   const [openCommentThread, setOpenCommentThread] = useState<string | null>(null);
   const [awarenessUsers, setAwarenessUsers] = useState<Array<{ id: string; name: string; color: string; selectedBlockId?: string | null }>>([]);
+  const [changes, setChanges] = useState<ChangeRecord[]>([]);
 
-  const { activeTool, setActiveTool, setSelectedBlock, pendingFormat, clearPendingFormat } = useFidelityCanvasStore();
+  // Store destructure must precede suggestModeRef — suggestMode is a const binding.
+  const { activeTool, setActiveTool, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode } = useFidelityCanvasStore();
+  const suggestModeRef = useRef(suggestMode);
   const { matches, currentMatchIndex } = useFindReplaceStore();
   const { ydocRef, providerRef } = useCollaboration(documentId, model);
 
   useEffect(() => {
     currentModelRef.current = model;
   }, [model]);
+
+  useEffect(() => {
+    suggestModeRef.current = suggestMode;
+  }, [suggestMode]);
 
   commentsRef.current = comments;
 
@@ -233,6 +253,63 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     setHistory((prev) => [...prev.slice(-49), model]);
     setRedoStack([]);
     onModelChange?.(nextModel);
+  };
+
+  const captureChange = (change: Omit<ChangeRecord, "id" | "timestamp" | "status" | "userId" | "userName">) => {
+    setChanges((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        userId: "local-user",
+        userName: "You",
+        timestamp: Date.now(),
+        status: "pending",
+        ...change,
+      },
+    ]);
+  };
+
+  const acceptChange = (change: ChangeRecord) => {
+    const blocks = (currentModelRef.current.blocks ?? []).map((b) => {
+      if (b.id !== change.blockId) return b;
+      return { ...b, [change.field]: change.newValue } as DocumentBlock;
+    });
+    const nextModel = { ...currentModelRef.current, blocks };
+    pushToHistory(nextModel);
+    saveDebounced.current(nextModel);
+    currentModelRef.current = nextModel;
+    setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "accepted" } : c)));
+  };
+
+  const rejectChange = (change: ChangeRecord) => {
+    // Restore the Fabric object to its pre-change value so the canvas
+    // visually reflects the rejection (model was never mutated in suggest mode).
+    for (const [, canvas] of fabricCanvasesRef.current.entries()) {
+      const obj = canvas.getObjects().find((o) => (o as any).data?.blockId === change.blockId);
+      if (!obj) continue;
+      if (change.field === "bounding_box" && Array.isArray(change.oldValue) && change.oldValue.length === 4) {
+        const [x0, y0] = change.oldValue as number[];
+        obj.set({ left: x0 * scale, top: y0 * scale });
+        obj.setCoords();
+      }
+      if (change.field === "content" && obj.type === "textbox") {
+        (obj as Textbox).set("text", String(change.oldValue ?? ""));
+      }
+      canvas.renderAll();
+      break;
+    }
+    setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "rejected" } : c)));
+  };
+
+  const saveVersionSnapshot = async () => {
+    await fetch(`/api/bff/documents/${documentId}/snapshot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        document_model: currentModelRef.current,
+        version_name: `Suggest mode ${new Date().toLocaleString()}`,
+      }),
+    });
   };
 
   const undo = () => {
@@ -681,8 +758,38 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
     fcanvas.on("object:added", sync);
     fcanvas.on("object:modified", (e) => {
-      const syncedModel = syncCanvasToModel(pageIndex, fcanvas);
-      if (syncedModel) currentModelRef.current = syncedModel;
+      if (suggestModeRef.current && e.target) {
+        const blockId = (e.target as any).data?.blockId as string | undefined;
+        if (blockId) {
+          const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
+          if (existing) {
+            const obj = e.target;
+            const left = (obj.left ?? 0) / scale;
+            const top = (obj.top ?? 0) / scale;
+            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
+            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+            captureChange({
+              blockId,
+              field: "bounding_box",
+              oldValue: existing.bounding_box,
+              newValue: [left, top, left + w, top + h],
+            });
+            if (obj.type === "textbox") {
+              captureChange({
+                blockId,
+                field: "content",
+                oldValue: existing.content ?? "",
+                newValue: (obj as Textbox).text ?? "",
+              });
+            }
+          }
+        }
+      } else {
+        const syncedModel = syncCanvasToModel(pageIndex, fcanvas);
+        if (syncedModel) currentModelRef.current = syncedModel;
+      }
+      // In suggest mode changes are captured, not committed — skip Yjs and reflow.
+      if (suggestModeRef.current) return;
       if (e.target && ydocRef.current) {
         const blockId = (e.target as any).data?.blockId as string | undefined;
         if (blockId) {
@@ -833,6 +940,41 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
         <div className="mx-2 h-6 w-px bg-[var(--border-subtle)] hidden md:block" />
 
+        <button
+          onClick={toggleSuggestMode}
+          className={`rounded px-3 py-1.5 text-[10px] font-bold uppercase ${suggestMode ? "bg-amber-500 text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"}`}
+        >
+          Suggest {suggestMode ? "On" : "Off"}
+        </button>
+
+        <button
+          onClick={() => {
+            void saveVersionSnapshot();
+          }}
+          className="rounded px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"
+        >
+          Save Version
+        </button>
+
+        <select
+          className="rounded border border-[var(--border-subtle)] bg-[var(--bg-base)] px-2 py-1 text-[10px]"
+          defaultValue=""
+          onChange={(e) => {
+            const preset = SMART_STYLE_PRESETS.find((p) => p.id === e.target.value);
+            if (!preset) return;
+            const nextModel = applySmartStyle(currentModelRef.current, preset);
+            pushToHistory(nextModel);
+            saveDebounced.current(nextModel);
+            currentModelRef.current = nextModel;
+            e.currentTarget.value = "";
+          }}
+        >
+          <option value="" disabled>Smart Style</option>
+          {SMART_STYLE_PRESETS.map((preset) => (
+            <option key={preset.id} value={preset.id}>{preset.label}</option>
+          ))}
+        </select>
+
         {activeTool === "sticky" && (
           <div className="flex gap-1 items-center mr-auto">
             {["#fff59d", "#a5d6a7", "#90caf9", "#f48fb1", "#ce93d8"].map((color) => (
@@ -932,6 +1074,23 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
           </VirtualizedPage>
         ))}
       </div>
+
+      {suggestMode && changes.filter((c) => c.status === "pending").length > 0 && (
+        <div className="fixed bottom-4 left-4 z-50 w-[360px] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3 shadow-xl">
+          <div className="mb-2 text-xs font-bold uppercase text-[var(--text-secondary)]">Pending Changes</div>
+          <div className="max-h-56 space-y-2 overflow-y-auto">
+            {changes.filter((c) => c.status === "pending").map((change) => (
+              <div key={change.id} className="rounded border border-[var(--border-subtle)] p-2">
+                <div className="text-[11px] text-[var(--text-primary)]">{change.field} on {change.blockId.slice(0, 8)}</div>
+                <div className="mt-2 flex gap-2">
+                  <button onClick={() => acceptChange(change)} className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white">Accept</button>
+                  <button onClick={() => rejectChange(change)} className="rounded bg-rose-600 px-2 py-1 text-[10px] font-bold text-white">Reject</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <CommentSidebar
         openThreadKey={openCommentThread}
