@@ -43,18 +43,25 @@ export default function LoginPage() {
       <div className="relative flex flex-col w-full lg:w-[52%] xl:w-[48%] min-h-screen px-8 sm:px-14 py-10">
 
         {/* Logo */}
-        <div className="mb-auto flex justify-center">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative h-10 w-10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+        <div className="flex justify-center mb-10">
+          <Link href="/" className="inline-flex items-baseline select-none group">
+            <div className="relative h-9 w-9 mr-2.5 self-center group-hover:scale-105 transition-transform duration-300 shrink-0">
               <Image src={DEFAULT_BRAND.icon192} alt="OLPDF Logo" fill className="object-contain" priority />
             </div>
-            <span className="text-xl font-extrabold tracking-tighter text-white">OLPDF</span>
+            <span className="font-sans font-black tracking-tighter text-orange-500 text-xl">O</span>
+            <span className="font-serif font-light text-white -ml-0.5 mr-0.5 text-xl">L</span>
+            <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded-md inline-flex items-baseline relative">
+              <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-md pointer-events-none" />
+              <span className="font-mono font-bold text-base opacity-90 relative z-10">P</span>
+              <span className="font-serif font-black text-base -ml-0.5 relative z-10">D</span>
+              <span className="font-sans font-thin italic text-base ml-0.5 relative z-10">F</span>
+            </span>
           </Link>
         </div>
 
-        {/* Form container — vertically centred */}
-        <div className="flex flex-col justify-center flex-1 py-12 max-w-sm w-full mx-auto">
-          <h1 className="text-3xl font-serif italic font-bold text-white mb-1">Welcome back.</h1>
+        {/* Form container */}
+        <div className="flex flex-col flex-1 justify-center max-w-sm w-full mx-auto">
+          <h1 className="text-3xl font-sans font-black tracking-tight text-white mb-1">Welcome back.</h1>
           <p className="text-sm text-[#9ca3af] mb-8">Log in to your workspace.</p>
 
           <form onSubmit={onSubmit} className="space-y-4">
