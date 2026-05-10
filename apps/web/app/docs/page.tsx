@@ -39,6 +39,11 @@ const NAV: NavItem[] = [
   { type: "header",       label: "Guides" },
   { id: "errors",         label: "Error Reference",    icon: AlertTriangle },
   { id: "self-hosting",   label: "Self-Hosting",       icon: Database },
+  { type: "header",       label: "Embed SDK" },
+  { id: "embed-overview", label: "Overview",           icon: Code2 },
+  { id: "embed-install",  label: "Installation",       icon: Download },
+  { id: "embed-events",   label: "Events",             icon: Zap },
+  { id: "embed-frameworks", label: "Framework Guides", icon: Layers },
 ];
 
 // ─── Code Block ──────────────────────────────────────────────────────────────
@@ -1054,6 +1059,91 @@ primary_region = 'ams'
   cpus = 2`} />
               </div>
             </div>
+          </section>
+
+          {/* ── Embed SDK ──────────────────────────────────────────────── */}
+          <section id="embed-overview" className="scroll-mt-24">
+            <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Embed SDK — Overview</h2>
+            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">The <code className="font-mono text-amber-500 text-sm">@olpdf/embed</code> package lets you embed the full OLPDF editor inside any web application via a lightweight postMessage bridge. The host page renders an iframe pointing at your OLPDF instance; the SDK handles all communication transparently.</p>
+            <div className="grid sm:grid-cols-3 gap-4 mb-6">
+              {[
+                { label: "Zero dependencies", desc: "No React, Vue, or Angular required in the host app." },
+                { label: "postMessage bridge", desc: "Secure cross-origin communication with origin validation." },
+                { label: "Full AST events", desc: "Receive the complete DocumentModel on every edit." },
+              ].map(({ label, desc }) => (
+                <div key={label} className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+                  <div className="text-xs font-black text-orange-500 uppercase tracking-widest mb-1">{label}</div>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="embed-install" className="scroll-mt-24 mt-12">
+            <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Installation</h2>
+            <div className="bg-[#111113] rounded-xl border border-[#2a2a2e] px-5 py-4 font-mono text-sm mb-4">
+              <span className="text-[#6b7280]">$</span> <span className="text-white">npm install </span><span className="text-orange-400">@olpdf/embed</span>
+            </div>
+            <p className="text-[var(--text-secondary)] text-sm mb-3">Or load from CDN (no bundler required):</p>
+            <div className="bg-[#111113] rounded-xl border border-[#2a2a2e] px-5 py-4 font-mono text-sm mb-6">
+              <span className="text-[#60a5fa]">import</span> <span className="text-white">{"{ OlPDFEmbed }"}</span> <span className="text-[#60a5fa]">from</span> <span className="text-orange-400">&apos;https://cdn.jsdelivr.net/npm/@olpdf/embed&apos;</span><span className="text-[#6b7280]">;</span>
+            </div>
+          </section>
+
+          <section id="embed-events" className="scroll-mt-24 mt-12">
+            <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Events</h2>
+            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">Subscribe to events using <code className="font-mono text-amber-500 text-sm">editor.on(event, handler)</code>. Each call returns an unsubscribe function.</p>
+            <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+              <table className="w-full text-sm">
+                <thead className="bg-[var(--bg-elevated)] border-b border-[var(--border-subtle)]">
+                  <tr>
+                    {["Event", "Payload", "Description"].map((h) => (
+                      <th key={h} className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {[
+                    { event: "READY", payload: "—", desc: "Editor mounted and ready to accept commands." },
+                    { event: "MODEL_UPDATE", payload: "{ documentId, documentModel }", desc: "Full AST after any edit. Replaces deprecated BLOCK_CHANGE." },
+                    { event: "PAGE_ADDED", payload: "{ pageIndex, width, height }", desc: "Layout engine added an overflow page." },
+                    { event: "PAGE_REMOVED", payload: "{ pageIndex }", desc: "Layout engine removed an overflow page." },
+                    { event: "SAVE", payload: "{ documentId, blockCount, pageCount }", desc: "Document saved." },
+                    { event: "EXPORT_COMPLETE", payload: "{ url }", desc: "Export finished; download URL (24h TTL)." },
+                  ].map(({ event, payload, desc }) => (
+                    <tr key={event} className="hover:bg-[var(--bg-elevated)]/50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-orange-400 whitespace-nowrap">{event}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)] whitespace-nowrap">{payload}</td>
+                      <td className="px-4 py-3 text-xs text-[var(--text-secondary)]">{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="embed-frameworks" className="scroll-mt-24 mt-12">
+            <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Framework Guides</h2>
+            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">The SDK is framework-agnostic. Call <code className="font-mono text-amber-500 text-sm">new OlPDFEmbed(container, options)</code> once your container element is in the DOM, and call <code className="font-mono text-amber-500 text-sm">editor.destroy()</code> on unmount.</p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                { fw: "Next.js", hint: "Use useEffect + useRef. Pass 'use client' directive. Call destroy() in the cleanup return." },
+                { fw: "Svelte", hint: "Use onMount / onDestroy. Bind container with bind:this." },
+                { fw: "Nuxt / Vue", hint: "Use onMounted. Access ref.value as the container element." },
+                { fw: "Astro", hint: "Place script inside the .astro file. getElementById after the div." },
+                { fw: "Analog (Angular)", hint: "Implement AfterViewInit. Use @ViewChild to get the native element." },
+                { fw: "Wix (Velo)", hint: "Use $w.onReady. Call $w('#element').getEl() for the container." },
+                { fw: "WordPress", hint: "Enqueue via wp_enqueue_script and add usage via wp_add_inline_script." },
+              ].map(({ fw, hint }) => (
+                <div key={fw} className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+                  <div className="text-sm font-black text-[var(--text-primary)] mb-1">{fw}</div>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{hint}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 text-sm text-[var(--text-secondary)]">
+              See the full interactive examples on the <a href="/#embed" className="text-orange-500 hover:text-orange-400 font-semibold transition-colors">landing page embed section</a>.
+            </p>
           </section>
 
           <div className="py-12 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
