@@ -145,7 +145,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         />
       )}
 
-      {installedPlugins?.map((p: Record<string, unknown>) => (
+      {installedPlugins?.map((p: { id: string; bundle_url: string; [k: string]: unknown }) => (
         <PluginHost
           key={p.id}
           bundleUrl={p.bundle_url}
