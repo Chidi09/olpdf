@@ -39,21 +39,24 @@ export default function Dashboard() {
   const pathname = usePathname();
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
 
-  const documentsQuery = useQuery<Record<string, unknown>[]>({
+  type ApiDoc  = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
+  type ApiBook = { id: string; title?: string; updated_at?: string; created_at?: string; chapters?: unknown[] };
+
+  const documentsQuery = useQuery<ApiDoc[]>({
     queryKey: ["documents"],
     queryFn: async () => {
       const res = await fetch("/api/bff/documents");
       if (!res.ok) throw new Error("Failed to fetch documents");
-      return res.json();
+      return res.json() as Promise<ApiDoc[]>;
     },
   });
 
-  const booksQuery = useQuery<Record<string, unknown>[]>({
+  const booksQuery = useQuery<ApiBook[]>({
     queryKey: ["books"],
     queryFn: async () => {
       const res = await fetch("/api/bff/books");
       if (!res.ok) throw new Error("Failed to fetch books");
-      return res.json();
+      return res.json() as Promise<ApiBook[]>;
     },
   });
 
