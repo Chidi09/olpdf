@@ -4,7 +4,7 @@
 // `export {}` makes this a module so `declare const self` is a local override,
 // not a redeclaration of the global WorkerGlobalScope.self.
 export {};
-declare const self: { location: { origin: string } };
+declare const self: { location: { origin: string }; onmessage: ((e: MessageEvent) => void) | null };
 
 type ParseFn = (data: Uint8Array) => unknown;
 
