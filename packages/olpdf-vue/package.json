@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@olpdf/vue",
   "version": "0.1.0",
   "description": "Vue 3 / Nuxt component wrapper for @olpdf/embed",
@@ -31,7 +31,7 @@
     "vue": ">=3.3"
   },
   "dependencies": {
-    "@olpdf/embed": "^0.1.0"
+    "@olpdf/embed": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
