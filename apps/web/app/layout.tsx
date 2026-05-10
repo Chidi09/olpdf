@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "./providers";
 import LayoutShell from "@/components/LayoutShell";
 import { DEFAULT_BRAND } from "@/lib/branding";
+import { TypekitLoader } from "@/components/TypekitLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,16 +105,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        {/* Load Typekit non-blocking — preconnect first, then swap in after parse */}
+        {/* Preconnect hints — reduce DNS/TLS overhead for external assets */}
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://p.typekit.net" crossOrigin="anonymous" />
-        <link rel="preload" href="https://use.typekit.net/nlr1ayn.css" as="style" />
-        <link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" media="print" onLoad={(e) => { (e.currentTarget as HTMLLinkElement).media = 'all'; }} />
-        <noscript><link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" /></noscript>
-        {/* Preconnect for simpleicons CDN used in landing page */}
         <link rel="preconnect" href="https://cdn.simpleicons.org" crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col">
+        <TypekitLoader />
         <Providers>
           <LayoutShell>{children}</LayoutShell>
         </Providers>
