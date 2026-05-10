@@ -156,7 +156,7 @@ Use your tools to make the requested changes. Be precise."""
         tool_calls = await provider.run_with_tools(prompt, _TOOL_DECLARATIONS)
     else:
         # Fallback: env Gemini key
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         chat = model.start_chat()
         response = chat.send_message(prompt, tools=_TOOL_DECLARATIONS, tool_config={"function_calling_config": {"mode": "ANY"}})
         tool_calls = []
@@ -315,7 +315,7 @@ async def chat_with_document(document_id: str, message: str, user_id: str = "") 
         provider = await get_provider_for_user(user_id)
         text = await provider.generate(prompt)
     elif GENAI_API_KEY:
-        model_client = genai.GenerativeModel("gemini-1.5-flash")
+        model_client = genai.GenerativeModel("gemini-2.5-flash")
         response = model_client.generate_content(prompt)
         text = getattr(response, "text", None) or ""
     else:
