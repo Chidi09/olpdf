@@ -1,7 +1,7 @@
 "use client"
 
 import { Extension } from "@tiptap/core";
-import { GripVertical, Hash, Type, List, Table as TableIcon, Image as ImageIcon, Minus } from "lucide-react";
+import { Hash, Type, List, Table as TableIcon, Minus } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";

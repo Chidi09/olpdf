@@ -3,19 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Star, 
-  Search, 
-  Filter, 
-  Upload, 
-  Folder, 
-  BarChart3, 
-  Settings, 
-  Shield, 
-  HelpCircle,
-  FileText,
-  BookOpen,
-  MoreVertical,
-  ArrowRight
+  Star,
+  Search,
+  Upload,
+  Folder,
+  BarChart3,
+  Settings,
+  Shield,
+  HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

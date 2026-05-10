@@ -1,6 +1,6 @@
 "use client";
 
-import { Shield, Lock, Eye, Trash2, Globe, Bell, FileText, Scale } from "lucide-react";
+import { Shield, Lock, Eye, Trash2, Globe, FileText } from "lucide-react";
 import BackLink from "@/components/BackLink";
 
 export default function PrivacyPage() {

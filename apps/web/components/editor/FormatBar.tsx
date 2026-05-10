@@ -17,13 +17,6 @@ const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72
 
 type Alignment = "left" | "center" | "right" | "justify";
 
-const ALIGN_ICONS: { value: Alignment; label: string }[] = [
-  { value: "left",    label: "⬛▬▬" },
-  { value: "center",  label: "▬⬛▬" },
-  { value: "right",   label: "▬▬⬛" },
-  { value: "justify", label: "▬▬▬" },
-];
-
 // SVG icons kept inline to avoid extra dependencies
 function AlignLeft()    { return <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor"><rect x="1" y="2" width="14" height="2"/><rect x="1" y="6" width="10" height="2"/><rect x="1" y="10" width="14" height="2"/><rect x="1" y="14" width="8" height="2"/></svg>; }
 function AlignCenter()  { return <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor"><rect x="1" y="2" width="14" height="2"/><rect x="3" y="6" width="10" height="2"/><rect x="1" y="10" width="14" height="2"/><rect x="4" y="14" width="8" height="2"/></svg>; }

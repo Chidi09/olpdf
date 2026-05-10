@@ -145,7 +145,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         />
       )}
 
-      {installedPlugins?.map((p: any) => (
+      {installedPlugins?.map((p: Record<string, unknown>) => (
         <PluginHost
           key={p.id}
           bundleUrl={p.bundle_url}
@@ -158,7 +158,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             setCurrentModel(nextModel);
             saveMutation.mutate(nextModel);
           }}
-          onEmitNotification={(msg, type) => {
+          onEmitNotification={(_msg, _type) => {
             // Notification handled by system
           }}
         />

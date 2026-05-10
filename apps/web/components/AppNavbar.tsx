@@ -3,60 +3,76 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
-import {
-  LayoutTemplate,
-  HelpCircle,
-  Menu,
-  X,
-  LogOut,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { LayoutTemplate, HelpCircle, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { DEFAULT_BRAND } from "@/lib/branding";
 import { useNavStore } from "@/store/useNavStore";
 
-// AppNavbar is only rendered on public pages (landing, docs, etc.)
-// Logged-in app routes use AppSidebar instead — no overlap.
 const navItems = [
-  { href: "/templates", label: "Templates", icon: LayoutTemplate, auth: "always" },
-  { href: "/help",      label: "Help",       icon: HelpCircle,     auth: "always" },
+  { href: "/templates", label: "Templates", icon: LayoutTemplate },
+  { href: "/help",      label: "Help",       icon: HelpCircle },
 ];
 
 const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
+// Outer shell handles the auth-route guard without calling any hooks after return.
 export default function AppNavbar() {
   const pathname = usePathname();
-
   if (AUTH_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
     return null;
   }
+  return <NavbarInner />;
+}
 
+function BrandWordmark({ visible }: { visible: boolean }) {
+  return (
+    <span
+      className={`font-sans font-black tracking-tight text-xl text-[var(--text-primary)] transition-all duration-300 ${
+        visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none"
+      }`}
+    >
+      OL<span className="text-orange-500">PDF</span>
+    </span>
+  );
+}
+
+function NavbarInner() {
+  const pathname = usePathname();
   const router = useRouter();
   const { scrolled, mobileMenuOpen, setScrolled, toggleMobileMenu, setMobileMenuOpen } = useNavStore();
   const { session, user, loading, signOut } = useAuth();
-  const { branding, isLoading: tenantLoading } = useTenant();
+  const { branding } = useTenant();
+  const [pastHero, setPastHero] = useState(false);
+  const [nearFooter, setNearFooter] = useState(false);
 
   const isAuthenticated = !!session;
+  const isLanding = pathname === "/";
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 20);
+      if (isLanding) {
+        const heroH = window.innerHeight * 0.85;
+        const docH = document.body.scrollHeight;
+        setPastHero(y > heroH);
+        setNearFooter(y > docH - window.innerHeight - 320);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [setScrolled]);
+  }, [isLanding, setScrolled]);
+
+  const showWordmark = !isLanding || (pastHero && !nearFooter);
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/login");
   };
-
-  const filteredItems = navItems.filter((item) => {
-    if (item.auth === "always") return true;
-    if (item.auth === "required") return isAuthenticated;
-    if (item.auth === "public") return !isAuthenticated || pathname === "/";
-    return true;
-  });
 
   return (
     <>
@@ -67,25 +83,22 @@ export default function AppNavbar() {
       >
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex items-center gap-8">
-            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-3 group">
-              <div className="relative h-9 w-9 sm:h-10 sm:w-10 shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                <Image src={DEFAULT_BRAND.icon192} alt={`${branding.name || "OLPDF"} Logo`} fill className="object-contain" priority />
+            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
+              <div className="relative h-9 w-9 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                <Image
+                  src={DEFAULT_BRAND.icon192}
+                  alt={`${branding.name || "OLPDF"} Logo`}
+                  fill
+                  className="object-contain"
+                  priority
+                />
               </div>
-              <span className="hidden sm:inline-flex items-baseline">
-                <span className="font-sans font-black tracking-tighter text-orange-500 text-xl">O</span>
-                <span className="font-serif font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-xl">L</span>
-                <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded-md inline-flex items-baseline relative">
-                  <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-md pointer-events-none" />
-                  <span className="font-mono font-bold text-base opacity-90 relative z-10">P</span>
-                  <span className="font-serif font-black text-base -ml-0.5 relative z-10">D</span>
-                  <span className="font-sans font-thin italic text-base ml-0.5 relative z-10">F</span>
-                </span>
-              </span>
+              <BrandWordmark visible={showWordmark} />
             </Link>
 
             <nav className="hidden lg:flex items-center gap-1 text-sm font-bold">
-              {filteredItems.map((item) => {
-                const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+              {navItems.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(item.href + "/");
                 const Icon = item.icon;
                 return (
                   <Link
@@ -132,7 +145,7 @@ export default function AppNavbar() {
                     <Image src={user.user_metadata.avatar_url} alt="User Avatar" fill className="object-cover opacity-80" />
                   ) : (
                     <span className="font-bold text-[var(--text-primary)]">
-                      {user?.email?.charAt(0).toUpperCase() || "U"}
+                      {user?.email?.charAt(0).toUpperCase() ?? "U"}
                     </span>
                   )}
                 </div>
@@ -167,7 +180,7 @@ export default function AppNavbar() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[90] bg-[var(--bg-base)] lg:hidden animate-fadeIn">
           <div className="flex flex-col p-8 pt-24 gap-6">
-            {filteredItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link

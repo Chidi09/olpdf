@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { forwardJson } from "../../../_shared";
 
 type Params = { params: Promise<{ id: string }> };

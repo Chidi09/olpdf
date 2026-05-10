@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 
 export function OfflineIndicator() {
-  const [offline, setOffline] = useState(false);
+  // Lazy init avoids SSR mismatch and fixes the setState-in-effect lint error.
+  const [offline, setOffline] = useState(() =>
+    typeof navigator !== "undefined" ? !navigator.onLine : false,
+  );
 
   useEffect(() => {
     const on = () => setOffline(true);
     const off = () => setOffline(false);
     window.addEventListener("offline", on);
     window.addEventListener("online", off);
-    setOffline(!navigator.onLine);
     return () => {
       window.removeEventListener("offline", on);
       window.removeEventListener("online", off);

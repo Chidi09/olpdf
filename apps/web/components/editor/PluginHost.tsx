@@ -11,12 +11,11 @@ interface PluginHostProps {
   onEmitNotification: (message: string, type: 'info' | 'error') => void;
 }
 
-export function PluginHost({ 
-  bundleUrl, 
-  documentId, 
-  blocks, 
+export function PluginHost({
+  bundleUrl,
+  blocks,
   onUpdateBlock,
-  onEmitNotification 
+  onEmitNotification
 }: PluginHostProps) {
   const workerRef = useRef<Worker | null>(null);
 

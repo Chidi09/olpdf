@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { Shield, Lock, EyeOff, Server, Activity, ChevronRight } from "lucide-react";
+import { Shield, Lock, EyeOff, Server, Activity } from "lucide-react";
 import BackLink from "@/components/BackLink";
 
 export default function SecurityPage() {

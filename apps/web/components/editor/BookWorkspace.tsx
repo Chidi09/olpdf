@@ -43,7 +43,7 @@ export default function BookWorkspace({ bookId, userName, userColor }: BookWorks
   const safeBook: BookModel = book ?? { title: "Untitled Book", meta: {}, chapters: [] };
 
   const updateBookMetaMutation = useMutation({
-    mutationFn: async (metaUpdates: Record<string, any>) => {
+    mutationFn: async (metaUpdates: Record<string, unknown>) => {
       const res = await fetch(`/api/bff/books/${bookId}/meta`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

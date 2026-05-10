@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { DEFAULT_BRAND } from "@/lib/branding";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://olpdf.xyz";
@@ -32,24 +31,17 @@ const jsonLd = {
   creator: { "@type": "Organization", name: "OLPDF", url: APP_URL },
 };
 import ApiSection from "@/components/ApiSection";
-import EmbedSection from "@/components/EmbedSection";
 import {
   FileJson,
   Layers,
   Wand2,
   Download,
-  Server,
-  Cpu,
-  ShieldCheck,
-  Terminal,
-  Github, 
-  Users, 
-  ArrowRight, 
+  Github,
+  ArrowRight,
   Code2,
   BookOpen,
   Sparkles,
   CheckCircle2,
-  Database,
   PenTool,
   Bookmark,
   Library
@@ -581,15 +573,8 @@ export default function LandingPage() {
                       <div className="relative h-9 w-9 shrink-0 group-hover:scale-105 transition-transform">
                           <Image src={DEFAULT_BRAND.icon192} alt="OLPDF" fill className="object-contain" />
                       </div>
-                      <span className="text-3xl inline-flex items-baseline">
-                          <span className="font-sans font-black tracking-tighter text-orange-500">O</span>
-                          <span className="font-serif italic font-light text-[var(--text-primary)] -ml-1 mr-1.5">L</span>
-                          <span className="bg-[#e21818] text-white px-2.5 py-0.5 rounded-lg shadow-sm border border-[#b31212] inline-flex items-baseline relative group-hover:rotate-1 transition-transform">
-                              <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg pointer-events-none" />
-                              <span className="font-mono font-bold tracking-tight opacity-90 relative z-10">P</span>
-                              <span className="font-serif font-black -ml-0.5 relative z-10">D</span>
-                              <span className="font-sans font-thin italic ml-0.5 scale-110 origin-bottom relative z-10">F</span>
-                          </span>
+                      <span className="font-sans font-black tracking-tight text-2xl text-[var(--text-primary)]">
+                          OL<span className="text-orange-500">PDF</span>
                       </span>
                   </Link>
                   <p className="text-[var(--text-secondary)] text-sm max-w-xs mb-8 font-medium leading-relaxed">

@@ -11,9 +11,6 @@ declare module "posthog-js" {
 }
 
 declare module "jszip" {
-  interface JSZipObject {
-    async(type: "blob"): Promise<Blob>;
-  }
   interface JSZip {
     file(name: string, data: string, options?: { base64?: boolean }): this;
     generateAsync(options: { type: "blob" | "arraybuffer" | "uint8array" }): Promise<Blob>;

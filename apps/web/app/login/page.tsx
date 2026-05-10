@@ -46,19 +46,12 @@ export default function LoginPage() {
         <div className="flex flex-col flex-1 justify-center max-w-sm w-full mx-auto">
 
           <div className="flex justify-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2.5 select-none">
-              <div className="relative h-9 w-9 shrink-0">
+            <Link href="/" className="inline-flex items-center gap-2.5 select-none group">
+              <div className="relative h-9 w-9 shrink-0 group-hover:scale-105 transition-transform">
                 <Image src={DEFAULT_BRAND.icon192} alt="OLPDF" fill className="object-contain" priority />
               </div>
-              <span className="inline-flex items-baseline">
-                <span className="font-sans font-black tracking-tighter text-orange-500 text-2xl">O</span>
-                <span className="font-serif font-light text-white -ml-0.5 mr-0.5 text-2xl">L</span>
-                <span className="bg-[#e21818] text-white px-2 py-0.5 rounded-md inline-flex items-baseline relative">
-                  <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-md pointer-events-none" />
-                  <span className="font-mono font-bold text-lg opacity-90 relative z-10">P</span>
-                  <span className="font-serif font-black text-lg -ml-0.5 relative z-10">D</span>
-                  <span className="font-sans font-thin italic text-lg ml-0.5 relative z-10">F</span>
-                </span>
+              <span className="font-sans font-black tracking-tight text-2xl text-white">
+                OL<span className="text-orange-500">PDF</span>
               </span>
             </Link>
           </div>

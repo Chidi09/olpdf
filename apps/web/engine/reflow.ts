@@ -168,10 +168,8 @@ export function reflowDocument(model: DocumentModel): DocumentModel {
     const pageIndex = block.page_index ?? 0;
     const colIndex  = block.column_index ?? 0;
     const key       = `${pageIndex}:${colIndex}`;
-    const pageDim   = _pageDim(pageDimensions, pageIndex);
     const cursorY   = cursors.get(key) ?? TOP_MARGIN;
     const height    = _blockHeight(block);
-    const bb        = block.bounding_box ?? [0, 0, 0, 0];
     const fontSize  = block.font_meta?.size ?? 11;
 
     const placed = _resolveOverflow(block, cursorY, height, pageDimensions);

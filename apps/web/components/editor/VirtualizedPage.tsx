@@ -44,7 +44,8 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
   // Ref so the IntersectionObserver callback always reads current state
   // without needing to be recreated on every state transition.
   const stateRef = useRef<PageState>("placeholder");
-  stateRef.current = state;
+  // Sync via useLayoutEffect so we never mutate a ref during render.
+  useEffect(() => { stateRef.current = state; }, [state]);
 
   useEffect(() => {
     const cached = thumbnailCacheRef.current.get(dim.page_index);

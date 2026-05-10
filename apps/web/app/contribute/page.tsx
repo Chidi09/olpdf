@@ -10,7 +10,6 @@ import {
   ArrowRight, 
   Sparkles,
   Zap,
-  Shield,
   Database,
   Cpu
 } from "lucide-react";

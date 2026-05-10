@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { HelpCircle, Search, Mail, FileText, ExternalLink, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export default function HelpPage() {
   return (

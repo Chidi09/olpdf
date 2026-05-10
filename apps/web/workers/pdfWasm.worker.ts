@@ -4,14 +4,14 @@
 // `export {}` makes this a module so `declare const self` is a local override,
 // not a redeclaration of the global WorkerGlobalScope.self.
 export {};
-declare const self: any;
+declare const self: DedicatedWorkerGlobalScope;
 
 type ParseFn = (data: Uint8Array) => unknown;
 
 let parseFn: ParseFn | null = null;
 
 const ready = (async () => {
-  // @ts-ignore
+  // @ts-expect-error — dynamic wasm import has no type declarations
   const mod = await import(/* webpackIgnore: true */ "/wasm/pdf_wasm.js");
   await (mod.default as (url: URL | string) => Promise<void>)(
     new URL("/wasm/pdf_wasm_bg.wasm", self.location.origin)

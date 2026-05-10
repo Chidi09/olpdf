@@ -42,10 +42,11 @@ export function useCollaborationBridge(
       }
     };
 
+    const saveDebouncedCurrent = saveDebounced.current;
     yBlocks.observeDeep(observer);
     return () => {
       yBlocks.unobserveDeep(observer);
-      saveDebounced.current.cancel();
+      saveDebouncedCurrent.cancel();
     };
   }, [ydocRef, fabricCanvasesRef, scale, saveDebounced]);
 }

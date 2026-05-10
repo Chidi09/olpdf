@@ -39,7 +39,7 @@ export default function Dashboard() {
   const pathname = usePathname();
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
 
-  const documentsQuery = useQuery<any[]>({
+  const documentsQuery = useQuery<Record<string, unknown>[]>({
     queryKey: ["documents"],
     queryFn: async () => {
       const res = await fetch("/api/bff/documents");
@@ -48,7 +48,7 @@ export default function Dashboard() {
     },
   });
 
-  const booksQuery = useQuery<any[]>({
+  const booksQuery = useQuery<Record<string, unknown>[]>({
     queryKey: ["books"],
     queryFn: async () => {
       const res = await fetch("/api/bff/books");

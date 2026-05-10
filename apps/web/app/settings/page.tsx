@@ -121,11 +121,6 @@ export default function SettingsPage() {
       .finally(() => setLoadingSettings(false));
   }, []);
 
-  // Reset model when provider changes
-  useEffect(() => {
-    const cfg = PROVIDERS.find((p) => p.id === provider);
-    if (cfg) setModel(cfg.models[0]);
-  }, [provider]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -266,7 +261,7 @@ export default function SettingsPage() {
                   return (
                     <button
                       key={p.id}
-                      onClick={() => setProvider(p.id)}
+                      onClick={() => { setProvider(p.id); setModel(p.models[0]); }}
                       className={`relative flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left transition-all ${
                         active
                           ? "border-transparent bg-[var(--bg-surface)]"

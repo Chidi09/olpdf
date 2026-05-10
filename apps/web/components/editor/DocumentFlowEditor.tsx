@@ -97,7 +97,7 @@ const CrossBlockNav = Extension.create<CrossBlockOptions>({
     return {
       ArrowRight: ({ editor }) => {
         const { state } = editor;
-        const { from, to, empty } = state.selection;
+        const { from, empty } = state.selection;
         if (!empty) return false;
         if (from < state.doc.content.size - 1) return false;
         this.options.onNavigateNext();
@@ -212,6 +212,7 @@ function BlockCell({
       StarterKit,
       TextStyle,
       Color,
+      // eslint-disable-next-line react-hooks/refs -- callbacks are closures; cbRef.current is read at call-time, not during render
       CrossBlockNav.configure({
         onNavigateNext: () => cbRef.current.onNavigateNext(),
         onNavigatePrev: () => cbRef.current.onNavigatePrev(),

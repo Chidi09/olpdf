@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowRight, Copy, Check, Code2, Sparkles } from "lucide-react";
+import { ArrowRight, Copy, Check, Code2 } from "lucide-react";
 
 const SNIPPETS: Record<string, { filename: string; lines: { text: string; color: string }[][] }> = {
   react: {

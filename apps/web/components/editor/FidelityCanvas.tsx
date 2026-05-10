@@ -6,7 +6,7 @@ import debounce from "lodash/debounce";
 import { Canvas, Ellipse, FabricObject, Group, IText, Line, PencilBrush, Rect, Textbox } from "fabric";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
-import { useFidelityCanvasStore, type ShapeTool, type SelectedBlockMeta } from "@/store/useFidelityCanvasStore";
+import { useFidelityCanvasStore, type ShapeTool } from "@/store/useFidelityCanvasStore";
 import FormatBar from "@/components/editor/FormatBar";
 import { reflow } from "@/engine/reflow";
 import { DocumentFlowEditor } from "@/components/editor/DocumentFlowEditor";
@@ -26,7 +26,7 @@ import { useDarkModeCanvas } from "@/hooks/useDarkModeCanvas";
 import { useAiTools } from "@/hooks/useAiTools";
 import { useEditorToolbarActions } from "@/hooks/useEditorToolbarActions";
 import { useModelSyncAndReflow } from "@/hooks/useModelSyncAndReflow";
-import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TipTapJSON, TableData } from "@/types/editor";
+import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TableData } from "@/types/editor";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -504,7 +504,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
   useCommentIndicators(fabricCanvasesRef, comments, scale, setOpenCommentThread);
 
-  const { syncCanvasToModel, applyReflowToCanvases, restoreFabricTextbox } = useModelSyncAndReflow({
+  const { syncCanvasToModel, applyReflowToCanvases } = useModelSyncAndReflow({
     model,
     scale,
     fabricCanvasesRef,
@@ -989,6 +989,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       )}
 
       {/* Pages */}
+      {/* eslint-disable-next-line react-hooks/refs -- pageDimensions is state derived, not a ref */}
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8">
         {pageDimensions.map((dim) => (
           <PageErrorBoundary key={dim.page_index} pageIndex={dim.page_index}>

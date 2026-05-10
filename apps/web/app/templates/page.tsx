@@ -4,10 +4,9 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  Search, 
-  LayoutTemplate, 
-  Star, 
-  Users, 
+  Search,
+  LayoutTemplate,
+  Star,
   Briefcase, 
   GraduationCap, 
   Scale, 

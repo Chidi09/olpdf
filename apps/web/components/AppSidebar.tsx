@@ -64,15 +64,8 @@ export default function AppSidebar() {
           <Image src={DEFAULT_BRAND.icon192} alt="OLPDF Logo" fill className="object-contain" priority />
         </div>
         {expanded && (
-          <span className="inline-flex items-baseline shrink-0">
-            <span className="font-sans font-black tracking-tighter text-orange-500 text-lg">O</span>
-            <span className="font-serif font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-lg">L</span>
-            <span className="bg-[#e21818] text-white px-1.5 py-px rounded-md inline-flex items-baseline relative">
-              <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-md pointer-events-none" />
-              <span className="font-mono font-bold text-sm opacity-90 relative z-10">P</span>
-              <span className="font-serif font-black text-sm -ml-0.5 relative z-10">D</span>
-              <span className="font-sans font-thin italic text-sm ml-0.5 relative z-10">F</span>
-            </span>
+          <span className="font-sans font-black tracking-tight text-lg text-[var(--text-primary)] truncate">
+            OL<span className="text-orange-500">PDF</span>
           </span>
         )}
       </Link>

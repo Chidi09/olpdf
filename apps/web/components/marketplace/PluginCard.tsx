@@ -1,6 +1,6 @@
 'use client'
 
-import { Star, Download, ShieldCheck, User, Box } from 'lucide-react'
+import { Download, ShieldCheck, User, Box } from 'lucide-react'
 
 interface PluginCardProps {
   plugin: {

@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import path from "node:path";
+import { createRequire } from "node:module";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -10,22 +11,16 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "avatars.githubusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      }
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
 };
 
+const _require = createRequire(import.meta.url);
 let withPWAConfig = (config: NextConfig) => config;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const withPWA = require("next-pwa")({
+  const withPWA = _require("next-pwa")({
     dest: "public",
     register: true,
     skipWaiting: true,
@@ -33,7 +28,7 @@ try {
   });
   withPWAConfig = withPWA;
 } catch {
-  withPWAConfig = (config: NextConfig) => config;
+  // next-pwa optional — skip if not installed
 }
 
 export default withPWAConfig(nextConfig);
