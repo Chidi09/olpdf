@@ -1,6 +1,5 @@
-"""PDF import routing: classify pages, extract native text, dispatch OCR worker."""
+"""PDF import pipeline: classify pages, extract native text, OCR via Gemini Vision."""
 import logging
-import os
 from io import BytesIO
 from typing import Any, Dict, List
 
@@ -9,6 +8,7 @@ import pdfplumber
 from ...core.supabase_client import supabase
 from ...core.security import sanitize_document_model
 from ...engine.extractor import extract_page_blocks_from_pdf
+from ...services.ocr_service import ocr_pages_with_gemini
 
 logger = logging.getLogger("olpdf-api.import")
 
@@ -24,11 +24,12 @@ def classify_page(page: Any) -> dict:
     if text_coverage > 0.8:
         strategy, page_type = "native", "text"
     elif text_coverage < 0.2 and image_ratio > 0.5:
-        strategy, page_type = "ocr", "scanned"
+        strategy, page_type = "gemini_vision", "scanned"
     elif len(tables) >= 2:
-        strategy, page_type = "table_extraction", "table_heavy"
+        # Still extract natively — pdfplumber table detection is reliable
+        strategy, page_type = "native", "table_heavy"
     elif image_ratio > 0.6:
-        strategy, page_type = "vision_preserve", "image_heavy"
+        strategy, page_type = "gemini_vision", "image_heavy"
     else:
         strategy, page_type = "native", "text"
 
@@ -38,11 +39,9 @@ def classify_page(page: Any) -> dict:
         "text_layer_ratio": min(text_coverage, 1.0),
         "table_likelihood": min(len(tables) / 5, 1.0),
         "image_ratio": min(image_ratio, 1.0),
-        "confidence_score": 0.95 if strategy == "native" else 0.7,
+        "confidence_score": 0.95 if strategy == "native" else 0.85,
         "needs_review": strategy != "native",
     }
-
-
 
 
 def _safe_update_document(document_id: str, payload: dict) -> None:
@@ -75,7 +74,10 @@ async def route_pdf_import(
             document_id, e, exc_info=True,
             extra={"request_id": request_id},
         )
-        _safe_update_document(document_id, {"status": "failed", "error": "Import pipeline crashed unexpectedly"})
+        _safe_update_document(document_id, {
+            "status": "failed",
+            "error": "Import pipeline crashed unexpectedly",
+        })
         return {"status": "failed", "document_id": document_id}
 
 
@@ -86,15 +88,19 @@ async def _route_pdf_import_inner(
     request_id: str = "",
 ) -> dict:
     native_blocks: List[Dict[str, Any]] = []
-    pages_needing_ocr: List[int] = []
+    pages_needing_vision: List[int] = []
     metadata_rows: list = []
 
     _safe_update_document(document_id, {"status": "processing", "import_progress": 5, "error": None})
 
+    # ── Phase 1: Classify pages ────────────────────────────────────────────────
     with pdfplumber.open(BytesIO(file_bytes)) as pdf:
         pages_total = len(pdf.pages)
         if pages_total > 500:
-            _safe_update_document(document_id, {"status": "failed", "error": f"Document exceeds 500 pages (found {pages_total})."})
+            _safe_update_document(document_id, {
+                "status": "failed",
+                "error": f"Document exceeds 500 pages (found {pages_total}).",
+            })
             return {"status": "failed", "error": "Document too long"}
 
         for idx, page in enumerate(pdf.pages):
@@ -104,61 +110,59 @@ async def _route_pdf_import_inner(
             if classification["extraction_strategy"] == "native":
                 native_blocks.extend(extract_page_blocks_from_pdf(file_bytes, idx))
             else:
-                pages_needing_ocr.append(idx)
+                pages_needing_vision.append(idx)
 
-            _safe_update_document(document_id, {"import_progress": min(95, int(((idx + 1) / max(pages_total, 1)) * 90) + 5)})
+            _safe_update_document(document_id, {
+                "import_progress": min(80, int(((idx + 1) / max(pages_total, 1)) * 75) + 5),
+            })
 
     _safe_insert_page_metadata(metadata_rows)
 
-    if native_blocks:
-        sanitized = sanitize_document_model({"blocks": native_blocks})
+    # ── Phase 2: Gemini Vision OCR for scanned / image-heavy pages ────────────
+    vision_blocks: List[Dict[str, Any]] = []
+    if pages_needing_vision:
+        logger.info(
+            "document %s: %d pages need Gemini Vision OCR: %s",
+            document_id, len(pages_needing_vision), pages_needing_vision,
+        )
+        _safe_update_document(document_id, {"import_progress": 82})
+        vision_blocks = await ocr_pages_with_gemini(file_bytes, pages_needing_vision)
+
+    # ── Phase 3: Merge blocks in page order and persist ───────────────────────
+    all_blocks = sorted(
+        native_blocks + vision_blocks,
+        key=lambda b: (b.get("page_index", 0), b.get("id", "")),
+    )
+
+    if all_blocks:
+        sanitized = sanitize_document_model({"blocks": all_blocks})
         _safe_update_document(document_id, {
             "document_model": sanitized,
-            "status": "partial" if pages_needing_ocr else "ready",
+            "status": "ready",
+            "import_progress": 95,
         })
 
-    if pages_needing_ocr:
-        ocr_worker_url = os.environ.get("OCR_WORKER_URL")
-        worker_secret = os.environ.get("WORKER_SECRET", "")
-        if ocr_worker_url:
-            import httpx
-            headers = {
-                "Content-Type": "application/json",
-                "X-Worker-Secret": worker_secret,
-            }
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    await client.post(
-                        f"{ocr_worker_url.rstrip('/')}/worker/process-ocr",
-                        headers=headers,
-                        json={"document_id": document_id, "page_indices": pages_needing_ocr},
-                    )
-            except Exception as e:
-                logger.error("OCR worker dispatch failed for document %s: %s", document_id, e)
+    _safe_update_document(document_id, {"status": "ready", "import_progress": 100})
 
-    final_status = "partial" if pages_needing_ocr else "ready"
-    _safe_update_document(document_id, {"status": final_status, "import_progress": 100})
-
+    # ── Phase 4: Notifications ────────────────────────────────────────────────
     try:
-        from ...services.notification_service import notify_import_complete, notify_ocr_partial
+        from ...services.notification_service import notify_import_complete
         doc_row = supabase.table("documents").select("title, user_id").eq("id", document_id).single().execute()
-        if doc_row.data:
-            title = doc_row.data.get("title", "Your document")
-            user_id = doc_row.data.get("user_id")
-            if user_id:
-                if final_status == "ready":
-                    notify_import_complete(user_id, title, document_id)
-                else:
-                    notify_ocr_partial(user_id, title, document_id, len(pages_needing_ocr))
+        if doc_row.data and doc_row.data.get("user_id"):
+            notify_import_complete(
+                doc_row.data["user_id"],
+                doc_row.data.get("title", "Your document"),
+                document_id,
+            )
     except Exception as e:
         logger.warning("Import notification failed for document %s: %s", document_id, e)
 
     return {
-        "status": final_status,
+        "status": "ready",
         "document_id": document_id,
         "pages_total": len(metadata_rows),
-        "pages_native": len(metadata_rows) - len(pages_needing_ocr),
-        "pages_ocr": len(pages_needing_ocr),
+        "pages_native": len(metadata_rows) - len(pages_needing_vision),
+        "pages_vision": len(pages_needing_vision),
         "page_metadata": metadata_rows,
     }
 
@@ -183,12 +187,21 @@ async def index_chapter_embeddings(chapter_id: str) -> None:
         if not chunks:
             return
 
-        embed_res = genai.embed_content(model="models/text-embedding-004", content=chunks, task_type="retrieval_document")
-        embeddings = embed_res["embedding"]
+        embed_res = genai.embed_content(
+            model="models/text-embedding-004",
+            content=chunks,
+            task_type="retrieval_document",
+        )
 
         rows = [
-            {"book_id": chapter["book_id"], "chapter_id": chapter_id, "chunk_index": i, "content": c, "embedding": e}
-            for i, (c, e) in enumerate(zip(chunks, embeddings))
+            {
+                "book_id": chapter["book_id"],
+                "chapter_id": chapter_id,
+                "chunk_index": i,
+                "content": c,
+                "embedding": e,
+            }
+            for i, (c, e) in enumerate(zip(chunks, embed_res["embedding"]))
         ]
         supabase.table("chapter_embeddings").delete().eq("chapter_id", chapter_id).execute()
         supabase.table("chapter_embeddings").insert(rows).execute()

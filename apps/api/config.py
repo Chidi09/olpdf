@@ -12,13 +12,8 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     supabase_jwt_secret: str = ""
 
-    # QStash
-    qstash_token: str = ""
+    # QStash (used only for cleanup-exports cron)
     qstash_current_signing_key: str = ""
-
-    # Modal workers
-    modal_worker_url: str = ""
-    worker_secret: str = ""
 
     # AI
     gemini_api_key: str = ""
