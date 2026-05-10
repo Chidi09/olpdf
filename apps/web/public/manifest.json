@@ -1,8 +1,9 @@
 {
   "name": "OLPDF Editor",
   "short_name": "OLPDF",
-  "description": "Edit any PDF like a Word document",
+  "description": "Edit any PDF like a Word document — free, AI-powered, structure-first.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#f97316",
@@ -19,6 +20,23 @@
       "purpose": "any maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/brand/screenshots/editor-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "OLPDF Fidelity Editor"
+    },
+    {
+      "src": "/brand/screenshots/editor-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "OLPDF on mobile"
+    }
+  ],
   "orientation": "any",
-  "categories": ["productivity", "utilities"]
+  "categories": ["productivity", "utilities"],
+  "lang": "en-US"
 }
