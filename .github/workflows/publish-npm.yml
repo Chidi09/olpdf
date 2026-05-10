@@ -1,0 +1,31 @@
+name: Publish @olpdf/embed to npm
+
+on:
+  push:
+    tags:
+      - "embed/v*"   # trigger on tags like  embed/v0.1.0
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter @olpdf/embed build
+
+      - name: Publish
+        run: pnpm --filter @olpdf/embed publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

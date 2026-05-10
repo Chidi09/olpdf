@@ -1,0 +1,18 @@
+name: Publish olpdf to crates.io
+
+on:
+  push:
+    tags:
+      - "rs/v*"   # trigger on tags like  rs/v0.1.0
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish
+        working-directory: packages/olpdf-rs
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}

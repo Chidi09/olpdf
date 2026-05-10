@@ -1,0 +1,17 @@
+[package]
+name = "olpdf"
+version = "0.1.0"
+edition = "2021"
+description = "Rust client for the OLPDF PDF editing API"
+license = "MIT"
+homepage = "https://olpdf.xyz"
+repository = "https://github.com/Chidi09/olpdf"
+documentation = "https://docs.rs/olpdf"
+keywords = ["pdf", "editor", "ai", "document"]
+categories = ["api-bindings", "web-programming"]
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
