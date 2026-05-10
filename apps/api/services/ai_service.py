@@ -31,26 +31,73 @@ def apply_tool_call(document: Dict[str, Any], tool_call: Any) -> Dict[str, Any]:
         for b in blocks:
             if b["id"] == args.get("block_id"):
                 b["content"] = args.get("new_content")
+                # Clear rich_spans so the layout engine correctly reconstructs formatting from raw string
+                if "rich_spans" in b:
+                    del b["rich_spans"]
                 break
 
     elif name == "InsertBlock":
         block_type = args.get("block_type", "paragraph")
         if block_type not in _VALID_BLOCK_TYPES:
             block_type = "paragraph"
-        new_block = {"id": f"blk_ai_{os.urandom(4).hex()}", "type": block_type, "content": args.get("content", ""), "confidence_score": 1.0, "needs_review": False, "style_overrides": {}}
+        new_id = f"blk_ai_{os.urandom(4).hex()}"
+        new_block = {
+            "id": new_id, 
+            "type": block_type, 
+            "content": args.get("content", ""), 
+            "confidence_score": 1.0, 
+            "needs_review": False, 
+            "style_overrides": {},
+            "float": "none"
+        }
         after_id = args.get("after_block_id")
         if after_id == "START":
+            if blocks:
+                first_id = blocks[0]["id"]
+                new_block["next_block_id"] = first_id
+                blocks[0]["prev_block_id"] = new_id
             blocks.insert(0, new_block)
         else:
             for i, b in enumerate(blocks):
                 if b["id"] == after_id:
+                    # Heal links
+                    next_id = b.get("next_block_id")
+                    b["next_block_id"] = new_id
+                    new_block["prev_block_id"] = b["id"]
+                    if next_id:
+                        new_block["next_block_id"] = next_id
+                        for nb in blocks:
+                            if nb["id"] == next_id:
+                                nb["prev_block_id"] = new_id
+                                break
                     blocks.insert(i + 1, new_block)
                     break
             else:
                 blocks.append(new_block)
 
     elif name == "DeleteBlock":
-        document["blocks"] = [b for b in blocks if b["id"] != args.get("block_id")]
+        block_id = args.get("block_id")
+        # Find the block to delete to heal links
+        deleted_block = next((b for b in blocks if b["id"] == block_id), None)
+        if deleted_block:
+            prev_id = deleted_block.get("prev_block_id")
+            next_id = deleted_block.get("next_block_id")
+            if prev_id:
+                for b in blocks:
+                    if b["id"] == prev_id:
+                        if next_id:
+                            b["next_block_id"] = next_id
+                        else:
+                            b.pop("next_block_id", None)
+            if next_id:
+                for b in blocks:
+                    if b["id"] == next_id:
+                        if prev_id:
+                            b["prev_block_id"] = prev_id
+                        else:
+                            b.pop("prev_block_id", None)
+                            
+        document["blocks"] = [b for b in blocks if b["id"] != block_id]
 
     elif name == "ReorderBlocks":
         order = args.get("block_ids_in_order", [])
@@ -58,6 +105,19 @@ def apply_tool_call(document: Dict[str, Any], tool_call: Any) -> Dict[str, Any]:
         ordered = [block_map[bid] for bid in order if bid in block_map]
         mentioned = set(order)
         ordered += [b for b in blocks if b["id"] not in mentioned]
+        
+        # Re-link the AST flow sequentially
+        for i in range(len(ordered)):
+            if i > 0:
+                ordered[i]["prev_block_id"] = ordered[i-1]["id"]
+            else:
+                ordered[i].pop("prev_block_id", None)
+                
+            if i < len(ordered) - 1:
+                ordered[i]["next_block_id"] = ordered[i+1]["id"]
+            else:
+                ordered[i].pop("next_block_id", None)
+                
         document["blocks"] = ordered
 
     elif name == "UpdateStyle":
