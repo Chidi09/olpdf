@@ -45,7 +45,11 @@ import {
   CheckCircle2,
   PenTool,
   Bookmark,
-  Library
+  Library,
+  Terminal,
+  HardDrive,
+  ShieldCheck,
+  Cpu
 } from "lucide-react";
 
 // Official Logos as SVG Components
@@ -227,199 +231,218 @@ export default function LandingPage() {
       </section>
 
       {/* TECH STACK */}
-      <section className="relative py-32 px-6 border-b border-[#1a1a1d] overflow-hidden" style={{ background: '#0d0d10' }}>
-        {/* Ambient glow */}
-        <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-32 w-[800px] h-[400px] rounded-full opacity-[0.15]" style={{ background: 'radial-gradient(ellipse, #f97316 0%, transparent 70%)', filter: 'blur(80px)' }} />
-        {/* Subtle dot grid */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      {/* DRAMATIC TECH NARRATIVE */}
+      <section className="relative bg-[#0d0d10] pt-48 pb-24 overflow-hidden border-b border-[#1a1a1d]">
+        {/* Vertical Axis Line */}
+        <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#1e1e21] to-transparent hidden md:block" />
+        
+        {/* Ambient background effects */}
+        <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[120px]" />
+            <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px]" />
+        </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto">
-
-          {/* Heading */}
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/25 bg-orange-500/8 text-orange-400 text-[10px] font-mono font-bold uppercase tracking-widest mb-6">
-              <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" />
-              Infrastructure
-            </div>
-            <h2 className="font-sans font-black text-5xl md:text-6xl tracking-tight text-white leading-[1.05] mb-5">
-              Built on open<br />foundations.
-            </h2>
-            <p className="text-[#6b7280] max-w-lg mx-auto text-lg leading-relaxed font-medium">
-              Every layer chosen for reliability, transparency, and zero vendor lock-in. No black boxes, no magic, no surprise bills.
-            </p>
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          <div className="text-center mb-48 animate-reveal">
+             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/20 bg-orange-500/5 text-orange-500 text-[10px] font-mono font-bold uppercase tracking-widest mb-8">
+                The Blueprint
+             </div>
+             <h2 className="font-sans font-black text-7xl md:text-[9rem] tracking-tighter text-white leading-[0.8] mb-12">
+               The <span className="text-orange-500 italic font-serif font-light">Stack</span> <br/> of OLPDF.
+             </h2>
+             <p className="text-[#4b5563] text-xl md:text-2xl max-w-2xl mx-auto font-medium leading-relaxed">
+               We didn&apos;t build a wrapper. We built an operating system for document intelligence.
+             </p>
           </div>
 
-          {/* Top row — 2 wide cards */}
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-
-            {/* Next.js */}
-            {(() => {
-              const bullets = [
-                "Server Components for zero-bundle marketing pages — only the editor ships client JS",
-                "App Router with isolated canvas layer per PDF page — React never touches the Fabric surface",
-                "Dynamic import of the Rust/WASM parser and Fabric.js — invisible to the initial load",
-              ];
-              return (
-                <div className="group relative flex flex-col p-8 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-white/20 hover:shadow-2xl hover:shadow-black/50">
-                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-white/0 group-hover:bg-white/60 transition-all duration-300" />
-                  <div className="flex items-start gap-4 mb-6">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="https://cdn.simpleicons.org/nextdotjs/ffffff" alt="Next.js" width={32} height={32} className="shrink-0 mt-1 opacity-90" />
-                    <div>
-                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Frontend Runtime</p>
-                      <h3 className="font-sans font-black text-2xl text-white">Next.js</h3>
-                    </div>
-                  </div>
-                  <p className="text-[#9ca3af] leading-relaxed mb-6 flex-1">
-                    The frontend is a Next.js application compiled with Turbopack. Server Components handle every public-facing page at zero client bundle cost. The document editor is a fully client-rendered surface — TipTap for flow editing, Fabric.js for fidelity canvas — each isolated so framework re-renders never bleed into the canvas layer.
-                  </p>
-                  <ul className="space-y-2.5 border-t border-[#1e1e21] pt-5">
-                    {bullets.map(b => (
-                      <li key={b} className="flex items-start gap-3 text-sm text-[#6b7280]">
-                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
+          {/* Chapter 1: Frontend */}
+          <div className="relative mb-64 flex flex-col md:flex-row items-center gap-12 lg:gap-24 group">
+             <div className="absolute -left-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">01</div>
+             <div className="flex-1 md:pr-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white/40 text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Frontend Runtime</div>
+                <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
+                  Next.js <br/><span className="text-[#4b5563]">Turbopack.</span>
+                </h3>
+                <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
+                   The frontend is a Next.js 15 application compiled with Turbopack. We use Server Components for the entire marketing and dashboard layer, ensuring zero client bundle cost.
+                </p>
+                <div className="flex flex-col gap-5">
+                   {["App Router for isolated canvas layers", "Dynamic WASM parser loading", "Fabric.js fidelity surface"].map(item => (
+                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px]">
+                        <div className="h-px w-12 bg-orange-500" /> {item}
+                     </div>
+                   ))}
                 </div>
-              );
-            })()}
-
-            {/* FastAPI */}
-            {(() => {
-              const bullets = [
-                "PyMuPDF span-tree traversal: font family, size, weight, color, and bounding box per word",
-                "Gap-histogram column detection assigns column_index to every block for multi-column layouts",
-                "Font metrics collected in-browser and shipped with export requests for pixel-matched line breaks",
-              ];
-              return (
-                <div className="group relative flex flex-col p-8 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#009688]/50 hover:shadow-2xl hover:shadow-[#009688]/10">
-                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#009688]/0 group-hover:bg-[#009688]/80 transition-all duration-300" />
-                  <div className="flex items-start gap-4 mb-6">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="https://cdn.simpleicons.org/fastapi" alt="FastAPI" width={32} height={32} className="shrink-0 mt-1 opacity-90" />
-                    <div>
-                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Extraction Engine</p>
-                      <h3 className="font-sans font-black text-2xl text-white">FastAPI + Python</h3>
-                    </div>
-                  </div>
-                  <p className="text-[#9ca3af] leading-relaxed mb-6 flex-1">
-                    The API is a FastAPI application backed by Python&apos;s unmatched PDF ecosystem. A heuristic Vision Router classifies every page before any AI is invoked — native text pages go straight to PyMuPDF extraction, while scanned or image-heavy pages are rendered to PNG and processed by the AI Vision layer concurrently. Pydantic v2 models are shared with the TypeScript layer: one schema, two runtimes, zero drift.
-                  </p>
-                  <ul className="space-y-2.5 border-t border-[#1e1e21] pt-5">
-                    {bullets.map(b => (
-                      <li key={b} className="flex items-start gap-3 text-sm text-[#6b7280]">
-                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
+             </div>
+             <div className="flex-1 w-full max-w-lg aspect-square relative z-10 animate-reveal opacity-0" style={{ animationDelay: '200ms' }}>
+                <div className="absolute inset-0 bg-[#111113] border border-[#1e1e21] rounded-[3rem] p-10 shadow-2xl flex flex-col justify-center overflow-hidden group-hover:border-white/20 transition-colors duration-500">
+                   <div className="font-mono text-[10px] text-white/20 mb-6 leading-tight whitespace-pre">
+                      {`import { Editor } from "@/components/editor";\n\nexport default async function Page() {\n  const doc = await getDocument(id);\n  return <Editor initialData={doc} />;\n}`}
+                   </div>
+                   <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-3">
+                      <div className="h-full bg-white/40 w-1/2 animate-pulse" />
+                   </div>
+                   <div className="text-[10px] font-mono text-white/30 font-bold uppercase tracking-widest">Hydrating Core...</div>
                 </div>
-              );
-            })()}
+                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-2xl bg-[#0d0d10] border border-[#1e1e21] flex items-center justify-center text-white shadow-2xl transform rotate-12 group-hover:rotate-0 transition-all duration-500">
+                   <Code2 className="h-10 w-10 text-white opacity-80" />
+                </div>
+          </div>
           </div>
 
-          {/* Bottom row — 3 cards */}
-          <div className="grid md:grid-cols-3 gap-4">
-
-            {/* Supabase */}
-            {(() => {
-              const bullets = [
-                "RLS on every table — the service role is never used in user-facing request paths",
-                "pgvector cosine similarity for cross-chapter semantic drift detection in the Book Maker",
-                "Realtime Presence for live collaboration cursors; Broadcast for Yjs CRDT delta sync",
-              ];
-              return (
-                <div className="group relative flex flex-col p-7 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#3ECF8E]/50 hover:shadow-2xl hover:shadow-[#3ECF8E]/10">
-                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#3ECF8E]/0 group-hover:bg-[#3ECF8E]/80 transition-all duration-300" />
-                  <div className="flex items-start gap-3 mb-5">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="https://cdn.simpleicons.org/supabase" alt="Supabase" width={28} height={28} className="shrink-0 mt-1 opacity-90" />
-                    <div>
-                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Database · Auth · Realtime</p>
-                      <h3 className="font-sans font-black text-xl text-white">Supabase</h3>
-                    </div>
-                  </div>
-                  <p className="text-[#9ca3af] text-sm leading-relaxed mb-5 flex-1">
-                    PostgreSQL with row-level security is the backbone. Every document and API key is locked at the database layer — the API cannot accidentally leak data across accounts. pgvector stores chapter embeddings for the RAG consistency checker. Supabase Auth handles identity end-to-end with no custom session logic.
-                  </p>
-                  <ul className="space-y-2 border-t border-[#1e1e21] pt-4">
-                    {bullets.map(b => (
-                      <li key={b} className="flex items-start gap-2.5 text-sm text-[#6b7280]">
-                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
+          {/* Chapter 2: Python Backend */}
+          <div className="relative mb-64 flex flex-col md:flex-row-reverse items-center gap-12 lg:gap-24 group">
+             <div className="absolute -right-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">02</div>
+             <div className="flex-1 md:pl-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#009688]/30 bg-[#009688]/5 text-[#009688] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Extraction Engine</div>
+                <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
+                  FastAPI <br/><span className="text-[#009688]">Python.</span>
+                </h3>
+                <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
+                   Our extraction engine reconstructs the semantic &quot;Span-Tree&quot; from raw PDF coordinates. It detects column gaps and identifies multi-column flows.
+                </p>
+                <div className="flex flex-col gap-5">
+                   {["PyMuPDF span-tree traversal", "Gap-histogram column detection", "Vision Router for scanned pages"].map(item => (
+                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px] md:flex-row-reverse">
+                        <div className="h-px w-12 bg-[#009688]" /> {item}
+                     </div>
+                   ))}
                 </div>
-              );
-            })()}
-
-            {/* Cloudflare R2 */}
-            {(() => {
-              const bullets = [
-                "S3-compatible — swap to any provider by changing one environment variable",
-                "Zero egress fees regardless of download region or monthly volume",
-                "Export links are signed URLs with 24h TTL, pruned by scheduled cleanup",
-              ];
-              return (
-                <div className="group relative flex flex-col p-7 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#F6821F]/50 hover:shadow-2xl hover:shadow-[#F6821F]/10">
-                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#F6821F]/0 group-hover:bg-[#F6821F]/80 transition-all duration-300" />
-                  <div className="flex items-start gap-3 mb-5">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="https://cdn.simpleicons.org/cloudflare" alt="Cloudflare" width={28} height={28} className="shrink-0 mt-1 opacity-90" />
-                    <div>
-                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Object Storage</p>
-                      <h3 className="font-sans font-black text-xl text-white">Cloudflare R2</h3>
-                    </div>
-                  </div>
-                  <p className="text-[#9ca3af] text-sm leading-relaxed mb-5 flex-1">
-                    All uploaded PDFs, processed exports, and intermediate artifacts live in Cloudflare R2. There is no cost to serving export downloads to users anywhere in the world. Every exported file gets a time-bounded signed URL — nothing lives in storage indefinitely, and no authenticated endpoint is needed to download a finished export.
-                  </p>
-                  <ul className="space-y-2 border-t border-[#1e1e21] pt-4">
-                    {bullets.map(b => (
-                      <li key={b} className="flex items-start gap-2.5 text-sm text-[#6b7280]">
-                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
+             </div>
+             <div className="flex-1 w-full max-w-lg aspect-square relative z-10 animate-reveal opacity-0" style={{ animationDelay: '200ms' }}>
+                <div className="absolute inset-0 bg-[#0d0d10] border border-[#1e1e21] rounded-[3rem] p-10 shadow-2xl flex flex-col justify-center overflow-hidden group-hover:border-[#009688]/30 transition-colors duration-500">
+                   <div className="flex items-center gap-2 mb-8">
+                      <div className="h-2 w-2 rounded-full bg-[#009688] animate-pulse" />
+                      <div className="text-[10px] font-mono text-[#009688] font-bold uppercase tracking-widest">GET /api/v1/extract</div>
+                   </div>
+                   <div className="space-y-3">
+                      <div className="h-2 w-full bg-[#1e1e21] rounded overflow-hidden">
+                         <div className="h-full bg-[#009688]/40 w-3/4 animate-pulse" />
+                      </div>
+                      <div className="h-2 w-[90%] bg-[#1e1e21] rounded overflow-hidden">
+                         <div className="h-full bg-[#009688]/40 w-1/2 animate-pulse delay-75" />
+                      </div>
+                      <div className="h-2 w-[85%] bg-[#1e1e21] rounded overflow-hidden">
+                         <div className="h-full bg-[#009688]/40 w-5/6 animate-pulse delay-150" />
+                      </div>
+                   </div>
+                   <div className="mt-8 flex gap-3">
+                      <div className="px-2 py-1 rounded bg-[#009688]/10 text-[#009688] text-[8px] font-mono font-bold uppercase tracking-widest">SpanTree OK</div>
+                      <div className="px-2 py-1 rounded bg-orange-500/10 text-orange-500 text-[8px] font-mono font-bold uppercase tracking-widest">BBox_Match</div>
+                   </div>
                 </div>
-              );
-            })()}
-
-            {/* AI */}
-            {(() => {
-              const bullets = [
-                "Vision OCR: scanned pages rendered to PNG and processed concurrently — no GPU worker needed",
-                "Tool-call-only editing mode: AI cannot write free-text to documents, every change is auditable",
-                "Bring your own key for Claude, GPT, DeepSeek, Kimi, or Gemini — swappable per account",
-              ];
-              return (
-                <div className="group relative flex flex-col p-7 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#4285F4]/50 hover:shadow-2xl hover:shadow-[#4285F4]/10">
-                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#4285F4]/0 group-hover:bg-[#4285F4]/80 transition-all duration-300" />
-                  <div className="flex items-start gap-3 mb-5">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="https://cdn.simpleicons.org/googlegemini" alt="AI" width={28} height={28} className="shrink-0 mt-1 opacity-90" />
-                    <div>
-                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Vision OCR · Document AI</p>
-                      <h3 className="font-sans font-black text-xl text-white">AI — Your Provider</h3>
-                    </div>
-                  </div>
-                  <p className="text-[#9ca3af] text-sm leading-relaxed mb-5 flex-1">
-                    The AI layer handles two distinct jobs: Vision OCR for scanned pages (all pages processed concurrently, no external GPU worker required), and structured document editing via strict tool-calling. In editing mode, the model is given a precise set of tools and never allowed to produce free-text mutations — every change is logged with a before/after diff and requires user acceptance.
-                  </p>
-                  <ul className="space-y-2 border-t border-[#1e1e21] pt-4">
-                    {bullets.map(b => (
-                      <li key={b} className="flex items-start gap-2.5 text-sm text-[#6b7280]">
-                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="absolute -left-6 -top-6 h-20 w-20 rounded-2xl bg-[#0d0d10] border border-[#1e1e21] flex items-center justify-center text-white shadow-2xl transform -rotate-12 group-hover:rotate-0 transition-all duration-500">
+                   <Terminal className="h-10 w-10 text-[#009688]" />
                 </div>
-              );
-            })()}
+             </div>
+          </div>
+          
+          {/* Chapter 3: Storage */}
+          <div className="relative mb-64 flex flex-col md:flex-row items-center gap-12 lg:gap-24 group">
+             <div className="absolute -left-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">03</div>
+             <div className="flex-1 md:pr-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#F6821F]/30 bg-[#F6821F]/5 text-[#F6821F] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Object Storage</div>
+                <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
+                  Cloudflare <br/><span className="text-[#F6821F]">R2.</span>
+                </h3>
+                <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
+                   All documents live in Cloudflare R2. Zero egress fees regardless of volume. Every exported file gets a time-bounded signed URL.
+                </p>
+                <div className="flex flex-col gap-5">
+                   {["S3-compatible API", "Zero egress fees globally", "Temporary signed URLs"].map(item => (
+                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px]">
+                        <div className="h-px w-12 bg-[#F6821F]" /> {item}
+                     </div>
+                   ))}
+                </div>
+             </div>
+             <div className="flex-1 w-full max-w-lg aspect-square relative z-10 animate-reveal opacity-0" style={{ animationDelay: '200ms' }}>
+                <div className="absolute inset-0 bg-[#0d0d10] border border-[#1e1e21] rounded-[3rem] p-10 shadow-2xl flex items-center justify-center overflow-hidden group-hover:border-[#F6821F]/30 transition-colors duration-500">
+                   <div className="relative w-48 h-48 border-2 border-dashed border-[#F6821F]/20 rounded-full flex items-center justify-center animate-[spin_20s_linear_infinite]">
+                      <div className="absolute top-0 h-4 w-4 bg-[#F6821F] rounded-full shadow-[0_0_20px_#F6821F]" />
+                   </div>
+                   <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-4xl font-sans font-black text-white opacity-20 uppercase tracking-tighter">Egress: $0.00</div>
+                   </div>
+                </div>
+                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-2xl bg-[#0d0d10] border border-[#1e1e21] flex items-center justify-center text-white shadow-2xl transform rotate-12 group-hover:rotate-0 transition-all duration-500">
+                   <HardDrive className="h-10 w-10 text-[#F6821F]" />
+                </div>
+             </div>
+          </div>
+
+          {/* Chapter 4: Database/Security */}
+          <div className="relative mb-64 flex flex-col md:flex-row-reverse items-center gap-12 lg:gap-24 group">
+             <div className="absolute -right-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">04</div>
+             <div className="flex-1 md:pl-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3ECF8E]/30 bg-[#3ECF8E]/5 text-[#3ECF8E] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Database · Security</div>
+                <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
+                  Supabase <br/><span className="text-[#3ECF8E]">Auth.</span>
+                </h3>
+                <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
+                   PostgreSQL with Row-Level Security is our backbone. Every document is locked at the database layer — the API cannot accidentally leak data across accounts.
+                </p>
+                <div className="flex flex-col gap-5">
+                   {["RLS-enforced table isolation", "pgvector semantic search", "Realtime collaboration sync"].map(item => (
+                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px] md:flex-row-reverse">
+                        <div className="h-px w-12 bg-[#3ECF8E]" /> {item}
+                     </div>
+                   ))}
+                </div>
+             </div>
+             <div className="flex-1 w-full max-w-lg aspect-square relative z-10 animate-reveal opacity-0" style={{ animationDelay: '200ms' }}>
+                <div className="absolute inset-0 bg-[#0d0d10] border border-[#1e1e21] rounded-[3rem] p-10 shadow-2xl flex flex-col justify-center overflow-hidden group-hover:border-[#3ECF8E]/30 transition-colors duration-500">
+                   <div className="grid grid-cols-4 gap-4 opacity-20">
+                      {[...Array(16)].map((_, i) => (
+                         <div key={i} className="aspect-square bg-[#3ECF8E]/20 rounded border border-[#3ECF8E]/40" />
+                      ))}
+                   </div>
+                   <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="p-6 rounded-2xl bg-[#0d0d10] border-2 border-[#3ECF8E] shadow-[0_0_40px_rgba(62,207,142,0.2)]">
+                         <ShieldCheck className="h-16 w-16 text-[#3ECF8E]" />
+                      </div>
+                   </div>
+                </div>
+                <div className="absolute -left-6 -top-6 h-20 w-20 rounded-2xl bg-[#0d0d10] border border-[#1e1e21] flex items-center justify-center text-white shadow-2xl transform -rotate-12 group-hover:rotate-0 transition-all duration-500">
+                   <ShieldCheck className="h-10 w-10 text-[#3ECF8E]" />
+                </div>
+             </div>
+          </div>
+
+          {/* Chapter 5: AI Intelligence */}
+          <div className="relative mb-32 flex flex-col md:flex-row items-center gap-12 lg:gap-24 group">
+             <div className="absolute -left-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">05</div>
+             <div className="flex-1 md:pr-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#4285F4]/30 bg-[#4285F4]/5 text-[#4285F4] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">AI Intelligence</div>
+                <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
+                  Vision <br/><span className="text-[#4285F4]">Intelligence.</span>
+                </h3>
+                <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
+                   The AI layer handles two distinct jobs: Vision OCR for scanned pages and structured document editing via strict tool-calling.
+                </p>
+                <div className="flex flex-col gap-5">
+                   {["Vision OCR for scanned pages", "Strict tool-call editing mode", "Account-level provider keys"].map(item => (
+                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px]">
+                        <div className="h-px w-12 bg-[#4285F4]" /> {item}
+                     </div>
+                   ))}
+                </div>
+             </div>
+             <div className="flex-1 w-full max-w-lg aspect-square relative z-10 animate-reveal opacity-0" style={{ animationDelay: '200ms' }}>
+                <div className="absolute inset-0 bg-[#0d0d10] border border-[#1e1e21] rounded-[3rem] p-10 shadow-2xl flex flex-col justify-center overflow-hidden group-hover:border-[#4285F4]/30 transition-colors duration-500">
+                   <div className="relative">
+                      <div className="text-center font-serif italic text-4xl text-white opacity-40 mb-8">Thinking...</div>
+                      <div className="flex justify-center gap-1">
+                         <div className="h-1 w-8 bg-[#4285F4] animate-[shimmer_2s_infinite]" />
+                         <div className="h-1 w-12 bg-[#4285F4] animate-[shimmer_2s_infinite_100ms]" />
+                         <div className="h-1 w-6 bg-[#4285F4] animate-[shimmer_2s_infinite_200ms]" />
+                      </div>
+                   </div>
+                </div>
+                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-2xl bg-[#0d0d10] border border-[#1e1e21] flex items-center justify-center text-white shadow-2xl transform rotate-12 group-hover:rotate-0 transition-all duration-500">
+                   <Cpu className="h-10 w-10 text-[#4285F4]" />
+                </div>
+             </div>
           </div>
         </div>
       </section>
