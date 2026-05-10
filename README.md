@@ -2,7 +2,9 @@
 
 > **Structure First. Deterministic Layout. Targeted AI.**
 
-OLPDF is an open-source, structure-first AI document studio. It classifies every page of a PDF before touching it, extracts a semantic block model, lets you edit with Gemini AI, and exports to PDF/A, Tagged PDF, or EPUB3.
+OLPDF is an open-source, structure-first AI document studio. It classifies every page of a PDF, extracts a semantic block model, lets you edit with any major AI provider, and exports to PDF/A, Tagged PDF, or EPUB3.
+
+**Live:** [olpdf.xyz](https://olpdf.xyz) · **Docs:** [olpdf.xyz/docs](https://olpdf.xyz/docs)
 
 ---
 
@@ -10,23 +12,15 @@ OLPDF is an open-source, structure-first AI document studio. It classifies every
 
 | Capability | How |
 |---|---|
-| **Smart PDF Import** | Vision Router classifies each page — native text, scanned, table-heavy, image-heavy — and routes to the cheapest reliable extractor |
-| **Block Editor** | TipTap-based editor turns the extracted block model into a Word-like editing surface |
-| **AI Editing** | Gemini 1.5 Flash uses tool-calling only (`mode: ANY`) — no free-text mutations, fully auditable |
+| **Smart PDF Import** | Vision Router classifies each page — native text, scanned, image-heavy — routes to PyMuPDF or Gemini Vision OCR inline |
+| **Block Editor** | TipTap-based editor turns the semantic block model into a Word-like editing surface with real-time collaboration |
+| **Multi-Provider AI** | Bring your own key for Claude, GPT, DeepSeek, Kimi, or Gemini — or use the free Gemini 2.5 Flash tier |
+| **Embed SDK** | Drop the full editor into any web app in 3 lines via `@olpdf/embed` — React, Svelte, Vue, Nuxt, Astro, Angular, Wix, WordPress, .NET/WebView2 |
 | **Book Maker** | Multi-chapter workspace with RAG consistency checker, EPUB3 + print PDF export |
 | **PDF Toolkit** | Merge, split, compress, rotate, watermark, protect, redact, extract images, detect/fill forms |
 | **Professional Exports** | Standard PDF, PDF/A-1b (archival), Tagged PDF (accessibility), EPUB3 (KDP/Apple Books) |
-| **Collaboration** | Yjs CRDT + Supabase Realtime for real-time multiplayer editing; IndexedDB for offline |
-
----
-
-## Open-Source Core Engine
-The `olpdf` core engine is now open-source. It includes high-fidelity PDF extraction, the `DocumentModel` JSON specification, and the ReportLab export pipeline.
-
-### Contribute
-We welcome contributions to the core engine. See `CONTRIBUTING.md` for details on setting up the local environment and submitting PRs.
-- `apps/api/engine/` contains the core extraction and export logic.
-- `packages/document-model/` contains the structural spec.
+| **Plugin Marketplace** | Install community plugins per workspace; enterprise version locking pins the exact version at install time |
+| **Collaboration** | Yjs CRDT + Supabase Realtime Presence for real-time multiplayer editing; IndexedDB for offline |
 
 ---
 
@@ -34,17 +28,18 @@ We welcome contributions to the core engine. See `CONTRIBUTING.md` for details o
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15, React 19, TipTap, Yjs, TanStack Query, Tailwind v4 |
+| Frontend | Next.js 16, React 19, TipTap, Yjs, TanStack Query, Tailwind v4 |
 | Backend | FastAPI (Python), Pydantic v2 |
 | Database | Supabase (PostgreSQL + pgvector + RLS) |
 | Storage | Cloudflare R2 (S3-compatible, zero egress) |
-| Queue | Upstash QStash (async job dispatch) |
+| Queue | Upstash QStash (export cleanup cron only) |
 | Rate Limiting | Upstash Redis |
-| GPU Worker | Modal (Surya OCR, PaddleOCR, OpenCV) |
-| AI | Gemini 1.5 Flash (tool-calling) + text-embedding-004 (RAG) |
+| AI — OCR | Gemini 2.5 Flash Vision (inline, replaces GPU worker) |
+| AI — Editing | Claude, GPT-4, DeepSeek, Kimi, Gemini — user-configurable per account |
+| AI — RAG | `text-embedding-004` (Gemini) for book consistency checks |
 | Email | Resend (or any SMTP) |
 | Monorepo | Turborepo + pnpm |
-| Deployment | Vercel (web + api), Modal (worker) |
+| Deployment | Vercel (web + api) |
 
 ---
 
@@ -53,16 +48,22 @@ We welcome contributions to the core engine. See `CONTRIBUTING.md` for details o
 ```
 olpdf-monorepo/
 ├── apps/
-│   ├── web/          # Next.js 15 frontend
-│   ├── api/          # FastAPI backend
-│   └── worker/       # Modal GPU worker (Surya OCR, PaddleOCR)
+│   ├── web/              # Next.js 16 frontend
+│   └── api/              # FastAPI backend
 ├── packages/
 │   ├── document-model/   # Shared Zod (TS) + Pydantic (Python) schemas
+│   ├── olpdf-embed/      # @olpdf/embed — vanilla JS embed SDK
+│   ├── olpdf-react/      # @olpdf/react — React / Next.js component
+│   ├── olpdf-svelte/     # @olpdf/svelte — Svelte / SvelteKit component
+│   ├── olpdf-vue/        # @olpdf/vue   — Vue 3 / Nuxt component
+│   ├── olpdf-py/         # olpdf        — Python SDK (PyPI)
+│   ├── olpdf-rs/         # olpdf        — Rust crate (crates.io)
+│   ├── olpdf-go/         # olpdf-go     — Go module (pkg.go.dev)
+│   ├── olpdf-dotnet/     # Olpdf        — C# NuGet package
 │   ├── ui/               # Shared React component library
 │   └── config/           # ESLint, Tailwind, TypeScript base configs
-├── schema.sql            # Supabase schema (run via migrations)
-├── supabase/             # Supabase migration files
-└── docker-compose.yml    # Local dev: Supabase + Redis emulator
+├── supabase/migrations/  # Incremental database migrations
+└── schema.sql            # Full schema snapshot
 ```
 
 ---
@@ -71,17 +72,16 @@ olpdf-monorepo/
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm 10+
+- Node.js 20+, pnpm 10+
 - Python 3.11+
 - A [Supabase](https://supabase.com) project
 - A [Cloudflare R2](https://www.cloudflare.com/products/r2/) bucket
-- A [Gemini API key](https://aistudio.google.com/)
+- A [Gemini API key](https://aistudio.google.com/) (free tier works)
 
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/your-org/olpdf.git
+git clone https://github.com/Chidi09/olpdf.git
 cd olpdf-monorepo
 pnpm install
 ```
@@ -92,8 +92,6 @@ pnpm install
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your-redis-token
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
@@ -103,43 +101,33 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
-R2_ACCOUNT_ID=your-cloudflare-account-id
 R2_ACCESS_KEY_ID=your-r2-access-key
 R2_SECRET_ACCESS_KEY=your-r2-secret
-R2_BUCKET_NAME=olpdf-storage
+R2_ENDPOINT=https://your-account.r2.cloudflarestorage.com
+R2_BUCKET_NAME=olpdf-documents
 
 GEMINI_API_KEY=your-gemini-key
 
-QSTASH_TOKEN=your-qstash-token
-QSTASH_CURRENT_SIGNING_KEY=your-qstash-signing-key
-QSTASH_NEXT_SIGNING_KEY=your-qstash-next-signing-key
-MODAL_WORKER_URL=https://your-modal-endpoint.modal.run
-
 # Email (pick one)
 RESEND_API_KEY=re_your_resend_key
-# or
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=user@example.com
-SMTP_PASSWORD=your-smtp-password
+# or SMTP_HOST / SMTP_PORT / SMTP_USERNAME / SMTP_PASSWORD
 EMAIL_FROM=noreply@olpdf.xyz
-
 APP_URL=https://olpdf.xyz
 
-# Local development only
+# Export cleanup cron (QStash)
+QSTASH_CURRENT_SIGNING_KEY=your-qstash-signing-key
+
+# Local development
 OLPDF_DEV_MODE=true
 ```
 
-### 3. Apply the database schema
+### 3. Apply migrations
 
 ```bash
-# Using Supabase CLI
 supabase db push
-
-# Or manually paste schema.sql into the Supabase SQL editor
 ```
 
-Enable the required extensions in Supabase:
+Enable required Postgres extensions:
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "vector";
@@ -148,17 +136,57 @@ CREATE EXTENSION IF NOT EXISTS "vector";
 ### 4. Run locally
 
 ```bash
-# All apps in parallel
-pnpm dev
-
-# Or individually:
+pnpm dev                       # All apps in parallel
 pnpm --filter web dev          # http://localhost:3000
 pnpm --filter api dev          # http://localhost:8000
 ```
 
 ---
 
+## Embed SDK
+
+Drop the full OLPDF editor into any web app:
+
+```bash
+npm install @olpdf/embed
+```
+
+```js
+import { OlPDFEmbed } from '@olpdf/embed';
+
+const editor = new OlPDFEmbed(container, {
+  host: 'https://olpdf.xyz',
+  documentId: 'doc_abc123',
+  token: userToken,
+});
+
+editor.on('MODEL_UPDATE', ({ documentModel }) => myDB.save(documentModel));
+```
+
+### Framework packages
+
+| Package | Install | Usage |
+|---|---|---|
+| `@olpdf/react` | `npm i @olpdf/react` | `<OlpdfEditor documentId token onModelUpdate />` |
+| `@olpdf/svelte` | `npm i @olpdf/svelte` | `<OlpdfEditor {documentId} {token} />` |
+| `@olpdf/vue` | `npm i @olpdf/vue` | `<OlpdfEditor document-id token @model-update />` |
+
+For Astro, Angular, Wix, and WordPress see [olpdf.xyz/docs#embed-frameworks](https://olpdf.xyz/docs#embed-frameworks).
+
+### SDK packages (other languages)
+
+| Language | Package | Registry |
+|---|---|---|
+| Python | `pip install olpdf` | PyPI |
+| Rust | `cargo add olpdf` | crates.io |
+| Go | `go get github.com/Chidi09/olpdf/packages/olpdf-go` | pkg.go.dev |
+| .NET | `dotnet add package Olpdf` | NuGet |
+
+---
+
 ## API Reference
+
+All routes require `Authorization: Bearer <api_key_or_jwt>`.
 
 ### Documents
 
@@ -168,32 +196,23 @@ pnpm --filter api dev          # http://localhost:8000
 | `GET` | `/api/documents/{id}` | Fetch document model |
 | `PUT` | `/api/documents/{id}` | Save document model |
 | `DELETE` | `/api/documents/{id}` | Delete document |
-| `POST` | `/api/documents/import/start` | Queue async PDF/DOCX import |
-| `GET` | `/api/documents/import/{jobId}/status` | Poll import progress |
-| `POST` | `/api/documents/{id}/export/{format}` | Export (standard \| pdf_a \| tagged) |
-| `POST` | `/api/documents/{id}/preflight` | Run export preflight checks |
+| `POST` | `/api/documents/import/start` | Import a PDF (inline Gemini Vision OCR for scanned pages) |
+| `GET` | `/api/documents/import/{id}/status` | Poll import progress |
+| `POST` | `/api/documents/{id}/export/{format}` | Export (`standard` \| `pdf_a` \| `tagged` \| `epub`) |
 | `POST` | `/api/documents/{id}/snapshot` | Save a named version |
 | `GET` | `/api/documents/{id}/versions` | List version history |
-
-### Books
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/books/create` | Create book project |
-| `GET` | `/api/books/{id}` | Fetch book + chapter stubs |
-| `POST` | `/api/books/{id}/chapters` | Add a chapter |
-| `PUT` | `/api/books/{id}/chapters/{ch}` | Save chapter (triggers embedding on → review) |
-| `POST` | `/api/books/{id}/export/{format}` | Export book (pdf \| epub) |
-| `POST` | `/api/books/{id}/consistency` | RAG cross-chapter consistency check |
 
 ### AI
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/ai/documents/{id}/instruction` | Run a natural-language edit instruction |
+| `POST` | `/api/ai/documents/{id}/instruction` | Natural-language edit (tool-call only, fully auditable) |
 | `GET` | `/api/ai/documents/{id}/logs` | Fetch AI audit log |
-| `POST` | `/api/ai/logs/{id}/accept` | Accept AI edit (writes to document) |
+| `POST` | `/api/ai/logs/{id}/accept` | Accept AI edit |
 | `POST` | `/api/ai/logs/{id}/reject` | Reject AI edit |
+| `GET` | `/api/ai-settings` | Get current AI provider + model |
+| `PUT` | `/api/ai-settings` | Set provider, model, and encrypted API key |
+| `DELETE` | `/api/ai-settings/key` | Clear key and revert to free Gemini tier |
 
 ### PDF Toolkit
 
@@ -201,87 +220,77 @@ pnpm --filter api dev          # http://localhost:8000
 |---|---|---|
 | `POST` | `/api/pdf/merge` | Merge multiple PDFs |
 | `POST` | `/api/pdf/split` | Split by page ranges |
-| `POST` | `/api/pdf/compress` | Compress & deflate |
 | `POST` | `/api/pdf/rotate` | Rotate pages |
-| `POST` | `/api/pdf/watermark` | Add diagonal text watermark |
+| `POST` | `/api/pdf/watermark` | Add text watermark |
 | `POST` | `/api/pdf/protect` | AES-256 password encryption |
-| `POST` | `/api/pdf/redact` | True redaction (removes vectors) |
-| `POST` | `/api/pdf/extract-images` | Extract all embedded images |
+| `POST` | `/api/pdf/redact` | True redaction (removes underlying vectors) |
+| `POST` | `/api/pdf/extract-images` | Extract embedded images |
 | `POST` | `/api/pdf/forms-detect` | Detect form fields |
 | `POST` | `/api/pdf/forms-fill` | Fill form fields |
 
-All routes require `Authorization: Bearer <supabase-jwt>`.
-Worker routes (`/api/worker/*`) require a valid QStash signature instead.
+### Books, Plugins, Workspaces
+
+See [olpdf.xyz/docs](https://olpdf.xyz/docs) for the full Books, Plugin Marketplace, Workspace, Webhook, Signature, and Tenant API references.
 
 ---
 
 ## Document Model
 
-Every document is stored as a JSON block tree. Both the frontend (TypeScript/Zod) and backend (Python/Pydantic) share the same schema from `packages/document-model`.
+Both TypeScript (Zod) and Python (Pydantic) share the same schema from `packages/document-model`.
 
 ```json
 {
   "meta": { "title": "...", "author": "...", "page_size": "A4" },
-  "styles": { "font_family": "Lora", "body": { "size": 11 } },
+  "styles": { "font_family": "Lora", "base_font_size": 11 },
   "blocks": [
     {
       "id": "blk_uuid",
       "type": "heading1",
       "content": "Executive Summary",
+      "rich_spans": [{ "text": "Executive Summary", "bold": true }],
       "confidence_score": 0.98,
-      "needs_review": false
+      "needs_review": false,
+      "page_index": 0,
+      "column_index": 0
     }
-  ]
+  ],
+  "page_dimensions": [{ "page_index": 0, "width": 595, "height": 842 }]
 }
 ```
 
 Block types: `paragraph` · `heading1` · `heading2` · `heading3` · `callout` · `table` · `list` · `divider` · `page_break` · `image`
 
-Blocks with `confidence_score < 0.80` are automatically flagged `needs_review: true` and highlighted in the editor.
-
 ---
 
 ## Vision Router
 
-The Vision Router classifies each PDF page before any extraction runs:
+Classifies each PDF page before extraction:
 
 | Page Type | Signal | Strategy |
 |---|---|---|
-| Native text | >80% text coverage | `pdfplumber` direct extraction |
-| Scanned | <20% text, high image ratio | Surya OCR + layout reconstruction |
-| Table-heavy | ≥2 tables detected | PaddleOCR table extractor |
-| Image-heavy | >60% image pixels | OpenCV region extraction |
-| Cover / blank | Single image or empty | Preserve / skip |
+| Native text | >80% text coverage | PyMuPDF direct extraction |
+| Table-heavy | ≥2 tables detected | pdfplumber table extractor |
+| Scanned / image-heavy | <20% text, >50% image | **Gemini 2.5 Flash Vision** (inline, concurrent) |
 
-Native pages are extracted synchronously. Scanned pages are dispatched to the Modal GPU worker via QStash and merged back when OCR completes.
+Scanned pages are rendered to PNG via PyMuPDF and sent to Gemini concurrently (`asyncio.gather` + semaphore). No external GPU worker or job queue required.
 
 ---
 
 ## AI Layer
 
-Gemini is **only** called with `function_calling_config: { mode: "ANY" }`. It never produces free-text that modifies documents — every change goes through a validated tool call:
+All document edits go through validated tool calls — Gemini/Claude/GPT is **never** given free-text write access to a document:
 
-- `RewriteBlock` — rewrite a block's content
-- `InsertBlock` — insert a new block after a given block ID
-- `DeleteBlock` — delete a block by ID
-- `ReorderBlocks` — reorder the full block list
-- `UpdateStyle` — update a document style property
-
-Every AI action creates an audit record in `ai_edit_logs` with a before/after diff. Edits are in `pending_review` status until the user accepts or rejects them.
-
----
-
-## Email Notifications
-
-OLPDF sends transactional emails at key moments:
-
-| Event | Template |
+| Tool | What it does |
 |---|---|
-| PDF import complete | "Your document is ready to edit" |
-| Import partial (OCR queued) | "Partial import complete — OCR in progress" |
-| Export ready | "Your PDF/A export is ready — link expires in 24h" |
+| `RewriteBlock` | Rewrite a block's content (clears rich_spans for re-render) |
+| `InsertBlock` | Insert a new block, healing the AST linked list |
+| `DeleteBlock` | Delete a block, healing prev/next pointers |
+| `ReorderBlocks` | Reorder all blocks, rebuilding the full chain |
+| `UpdateStyle` | Update a document-level style property |
 
-Configure via `RESEND_API_KEY` (recommended) or `SMTP_*` environment variables. In development, set `OLPDF_DEV_MODE=true` to log emails instead of sending.
+Every action creates an `ai_edit_logs` record with a before/after diff. Edits stay `pending_review` until accepted or rejected.
+
+Users can bring their own API key for any supported provider via **Settings → AI Engine**. Keys are encrypted at rest (AES-256/Fernet) and never returned in API responses.
 
 ---
 
@@ -290,14 +299,33 @@ Configure via `RESEND_API_KEY` (recommended) or `SMTP_*` environment variables. 
 | Threat | Control |
 |---|---|
 | Unauthenticated API access | JWT Bearer verification on all `/api/*` routes |
-| Worker route abuse | QStash HMAC signature on all `/api/worker/*` |
+| Export cleanup abuse | QStash HMAC on `/api/worker/cleanup-exports` |
 | Cross-user data access | Supabase RLS on all tables |
 | Oversized uploads | 10 MB payload cap in FastAPI middleware |
 | XSS in block content | `bleach.clean()` before persistence |
 | Prompt injection | `<user_instruction>` delimiters + tool-call-only mode |
 | Fake redaction | PyMuPDF `apply_redactions()` removes underlying vectors |
-| Export file abuse | 24-hour TTL cron on `exports/` storage bucket |
-| Plaintext password exposure | AES-256 encryption for protected PDFs |
+| Export file abuse | 24-hour TTL cron on `exports/` bucket |
+| Stored API keys | AES-256/Fernet encryption, hash stored only |
+
+---
+
+## Publishing SDK Packages
+
+Each SDK package publishes automatically when you push a version tag:
+
+| Package | Tag format | Registry |
+|---|---|---|
+| `@olpdf/embed` | `embed/v0.1.0` | npm |
+| `@olpdf/react` | `react/v0.1.0` | npm |
+| `@olpdf/svelte` | `svelte/v0.1.0` | npm |
+| `@olpdf/vue` | `vue/v0.1.0` | npm |
+| `olpdf` (Python) | `py/v0.1.0` | PyPI |
+| `olpdf` (Rust) | `rs/v0.1.0` | crates.io |
+| `olpdf-go` | `packages/olpdf-go/v0.1.0` | pkg.go.dev |
+| `Olpdf` (.NET) | `dotnet/v0.1.0` | NuGet |
+
+Required secrets: `NPM_TOKEN`, `CRATES_IO_TOKEN`, `NUGET_API_KEY`. PyPI uses GitHub OIDC Trusted Publisher (no token needed).
 
 ---
 
@@ -316,11 +344,11 @@ pnpm test           # Run all test suites
 ## Contributing
 
 1. Fork the repo and create a branch: `git checkout -b feature/my-feature`
-2. Make your changes following the patterns in this repo
-3. Ensure `pnpm lint && pnpm typecheck && pnpm test` all pass
+2. Follow the patterns in this repo
+3. Ensure `pnpm lint && pnpm typecheck && pnpm test` pass
 4. Open a pull request with a clear description
 
-See `/contribute` in the app for more details.
+See [/contribute](https://olpdf.xyz/contribute) in the app for more details.
 
 ---
 
