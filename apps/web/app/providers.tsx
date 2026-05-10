@@ -2,9 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useEffect } from "react";
-import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { TenantProvider } from "@/components/providers/TenantProvider";
-import { useWalkthroughStore } from "@/store/useWalkthroughStore";
 import { reportError } from "@/lib/errorReporting";
 
 // Module-level singleton — QueryClient config never changes at runtime
@@ -30,7 +28,6 @@ type ProvidersProps = {
 };
 
 export default function Providers({ children }: ProvidersProps) {
-  const { seen, markSeen } = useWalkthroughStore();
 
   // Layer 1: catch JS errors and unhandled rejections outside React trees.
   useEffect(() => {
@@ -58,7 +55,6 @@ export default function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <TenantProvider>
-        {!seen && <OnboardingWalkthrough onComplete={markSeen} />}
         {children}
       </TenantProvider>
     </QueryClientProvider>
