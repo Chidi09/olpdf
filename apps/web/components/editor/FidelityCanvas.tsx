@@ -1006,7 +1006,14 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
                         const rootType = (richContent as TipTapJSON).content?.[0]?.type ?? "";
                         if (rootType === "bulletList") nextType = "bullet_list";
                         if (rootType === "orderedList") nextType = "ordered_list";
-                        return { ...b, content: text, rich_content: richContent, type: nextType };
+                        const { _rich_spans, ...tiptapJson } = richContent as Record<string, unknown> & { _rich_spans?: unknown };
+                        return {
+                          ...b,
+                          content: text,
+                          rich_content: tiptapJson,
+                          rich_spans: Array.isArray(_rich_spans) && _rich_spans.length > 0 ? _rich_spans : b.rich_spans,
+                          type: nextType,
+                        };
                       });
                       const nextModel = { ...currentModelRef.current, blocks: nextBlocks };
                       restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, text);

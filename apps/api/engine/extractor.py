@@ -182,6 +182,7 @@ def _extract_page_tables(pdf_bytes: bytes, page_index: int) -> List[Dict[str, An
                 "id": f"blk_table_{page_index}_{tbl_idx}",
                 "type": "table",
                 "content": "",
+                "rich_spans": [],
                 "page_index": page_index,
                 "bounding_box": [x0, y0, x1, y1],
                 "table_data": {
@@ -196,6 +197,7 @@ def _extract_page_tables(pdf_bytes: bytes, page_index: int) -> List[Dict[str, An
                 "needs_review": False,
                 "style_overrides": {},
                 "z_index": 0,
+                "float": "none",
             })
     return tables
 
@@ -265,10 +267,36 @@ def _extract_page_blocks(
         block_type = _infer_block_type(full_text, font_size, is_bold, page_avg_font_size)
         alignment = _detect_alignment(x0, x1, page_width)
 
+        # Build rich_spans: one entry per unique formatting run so the frontend
+        # can render inline bold/italic/color without re-parsing the text.
+        rich_spans: List[Dict[str, Any]] = []
+        for line in lines:
+            for span in line.get("spans", []):
+                span_text = str(span.get("text", "")).strip()
+                if not span_text:
+                    continue
+                sflags = int(span.get("flags", 0))
+                scolor = _rgb_to_hex(int(span.get("color", 0)))
+                sfont  = _clean_font_name(str(span.get("font", "Unknown")))
+                ssize  = float(span.get("size", font_size) or font_size)
+                rich_spans.append({
+                    "text":        span_text + " ",
+                    "bold":        bool(sflags & 2**4),
+                    "italic":      bool(sflags & 2**1),
+                    "underline":   False,
+                    "strikethrough": False,
+                    "color":       scolor if scolor != "#000000" else None,
+                    "font_family": sfont if sfont != font_name else None,
+                    "font_size":   round(ssize, 2) if abs(ssize - font_size) > 0.5 else None,
+                    "link_href":   None,
+                    "mark":        False,
+                })
+
         result_blocks.append({
             "id": f"blk_native_{page_index}_{block_idx}",
             "type": block_type,
             "content": full_text,
+            "rich_spans": rich_spans,
             "page_index": page_index,
             "bounding_box": [x0, y0, x1, y1],
             "font_meta": {
@@ -289,6 +317,7 @@ def _extract_page_blocks(
             "needs_review": False,
             "style_overrides": {},
             "z_index": 0,
+            "float": "none",
         })
 
     return result_blocks
