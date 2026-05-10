@@ -214,6 +214,71 @@ function _blockFromNode(
   } as DocumentBlock;
 }
 
+// ─── Widow / orphan split ─────────────────────────────────────────────────────
+
+function _unitsToSpans(units: WordUnit[], baseFontMeta: Partial<FontMeta>): ASTSpan[] {
+  const spans: ASTSpan[] = [];
+  let cur: { font: Partial<FontMeta>; text: string } | null = null;
+
+  for (const u of units) {
+    const sameFont =
+      cur &&
+      cur.font.family === u.font.family &&
+      cur.font.size === u.font.size &&
+      cur.font.is_bold === u.font.is_bold &&
+      cur.font.is_italic === u.font.is_italic &&
+      cur.font.color === u.font.color;
+
+    if (sameFont) {
+      cur!.text += u.text;
+    } else {
+      if (cur) spans.push(_fontToSpan(cur.text, cur.font, baseFontMeta));
+      cur = { font: u.font, text: u.text };
+    }
+  }
+  if (cur) spans.push(_fontToSpan(cur.text, cur.font, baseFontMeta));
+  return spans;
+}
+
+function _fontToSpan(text: string, font: Partial<FontMeta>, base: Partial<FontMeta>): ASTSpan {
+  return {
+    text,
+    bold: font.is_bold ?? false,
+    italic: font.is_italic ?? false,
+    underline: false,
+    strikethrough: false,
+    color: font.color !== base.color ? font.color : undefined,
+    font_family: font.family !== base.family ? font.family : undefined,
+    font_size:
+      font.size !== undefined && Math.abs((font.size ?? 11) - (base.size ?? 11)) > 0.5
+        ? font.size
+        : undefined,
+    mark: false,
+  };
+}
+
+function _splitNodeAtLines(
+  node: ASTNode,
+  lines: LayoutLine[],
+  splitAt: number,
+): [ASTNode, ASTNode] {
+  const base = node.font_meta ?? {};
+  const beforeSpans = _unitsToSpans(lines.slice(0, splitAt).flatMap((l) => l.units), base);
+  const afterUnits = lines.slice(splitAt).flatMap((l) => l.units);
+  // Trim leading whitespace on the overflow portion
+  while (afterUnits.length > 0 && afterUnits[0].isSpace) afterUnits.shift();
+  const afterSpans = _unitsToSpans(afterUnits, base);
+
+  return [
+    { ...node, id: `${node.id}_p0`, spans: beforeSpans, next_node_id: `${node.id}_p1` },
+    { ...node, id: `${node.id}_p1`, spans: afterSpans, prev_node_id: `${node.id}_p0`, next_node_id: node.next_node_id },
+  ];
+}
+
+// ─── Column layout ────────────────────────────────────────────────────────────
+
+const MIN_WIDOW_ORPHAN_LINES = 2;
+
 function _layoutColumn(
   column: ASTColumn,
   colIdx: number,
@@ -240,7 +305,7 @@ function _layoutColumn(
     const units = _spansToWordUnits(
       node.spans.length > 0
         ? node.spans
-        : [{ text: node.content ?? "", bold: false, italic: false, underline: false, strikethrough: false, mark: false }],
+        : [{ text: "", bold: false, italic: false, underline: false, strikethrough: false, mark: false }],
       node.font_meta ?? {},
     );
 
@@ -256,9 +321,34 @@ function _layoutColumn(
     const nodeHeight = lines.reduce((s, l) => s + l.lineHeight, 0);
     const marginBottom = fontSize * 0.4;
 
+    // ── Widow / orphan control ────────────────────────────────────────────────
     if (cursorY + nodeHeight > maxY) {
-      overflow.push(node);
-      continue;
+      // Count lines that fit on this page
+      let fittingCount = 0;
+      let testY = cursorY;
+      for (const line of lines) {
+        if (testY + line.lineHeight <= maxY) { fittingCount++; testY += line.lineHeight; }
+        else break;
+      }
+      const overflowCount = lines.length - fittingCount;
+
+      if (
+        fittingCount < MIN_WIDOW_ORPHAN_LINES ||
+        overflowCount < MIN_WIDOW_ORPHAN_LINES
+      ) {
+        // Can't satisfy the rule with a split — push the whole node to overflow
+        overflow.push(node);
+        continue;
+      }
+
+      // Both sides have >= 2 lines — split the node and place the first half here
+      const [beforeNode, afterNode] = _splitNodeAtLines(node, lines, fittingCount);
+      const splitH = lines.slice(0, fittingCount).reduce((s, l) => s + l.lineHeight, 0);
+      blocks.push(
+        _blockFromNode(beforeNode, [column.x, cursorY, column.x + colWidth, cursorY + splitH], pageIndex, colIdx),
+      );
+      overflow.push(afterNode);
+      continue; // advance to next node; cursor stays at maxY (page is full)
     }
 
     const y0 = cursorY;

@@ -30,11 +30,32 @@ struct FontMeta {
 }
 
 #[derive(Serialize, Clone)]
+struct RichSpan {
+    text: String,
+    bold: bool,
+    italic: bool,
+    underline: bool,
+    strikethrough: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    link_href: Option<String>,
+    mark: bool,
+}
+
+#[derive(Serialize, Clone)]
 struct WasmBlock {
     id: String,
     #[serde(rename = "type")]
     block_type: String,
     content: String,
+    rich_spans: Vec<RichSpan>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next_block_id: Option<String>,
     page_index: usize,
     bounding_box: [f64; 4],
     font_meta: FontMeta,
@@ -100,9 +121,37 @@ fn infer_type(size: f64, avg: f64) -> &'static str {
     if r >= 1.8 { "heading1" } else if r >= 1.3 { "heading2" } else if r >= 1.1 { "heading3" } else { "paragraph" }
 }
 
+/// Convert accumulated (text, font_name, font_size) segments → RichSpan[].
+fn build_rich_spans(
+    segments: &[(String, String, f64)],
+    base_family: &str,
+    base_size: f64,
+) -> Vec<RichSpan> {
+    segments
+        .iter()
+        .filter(|(t, _, _)| !t.trim().is_empty())
+        .map(|(text, font, size)| {
+            let (family, is_bold, is_italic) = parse_font_name(font);
+            RichSpan {
+                text: text.clone(),
+                bold: is_bold,
+                italic: is_italic,
+                underline: false,
+                strikethrough: false,
+                color: None,
+                font_family: if family != base_family { Some(family) } else { None },
+                font_size: if (*size - base_size).abs() > 0.5 { Some(*size) } else { None },
+                link_href: None,
+                mark: false,
+            }
+        })
+        .collect()
+}
+
 /// Build one block record. Returns None if text is blank.
 fn make_block(
     text: &str,
+    segments: &[(String, String, f64)],
     x: f64,
     y: f64,
     font_size: f64,
@@ -118,10 +167,13 @@ fn make_block(
     let (family, is_bold, is_italic) = parse_font_name(font_name);
     let sy = (page_height - y - font_size).max(0.0);
     let w = (t.len() as f64 * font_size * 0.5).max(20.0);
+    let rich_spans = build_rich_spans(segments, &family, font_size);
     Some(WasmBlock {
         id: format!("blk_wasm_{page_index}_{idx}"),
         block_type: "paragraph".to_string(),
         content: t.to_string(),
+        rich_spans,
+        next_block_id: None, // assigned in post-processing
         page_index,
         bounding_box: [x.max(0.0), sy, (x + w).max(x + 10.0), (sy + font_size * 1.2).max(sy + 10.0)],
         font_meta: FontMeta { family, size: font_size, is_bold, is_italic, color: "#111111".to_string() },
@@ -132,6 +184,34 @@ fn make_block(
         column_index: 0,
         style_overrides: HashMap::new(),
     })
+}
+
+/// Post-process: assign column_index and next_block_id by proximity.
+fn assign_columns_and_links(blocks: &mut Vec<WasmBlock>, page_width: f64) {
+    // Simple two-column heuristic: blocks whose left edge is > 45% of page width
+    // are in column 1; all others are column 0.
+    let col_threshold = page_width * 0.45;
+
+    for b in blocks.iter_mut() {
+        b.column_index = if b.bounding_box[0] > col_threshold { 1 } else { 0 };
+    }
+
+    // Sort by reading order (col asc, y asc) to assign next_block_id
+    blocks.sort_by(|a, b_blk| {
+        if a.column_index != b_blk.column_index {
+            return a.column_index.cmp(&b_blk.column_index);
+        }
+        a.bounding_box[1]
+            .partial_cmp(&b_blk.bounding_box[1])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    for i in 0..blocks.len().saturating_sub(1) {
+        if blocks[i].column_index == blocks[i + 1].column_index {
+            let next_id = blocks[i + 1].id.clone();
+            blocks[i].next_block_id = Some(next_id);
+        }
+    }
 }
 
 // ── Page size ─────────────────────────────────────────────────────────────────
@@ -165,7 +245,7 @@ fn get_page_size(doc: &Document, page_id: (u32, u16)) -> (f64, f64) {
 
 // ── Content stream parser ─────────────────────────────────────────────────────
 
-fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_height: f64) -> Vec<WasmBlock> {
+fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_height: f64, page_width: f64) -> Vec<WasmBlock> {
     let bytes = match doc.get_and_decode_page_content(page_id) {
         Ok(b) => b,
         Err(_) => return vec![],
@@ -180,7 +260,12 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
 
     // Text object state
     let mut in_bt = false;
+    // Full block text (for content field)
     let mut cur_text = String::new();
+    // Per-font segments: (text, font_name, font_size)
+    let mut cur_segments: Vec<(String, String, f64)> = Vec::new();
+    let mut cur_seg_text = String::new();
+
     let mut start_x = 0.0_f64;
     let mut start_y = 0.0_f64;
 
@@ -192,14 +277,36 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
     let mut font_size = 11.0_f64;
     let mut leading = 0.0_f64;
 
-    // Flush cur_text as a block. Called via macro to borrow start_x/y by value.
+    // Flush the current font segment into cur_segments
+    macro_rules! flush_segment {
+        () => {
+            if !cur_seg_text.is_empty() {
+                cur_segments.push((cur_seg_text.clone(), font_name.clone(), font_size));
+                cur_seg_text.clear();
+            }
+        };
+    }
+
+    // Flush the whole BT block as one WasmBlock
     macro_rules! flush {
         () => {
-            if let Some(b) = make_block(&cur_text, start_x, start_y, font_size, &font_name, page_index, page_height, idx) {
+            flush_segment!();
+            if let Some(b) = make_block(
+                &cur_text,
+                &cur_segments,
+                start_x,
+                start_y,
+                font_size,
+                &font_name,
+                page_index,
+                page_height,
+                idx,
+            ) {
                 blocks.push(b);
                 idx += 1;
             }
             cur_text.clear();
+            cur_segments.clear();
         };
     }
 
@@ -219,6 +326,8 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
             "BT" => {
                 in_bt = true;
                 cur_text.clear();
+                cur_segments.clear();
+                cur_seg_text.clear();
                 tlm_e = 0.0; tlm_f = 0.0;
                 start_x = 0.0; start_y = 0.0;
             }
@@ -228,6 +337,8 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
             }
             "Tf" if in_bt => {
                 if op.operands.len() >= 2 {
+                    // Changing font mid-block: flush the current segment
+                    flush_segment!();
                     if let Object::Name(n) = &op.operands[0] {
                         font_name = String::from_utf8_lossy(n).to_string();
                     }
@@ -268,8 +379,10 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
             // Tj: show string
             "Tj" if in_bt => {
                 if let Some(Object::String(b, _)) = op.operands.first() {
+                    let decoded = decode_pdf_string(b);
                     if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
-                    cur_text.push_str(&decode_pdf_string(b));
+                    cur_text.push_str(&decoded);
+                    cur_seg_text.push_str(&decoded);
                 }
             }
             // TJ: show array of strings and kerning values
@@ -278,10 +391,20 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
                     for item in items {
                         match item {
-                            Object::String(b, _) => cur_text.push_str(&decode_pdf_string(b)),
+                            Object::String(b, _) => {
+                                let decoded = decode_pdf_string(b);
+                                cur_text.push_str(&decoded);
+                                cur_seg_text.push_str(&decoded);
+                            }
                             // Large negative kern = word space
-                            Object::Integer(n) if *n < -100 => cur_text.push(' '),
-                            Object::Real(f)    if *f < -100.0 => cur_text.push(' '),
+                            Object::Integer(n) if *n < -100 => {
+                                cur_text.push(' ');
+                                cur_seg_text.push(' ');
+                            }
+                            Object::Real(f) if *f < -100.0 => {
+                                cur_text.push(' ');
+                                cur_seg_text.push(' ');
+                            }
                             _ => {}
                         }
                     }
@@ -292,7 +415,9 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                 flush!();
                 set_pos!(tlm_e, tlm_f - leading);
                 if let Some(Object::String(b, _)) = op.operands.first() {
-                    cur_text.push_str(&decode_pdf_string(b));
+                    let decoded = decode_pdf_string(b);
+                    cur_text.push_str(&decoded);
+                    cur_seg_text.push_str(&decoded);
                 }
             }
             // ": set spacing, move to next line, show string
@@ -301,7 +426,9 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     flush!();
                     set_pos!(tlm_e, tlm_f - leading);
                     if let Object::String(b, _) = &op.operands[2] {
-                        cur_text.push_str(&decode_pdf_string(b));
+                        let decoded = decode_pdf_string(b);
+                        cur_text.push_str(&decoded);
+                        cur_seg_text.push_str(&decoded);
                     }
                 }
             }
@@ -316,6 +443,9 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
             b.block_type = infer_type(b.font_meta.size, avg).to_string();
         }
     }
+
+    // Assign column_index and next_block_id based on X proximity
+    assign_columns_and_links(&mut blocks, page_width);
 
     blocks
 }
@@ -337,7 +467,7 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
         let page_index = (*page_num as usize).saturating_sub(1);
         let (width, height) = get_page_size(&doc, page_id);
         page_dimensions.push(WasmPageDimension { page_index, width, height });
-        all_blocks.extend(parse_page(&doc, page_id, page_index, height));
+        all_blocks.extend(parse_page(&doc, page_id, page_index, height, width));
     }
 
     page_dimensions.sort_by_key(|p| p.page_index);

@@ -44,18 +44,30 @@ type Spacing struct {
 	MarginBottom float64 `json:"margin_bottom"`
 }
 
+type RichSpan struct {
+	Text          string `json:"text"`
+	Bold          bool   `json:"bold"`
+	Italic        bool   `json:"italic"`
+	Underline     bool   `json:"underline"`
+	Strikethrough bool   `json:"strikethrough"`
+	Color         string `json:"color,omitempty"`
+	FontFamily    string `json:"font_family,omitempty"`
+	FontSize      float64 `json:"font_size,omitempty"`
+}
+
 type Block struct {
-	ID          string     `json:"id"`
-	Type        string     `json:"type"`
-	Content     string     `json:"content"`
-	PageIndex   int        `json:"page_index"`
-	ColumnIndex int        `json:"column_index"`
-	BoundingBox []float64  `json:"bounding_box"`
-	FontMeta    *FontMeta  `json:"font_meta"`
-	Spacing     *Spacing   `json:"spacing"`
-	Alignment   string     `json:"alignment"`
-	ZIndex      int        `json:"z_index"`
-	TableData   *TableData `json:"table_data"`
+	ID          string      `json:"id"`
+	Type        string      `json:"type"`
+	Content     string      `json:"content"`
+	RichSpans   []RichSpan  `json:"rich_spans"`
+	PageIndex   int         `json:"page_index"`
+	ColumnIndex int         `json:"column_index"`
+	BoundingBox []float64   `json:"bounding_box"`
+	FontMeta    *FontMeta   `json:"font_meta"`
+	Spacing     *Spacing    `json:"spacing"`
+	Alignment   string      `json:"alignment"`
+	ZIndex      int         `json:"z_index"`
+	TableData   *TableData  `json:"table_data"`
 }
 
 type TableData struct {
@@ -164,6 +176,112 @@ func setFont(pdf *fpdf.Fpdf, fm *FontMeta) {
 		family = normalizeFontFamily(fm.Family)
 	}
 	pdf.SetFont(family, fontStyle(fm), fontSize(fm))
+}
+
+// ── Rich span tokeniser ───────────────────────────────────────────────────────
+
+func tokenizeText(s string) []string {
+	var tokens []string
+	if len(s) == 0 {
+		return tokens
+	}
+	inSpace := s[0] == ' ' || s[0] == '\t' || s[0] == '\n'
+	start := 0
+	for i := 0; i < len(s); i++ {
+		isS := s[i] == ' ' || s[i] == '\t' || s[i] == '\n'
+		if isS != inSpace {
+			tokens = append(tokens, s[start:i])
+			start = i
+			inSpace = isS
+		}
+	}
+	tokens = append(tokens, s[start:])
+	return tokens
+}
+
+// renderRichSpans renders inline-formatted text using per-span font settings.
+// Falls back to pdf.MultiCell when RichSpans is empty.
+// Returns true if spans were rendered, false if the caller should fall back.
+func renderRichSpans(pdf *fpdf.Fpdf, spans []RichSpan, x0, y0, cellW, lh float64, defaultFM *FontMeta, align string) bool {
+	if len(spans) == 0 {
+		return false
+	}
+
+	curX := x0
+	curY := y0
+	firstOnLine := true
+
+	for _, span := range spans {
+		if span.Text == "" {
+			continue
+		}
+
+		// Determine per-span font attributes
+		style := ""
+		if span.Bold || (defaultFM != nil && defaultFM.IsBold) {
+			style += "B"
+		}
+		if span.Italic || (defaultFM != nil && defaultFM.IsItalic) {
+			style += "I"
+		}
+		if span.Underline {
+			style += "U"
+		}
+
+		family := "Helvetica"
+		if span.FontFamily != "" {
+			family = normalizeFontFamily(span.FontFamily)
+		} else if defaultFM != nil && defaultFM.Family != "" {
+			family = normalizeFontFamily(defaultFM.Family)
+		}
+
+		sz := fontSize(defaultFM)
+		if span.FontSize > 0 {
+			sz = span.FontSize
+		}
+
+		pdf.SetFont(family, style, sz)
+
+		col := "#111111"
+		if span.Color != "" {
+			col = span.Color
+		} else if defaultFM != nil && defaultFM.Color != "" {
+			col = defaultFM.Color
+		}
+		r, g, b := hexToRGB(col)
+		pdf.SetTextColor(r, g, b)
+
+		spaceW := pdf.GetStringWidth(" ")
+		tokens := tokenizeText(span.Text)
+
+		for _, tok := range tokens {
+			isSpace := strings.TrimSpace(tok) == ""
+			if isSpace {
+				if !firstOnLine {
+					curX += pdf.GetStringWidth(tok)
+				}
+				continue
+			}
+
+			tokW := pdf.GetStringWidth(tok)
+			// Line-wrap: if the word doesn't fit and we're not at the start of the line
+			if !firstOnLine && curX+spaceW+tokW > x0+cellW {
+				curX = x0
+				curY += lh
+				firstOnLine = true
+			}
+
+			if !firstOnLine {
+				curX += spaceW
+			}
+
+			pdf.SetXY(curX, curY)
+			pdf.CellFormat(tokW, lh, tok, "", 0, "L", false, 0, "")
+			curX += tokW
+			firstOnLine = false
+		}
+	}
+	return true
 }
 
 // ── Table renderer ────────────────────────────────────────────────────────────
@@ -318,8 +436,10 @@ func exportFidelity(model DocumentModel) ([]byte, error) {
 				lh = block.Spacing.LineHeight
 			}
 
-			pdf.SetXY(x0, y0)
-			pdf.MultiCell(cellW, lh, block.Content, "", blockAlign(block.Alignment), false)
+			if !renderRichSpans(pdf, block.RichSpans, x0, y0, cellW, lh, block.FontMeta, block.Alignment) {
+				pdf.SetXY(x0, y0)
+				pdf.MultiCell(cellW, lh, block.Content, "", blockAlign(block.Alignment), false)
+			}
 		}
 	}
 
@@ -422,7 +542,14 @@ func exportFlow(model DocumentModel, mode string) ([]byte, error) {
 			marginAfter = block.Spacing.MarginBottom
 		}
 
-		pdf.MultiCell(usableW, lh, block.Content, "", blockAlign(block.Alignment), false)
+		x, y := pdf.GetXY()
+		if !renderRichSpans(pdf, block.RichSpans, x, y, usableW, lh, block.FontMeta, block.Alignment) {
+			pdf.MultiCell(usableW, lh, block.Content, "", blockAlign(block.Alignment), false)
+		} else {
+			// After span rendering, move the cursor past the block
+			_, curY := pdf.GetXY()
+			pdf.SetY(curY + lh)
+		}
 		pdf.Ln(marginAfter)
 	}
 

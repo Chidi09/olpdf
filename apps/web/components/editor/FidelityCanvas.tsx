@@ -9,7 +9,7 @@ import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useFidelityCanvasStore, type ShapeTool, type SelectedBlockMeta } from "@/store/useFidelityCanvasStore";
 import FormatBar from "@/components/editor/FormatBar";
 import { reflow } from "@/engine/reflow";
-import { TipTapOverlay } from "@/components/editor/TipTapOverlay";
+import { DocumentFlowEditor } from "@/components/editor/DocumentFlowEditor";
 import { VirtualizedPage } from "@/components/editor/VirtualizedPage";
 import { FindReplaceBar } from "@/components/editor/FindReplaceBar";
 import { useFindReplaceStore } from "@/store/useFindReplaceStore";
@@ -228,7 +228,8 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const fabricCanvasesRef = useRef<Map<number, Canvas>>(new Map());
   const saveMutation = useSaveDocumentMutation(documentId);
   const currentModelRef = useRef(model);
-  const [activeTipTapBlock, setActiveTipTapBlock] = useState<{ blockId: string; pageIndex: number } | null>(null);
+  type DocumentEditState = { pageIndex: number; blockId: string; cursorTarget: "start" | "end" };
+  const [documentEdit, setDocumentEdit] = useState<DocumentEditState | null>(null);
   const [comments, setComments] = useState<EditorComment[]>([]);
   const [openCommentThread, setOpenCommentThread] = useState<string | null>(null);
   const [awarenessUsers, setAwarenessUsers] = useState<Array<{ id: string; name: string; color: string; selectedBlockId?: string | null }>>([]);
@@ -702,9 +703,14 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       if (target.type !== "textbox") return;
       const blockId = (target as FabricObjectWithMeta).data?.blockId;
       if (!blockId) return;
-      target.set({ opacity: 0, evented: false, selectable: false });
+      // Hide all textboxes on this page — DocumentFlowEditor overlays them all
+      for (const obj of fcanvas.getObjects()) {
+        if (obj.type === "textbox") {
+          obj.set({ opacity: 0, evented: false, selectable: false });
+        }
+      }
       fcanvas.renderAll();
-      setActiveTipTapBlock({ blockId, pageIndex });
+      setDocumentEdit({ pageIndex, blockId, cursorTarget: "end" });
     });
     fcanvas.on("mouse:down", (e) => {
       const raw = (e as unknown as FabricMouseEvent).e;
@@ -990,48 +996,81 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
               onCanvasReady={(pageIndex, node) => setupFabricCanvas(pageIndex, node, dim.width * scale, dim.height * scale)}
               onCanvasDestroy={destroyFabricCanvas}
             >
-              {activeTipTapBlock?.pageIndex === dim.page_index && (() => {
-                const block = model.blocks?.find((b) => b.id === activeTipTapBlock.blockId);
-                if (!block) return null;
+              {documentEdit?.pageIndex === dim.page_index && (() => {
+                const pageBlocks = (model.blocks ?? []).filter(
+                  (b) => (b.page_index ?? 0) === dim.page_index && b.type !== "shape",
+                );
                 return (
-                  <TipTapOverlay
-                    block={block}
+                  <DocumentFlowEditor
+                    blocks={pageBlocks}
+                    allBlocks={model.blocks ?? []}
                     scale={scale}
-                    canvasLeft={0}
-                    canvasTop={0}
-                    onCommit={(text, richContent) => {
-                      const nextBlocks = (currentModelRef.current.blocks ?? []).map((b) => {
-                        if (b.id !== activeTipTapBlock.blockId) return b;
-                        let nextType = b.type;
-                        const rootType = (richContent as TipTapJSON).content?.[0]?.type ?? "";
-                        if (rootType === "bulletList") nextType = "bullet_list";
-                        if (rootType === "orderedList") nextType = "ordered_list";
-                        const { _rich_spans, ...tiptapJson } = richContent as Record<string, unknown> & { _rich_spans?: unknown };
-                        return {
-                          ...b,
-                          content: text,
-                          rich_content: tiptapJson,
-                          rich_spans: Array.isArray(_rich_spans) && _rich_spans.length > 0 ? _rich_spans : b.rich_spans,
-                          type: nextType,
-                        };
-                      });
+                    initialBlockId={documentEdit.blockId}
+                    cursorTarget={documentEdit.cursorTarget}
+                    onCommit={(updatedBlocks, deletedIds) => {
+                      const deletedSet = new Set(deletedIds);
+                      const nextBlocks = (currentModelRef.current.blocks ?? [])
+                        .filter((b) => !deletedSet.has(b.id))
+                        .map((b) => {
+                          const updated = updatedBlocks.find((u) => u.id === b.id);
+                          return updated ?? b;
+                        });
                       const nextModel = { ...currentModelRef.current, blocks: nextBlocks };
-                      restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, text);
-                      setActiveTipTapBlock(null);
                       pushToHistory(nextModel);
                       saveDebounced.current(nextModel);
                       currentModelRef.current = nextModel;
-                      const reflowed = reflow(nextModel, activeTipTapBlock.blockId, fabricCanvasesRef.current, nextModel.page_dimensions ?? pageDimensions);
-                      if (reflowed !== nextModel) {
-                        pushToHistory(reflowed);
-                        saveDebounced.current(reflowed);
-                        currentModelRef.current = reflowed;
-                        applyReflowToCanvases(reflowed);
+                      // Restore Fabric textboxes with updated content
+                      const canvas = fabricCanvasesRef.current.get(dim.page_index);
+                      if (canvas) {
+                        for (const obj of canvas.getObjects()) {
+                          if (obj.type !== "textbox") continue;
+                          const blockId = (obj as FabricObjectWithMeta & { data?: { blockId?: string } }).data?.blockId;
+                          const updated = nextBlocks.find((b) => b.id === blockId);
+                          if (updated) (obj as Textbox).set("text", updated.content || "");
+                          obj.set({ opacity: 1, evented: true, selectable: true });
+                        }
+                        canvas.renderAll();
+                      }
+                      // Reflow the whole page
+                      const firstChanged = updatedBlocks[0]?.id;
+                      if (firstChanged) {
+                        const reflowed = reflow(nextModel, firstChanged, fabricCanvasesRef.current, nextModel.page_dimensions ?? pageDimensions);
+                        if (reflowed !== nextModel) {
+                          pushToHistory(reflowed);
+                          saveDebounced.current(reflowed);
+                          currentModelRef.current = reflowed;
+                          applyReflowToCanvases(reflowed);
+                        }
                       }
                     }}
-                    onCancel={() => {
-                      restoreFabricTextbox(activeTipTapBlock.blockId, activeTipTapBlock.pageIndex, block.content ?? "");
-                      setActiveTipTapBlock(null);
+                    onNavigateToPage={(targetPage, blockId, cursorTgt) => {
+                      // Restore current page textboxes before switching
+                      const canvas = fabricCanvasesRef.current.get(dim.page_index);
+                      if (canvas) {
+                        for (const obj of canvas.getObjects()) {
+                          if (obj.type === "textbox") obj.set({ opacity: 1, evented: true, selectable: true });
+                        }
+                        canvas.renderAll();
+                      }
+                      // Hide textboxes on target page
+                      const targetCanvas = fabricCanvasesRef.current.get(targetPage);
+                      if (targetCanvas) {
+                        for (const obj of targetCanvas.getObjects()) {
+                          if (obj.type === "textbox") obj.set({ opacity: 0, evented: false, selectable: false });
+                        }
+                        targetCanvas.renderAll();
+                      }
+                      setDocumentEdit({ pageIndex: targetPage, blockId, cursorTarget: cursorTgt });
+                    }}
+                    onClose={() => {
+                      const canvas = fabricCanvasesRef.current.get(dim.page_index);
+                      if (canvas) {
+                        for (const obj of canvas.getObjects()) {
+                          if (obj.type === "textbox") obj.set({ opacity: 1, evented: true, selectable: true });
+                        }
+                        canvas.renderAll();
+                      }
+                      setDocumentEdit(null);
                     }}
                   />
                 );
