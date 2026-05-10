@@ -227,60 +227,199 @@ export default function LandingPage() {
       </section>
 
       {/* TECH STACK */}
-      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[#fdfdfc] dark:bg-[#141415] animate-reveal opacity-0" style={{ animationDelay: '80ms' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-strong)] text-[var(--text-secondary)] text-[10px] font-mono font-bold uppercase tracking-widest mb-5">
-                Infrastructure
-              </div>
-              <h2 className="text-4xl md:text-5xl font-mono font-bold tracking-tight text-[var(--text-primary)]">Built on Open Foundations</h2>
+      <section className="relative py-32 px-6 border-b border-[#1a1a1d] overflow-hidden" style={{ background: '#0d0d10' }}>
+        {/* Ambient glow */}
+        <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-32 w-[800px] h-[400px] rounded-full opacity-[0.15]" style={{ background: 'radial-gradient(ellipse, #f97316 0%, transparent 70%)', filter: 'blur(80px)' }} />
+        {/* Subtle dot grid */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+
+        <div className="relative z-10 max-w-6xl mx-auto">
+
+          {/* Heading */}
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/25 bg-orange-500/8 text-orange-400 text-[10px] font-mono font-bold uppercase tracking-widest mb-6">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" />
+              Infrastructure
             </div>
-            <p className="text-[var(--text-secondary)] max-w-sm text-sm font-medium leading-relaxed md:text-right">
-              OLPDF isn&apos;t just a tool — it&apos;s modern infrastructure optimized for document intelligence and publishing.
+            <h2 className="font-sans font-black text-5xl md:text-6xl tracking-tight text-white leading-[1.05] mb-5">
+              Built on open<br />foundations.
+            </h2>
+            <p className="text-[#6b7280] max-w-lg mx-auto text-lg leading-relaxed font-medium">
+              Every layer chosen for reliability, transparency, and zero vendor lock-in. No black boxes, no magic, no surprise bills.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
-            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
-              <div className="h-11 w-11 bg-[var(--text-primary)] rounded-xl flex items-center justify-center text-[var(--bg-base)] mb-5">
-                <svg viewBox="0 0 116 100" fill="currentColor" className="h-5 w-5"><path d="M57.5 0L115 100H0L57.5 0z" /></svg>
-              </div>
-              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Next.js & Vercel</h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
-                Next.js 15 with Turbopack on Vercel&apos;s edge network for instant page transitions and SSR.
-              </p>
-            </div>
+          {/* Top row — 2 wide cards */}
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
 
-            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
-              <div className="h-11 w-11 bg-blue-600 rounded-xl flex items-center justify-center text-white mb-5">
-                <svg viewBox="0 0 128 128" fill="currentColor" className="h-5 w-5"><path d="M64.6 2c-17.1 0-26.6 7.6-26.6 23.4v12.8h27.3V43H36.9C15.8 43 5.3 56.4 8.7 78.4c3.2 20.3 16.5 24.5 28.5 24.5h8.9V91.2c0-16.1 13.8-29.3 29.5-29.3h22.8V49.1C98.4 25.5 86.8 2 64.6 2zM52.3 16.3c3.2 0 5.8 2.6 5.8 5.8s-2.6 5.8-5.8 5.8-5.8-2.6-5.8-5.8 2.6-5.8 5.8-5.8z"/><path d="M64.6 126c17.1 0 26.6-7.6 26.6-23.4v-12.8H63.9v4.8h28.4C113.4 85 123.9 71.6 120.5 49.6c-3.2-20.3-16.5-24.5-28.5-24.5h-8.9v11.7c0 16.1-13.8 29.3-29.5 29.3H30.8v12.8C30.8 102.5 42.4 126 64.6 126zm12.3-14.3c-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8 5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8z"/></svg>
-              </div>
-              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Python & FastAPI</h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
-                Python&apos;s PDF ecosystem powers our extraction engine with heuristic structural reconstruction.
-              </p>
-            </div>
+            {/* Next.js */}
+            {(() => {
+              const bullets = [
+                "Server Components for zero-bundle marketing pages — only the editor ships client JS",
+                "App Router with isolated canvas layer per PDF page — React never touches the Fabric surface",
+                "Dynamic import of the Rust/WASM parser and Fabric.js — invisible to the initial load",
+              ];
+              return (
+                <div className="group relative flex flex-col p-8 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-white/20 hover:shadow-2xl hover:shadow-black/50">
+                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-white/0 group-hover:bg-white/60 transition-all duration-300" />
+                  <div className="flex items-start gap-4 mb-6">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://cdn.simpleicons.org/nextdotjs/ffffff" alt="Next.js" width={32} height={32} className="shrink-0 mt-1 opacity-90" />
+                    <div>
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Frontend Runtime</p>
+                      <h3 className="font-sans font-black text-2xl text-white">Next.js</h3>
+                    </div>
+                  </div>
+                  <p className="text-[#9ca3af] leading-relaxed mb-6 flex-1">
+                    The frontend is a Next.js application compiled with Turbopack. Server Components handle every public-facing page at zero client bundle cost. The document editor is a fully client-rendered surface — TipTap for flow editing, Fabric.js for fidelity canvas — each isolated so framework re-renders never bleed into the canvas layer.
+                  </p>
+                  <ul className="space-y-2.5 border-t border-[#1e1e21] pt-5">
+                    {bullets.map(b => (
+                      <li key={b} className="flex items-start gap-3 text-sm text-[#6b7280]">
+                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
 
-            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
-              <div className="h-11 w-11 bg-[#F6821F]/15 rounded-xl flex items-center justify-center mb-5">
-                <CloudflareIcon />
-              </div>
-              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Cloudflare R2</h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
-                S3-compatible storage with zero egress fees for processed documents and export artifacts.
-              </p>
-            </div>
+            {/* FastAPI */}
+            {(() => {
+              const bullets = [
+                "PyMuPDF span-tree traversal: font family, size, weight, color, and bounding box per word",
+                "Gap-histogram column detection assigns column_index to every block for multi-column layouts",
+                "Font metrics collected in-browser and shipped with export requests for pixel-matched line breaks",
+              ];
+              return (
+                <div className="group relative flex flex-col p-8 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#009688]/50 hover:shadow-2xl hover:shadow-[#009688]/10">
+                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#009688]/0 group-hover:bg-[#009688]/80 transition-all duration-300" />
+                  <div className="flex items-start gap-4 mb-6">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://cdn.simpleicons.org/fastapi" alt="FastAPI" width={32} height={32} className="shrink-0 mt-1 opacity-90" />
+                    <div>
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Extraction Engine</p>
+                      <h3 className="font-sans font-black text-2xl text-white">FastAPI + Python</h3>
+                    </div>
+                  </div>
+                  <p className="text-[#9ca3af] leading-relaxed mb-6 flex-1">
+                    The API is a FastAPI application backed by Python&apos;s unmatched PDF ecosystem. A heuristic Vision Router classifies every page before any AI is invoked — native text pages go straight to PyMuPDF extraction, while scanned or image-heavy pages are rendered to PNG and processed by the AI Vision layer concurrently. Pydantic v2 models are shared with the TypeScript layer: one schema, two runtimes, zero drift.
+                  </p>
+                  <ul className="space-y-2.5 border-t border-[#1e1e21] pt-5">
+                    {bullets.map(b => (
+                      <li key={b} className="flex items-start gap-3 text-sm text-[#6b7280]">
+                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+          </div>
 
-            <div className="p-7 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-[var(--border-subtle)] hover:-translate-y-1 transition-transform group">
-              <div className="h-11 w-11 bg-[#3ECF8E]/15 rounded-xl flex items-center justify-center mb-5">
-                <SupabaseIcon />
-              </div>
-              <h3 className="font-sans font-black text-base mb-2 text-[var(--text-primary)]">Supabase Auth</h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
-                PostgreSQL with RLS keeps your data private. Supabase Auth handles identity end-to-end.
-              </p>
-            </div>
+          {/* Bottom row — 3 cards */}
+          <div className="grid md:grid-cols-3 gap-4">
+
+            {/* Supabase */}
+            {(() => {
+              const bullets = [
+                "RLS on every table — the service role is never used in user-facing request paths",
+                "pgvector cosine similarity for cross-chapter semantic drift detection in the Book Maker",
+                "Realtime Presence for live collaboration cursors; Broadcast for Yjs CRDT delta sync",
+              ];
+              return (
+                <div className="group relative flex flex-col p-7 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#3ECF8E]/50 hover:shadow-2xl hover:shadow-[#3ECF8E]/10">
+                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#3ECF8E]/0 group-hover:bg-[#3ECF8E]/80 transition-all duration-300" />
+                  <div className="flex items-start gap-3 mb-5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://cdn.simpleicons.org/supabase" alt="Supabase" width={28} height={28} className="shrink-0 mt-1 opacity-90" />
+                    <div>
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Database · Auth · Realtime</p>
+                      <h3 className="font-sans font-black text-xl text-white">Supabase</h3>
+                    </div>
+                  </div>
+                  <p className="text-[#9ca3af] text-sm leading-relaxed mb-5 flex-1">
+                    PostgreSQL with row-level security is the backbone. Every document and API key is locked at the database layer — the API cannot accidentally leak data across accounts. pgvector stores chapter embeddings for the RAG consistency checker. Supabase Auth handles identity end-to-end with no custom session logic.
+                  </p>
+                  <ul className="space-y-2 border-t border-[#1e1e21] pt-4">
+                    {bullets.map(b => (
+                      <li key={b} className="flex items-start gap-2.5 text-sm text-[#6b7280]">
+                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+
+            {/* Cloudflare R2 */}
+            {(() => {
+              const bullets = [
+                "S3-compatible — swap to any provider by changing one environment variable",
+                "Zero egress fees regardless of download region or monthly volume",
+                "Export links are signed URLs with 24h TTL, pruned by scheduled cleanup",
+              ];
+              return (
+                <div className="group relative flex flex-col p-7 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#F6821F]/50 hover:shadow-2xl hover:shadow-[#F6821F]/10">
+                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#F6821F]/0 group-hover:bg-[#F6821F]/80 transition-all duration-300" />
+                  <div className="flex items-start gap-3 mb-5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://cdn.simpleicons.org/cloudflare" alt="Cloudflare" width={28} height={28} className="shrink-0 mt-1 opacity-90" />
+                    <div>
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Object Storage</p>
+                      <h3 className="font-sans font-black text-xl text-white">Cloudflare R2</h3>
+                    </div>
+                  </div>
+                  <p className="text-[#9ca3af] text-sm leading-relaxed mb-5 flex-1">
+                    All uploaded PDFs, processed exports, and intermediate artifacts live in Cloudflare R2. There is no cost to serving export downloads to users anywhere in the world. Every exported file gets a time-bounded signed URL — nothing lives in storage indefinitely, and no authenticated endpoint is needed to download a finished export.
+                  </p>
+                  <ul className="space-y-2 border-t border-[#1e1e21] pt-4">
+                    {bullets.map(b => (
+                      <li key={b} className="flex items-start gap-2.5 text-sm text-[#6b7280]">
+                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+
+            {/* AI */}
+            {(() => {
+              const bullets = [
+                "Vision OCR: scanned pages rendered to PNG and processed concurrently — no GPU worker needed",
+                "Tool-call-only editing mode: AI cannot write free-text to documents, every change is auditable",
+                "Bring your own key for Claude, GPT, DeepSeek, Kimi, or Gemini — swappable per account",
+              ];
+              return (
+                <div className="group relative flex flex-col p-7 rounded-2xl bg-[#111113] border border-[#1e1e21] transition-all duration-300 hover:-translate-y-2 hover:border-[#4285F4]/50 hover:shadow-2xl hover:shadow-[#4285F4]/10">
+                  <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-[#4285F4]/0 group-hover:bg-[#4285F4]/80 transition-all duration-300" />
+                  <div className="flex items-start gap-3 mb-5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://cdn.simpleicons.org/googlegemini" alt="AI" width={28} height={28} className="shrink-0 mt-1 opacity-90" />
+                    <div>
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#4b5563] mb-1">Vision OCR · Document AI</p>
+                      <h3 className="font-sans font-black text-xl text-white">AI — Your Provider</h3>
+                    </div>
+                  </div>
+                  <p className="text-[#9ca3af] text-sm leading-relaxed mb-5 flex-1">
+                    The AI layer handles two distinct jobs: Vision OCR for scanned pages (all pages processed concurrently, no external GPU worker required), and structured document editing via strict tool-calling. In editing mode, the model is given a precise set of tools and never allowed to produce free-text mutations — every change is logged with a before/after diff and requires user acceptance.
+                  </p>
+                  <ul className="space-y-2 border-t border-[#1e1e21] pt-4">
+                    {bullets.map(b => (
+                      <li key={b} className="flex items-start gap-2.5 text-sm text-[#6b7280]">
+                        <span className="text-orange-500 shrink-0 mt-0.5 font-black">→</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </section>
