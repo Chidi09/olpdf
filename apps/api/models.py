@@ -2,6 +2,7 @@ from .models.document import (  # noqa: F401
     FontMeta,
     PageDimension,
     DocumentMeta,
+    RichSpan,
     DocumentBlock,
     DocumentModel,
     BookChapter,
@@ -36,6 +37,7 @@ from .models.requests import (  # noqa: F401
     TenantCreatePayload,
     TenantBrandingPayload,
     TenantMemberAddPayload,
+    ExportRequest,
 )
 from .models.responses import (  # noqa: F401
     ImportStatusPayload,

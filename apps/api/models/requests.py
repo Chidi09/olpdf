@@ -5,6 +5,12 @@ from typing import Any, Dict, List, Literal, Optional, Annotated
 from .document import DocumentModel
 
 
+class ExportRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    document_model: DocumentModel
+    font_metrics: Optional[Dict[str, Dict[str, float]]] = None
+
+
 class ImportStartPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
     document_id: str = Field(min_length=1, max_length=100)

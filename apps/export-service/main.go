@@ -88,8 +88,9 @@ type DocumentModel struct {
 }
 
 type ExportRequest struct {
-	DocumentModel DocumentModel `json:"document_model"`
-	ColorSpace    string        `json:"color_space"`
+	DocumentModel DocumentModel              `json:"document_model"`
+	ColorSpace    string                     `json:"color_space"`
+	FontMetrics   map[string]map[string]float64 `json:"font_metrics,omitempty"`
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -178,6 +179,43 @@ func setFont(pdf *fpdf.Fpdf, fm *FontMeta) {
 	pdf.SetFont(family, fontStyle(fm), fontSize(fm))
 }
 
+// ── Font metrics helpers ──────────────────────────────────────────────────────
+
+// cssFontKey builds the CSS font string used as key in the browser FontMetricsTable.
+// Matches the _cssFont() format from apps/web/engine/fontMetrics.ts.
+func cssFontKey(family string, isBold, isItalic bool, size float64) string {
+	style := "normal"
+	if isItalic {
+		style = "italic"
+	}
+	weight := "normal"
+	if isBold {
+		weight = "bold"
+	}
+	return fmt.Sprintf(`%s %s %gpx "%s"`, style, weight, size, family)
+}
+
+// measureWithMetrics returns a word's width in PDF points using the browser-measured
+// font metric table, or -1 when the key or any character is missing (caller falls back).
+func measureWithMetrics(text string, key string, metrics map[string]map[string]float64) float64 {
+	if len(metrics) == 0 {
+		return -1
+	}
+	charTable, ok := metrics[key]
+	if !ok {
+		return -1
+	}
+	total := 0.0
+	for _, ch := range text {
+		w, ok := charTable[string(ch)]
+		if !ok {
+			return -1
+		}
+		total += w
+	}
+	return total * 0.75 // convert browser px (96 dpi) → PDF pts (72 dpi)
+}
+
 // ── Rich span tokeniser ───────────────────────────────────────────────────────
 
 func tokenizeText(s string) []string {
@@ -202,7 +240,7 @@ func tokenizeText(s string) []string {
 // renderRichSpans renders inline-formatted text using per-span font settings.
 // Falls back to pdf.MultiCell when RichSpans is empty.
 // Returns true if spans were rendered, false if the caller should fall back.
-func renderRichSpans(pdf *fpdf.Fpdf, spans []RichSpan, x0, y0, cellW, lh float64, defaultFM *FontMeta, align string) bool {
+func renderRichSpans(pdf *fpdf.Fpdf, spans []RichSpan, x0, y0, cellW, lh float64, defaultFM *FontMeta, align string, metrics map[string]map[string]float64) bool {
 	if len(spans) == 0 {
 		return false
 	}
@@ -218,22 +256,25 @@ func renderRichSpans(pdf *fpdf.Fpdf, spans []RichSpan, x0, y0, cellW, lh float64
 
 		// Determine per-span font attributes
 		style := ""
-		if span.Bold || (defaultFM != nil && defaultFM.IsBold) {
+		isBold := span.Bold || (defaultFM != nil && defaultFM.IsBold)
+		isItalic := span.Italic || (defaultFM != nil && defaultFM.IsItalic)
+		if isBold {
 			style += "B"
 		}
-		if span.Italic || (defaultFM != nil && defaultFM.IsItalic) {
+		if isItalic {
 			style += "I"
 		}
 		if span.Underline {
 			style += "U"
 		}
 
-		family := "Helvetica"
+		rawFamily := "Helvetica"
 		if span.FontFamily != "" {
-			family = normalizeFontFamily(span.FontFamily)
+			rawFamily = span.FontFamily
 		} else if defaultFM != nil && defaultFM.Family != "" {
-			family = normalizeFontFamily(defaultFM.Family)
+			rawFamily = defaultFM.Family
 		}
+		family := normalizeFontFamily(rawFamily)
 
 		sz := fontSize(defaultFM)
 		if span.FontSize > 0 {
@@ -251,19 +292,30 @@ func renderRichSpans(pdf *fpdf.Fpdf, spans []RichSpan, x0, y0, cellW, lh float64
 		r, g, b := hexToRGB(col)
 		pdf.SetTextColor(r, g, b)
 
+		metricsKey := cssFontKey(rawFamily, isBold, isItalic, sz)
 		spaceW := pdf.GetStringWidth(" ")
+		if mw := measureWithMetrics(" ", metricsKey, metrics); mw >= 0 {
+			spaceW = mw
+		}
 		tokens := tokenizeText(span.Text)
 
 		for _, tok := range tokens {
 			isSpace := strings.TrimSpace(tok) == ""
 			if isSpace {
 				if !firstOnLine {
-					curX += pdf.GetStringWidth(tok)
+					tokSpW := pdf.GetStringWidth(tok)
+					if mw := measureWithMetrics(tok, metricsKey, metrics); mw >= 0 {
+						tokSpW = mw
+					}
+					curX += tokSpW
 				}
 				continue
 			}
 
 			tokW := pdf.GetStringWidth(tok)
+			if mw := measureWithMetrics(tok, metricsKey, metrics); mw >= 0 {
+				tokW = mw
+			}
 			// Line-wrap: if the word doesn't fit and we're not at the start of the line
 			if !firstOnLine && curX+spaceW+tokW > x0+cellW {
 				curX = x0
@@ -276,7 +328,9 @@ func renderRichSpans(pdf *fpdf.Fpdf, spans []RichSpan, x0, y0, cellW, lh float64
 			}
 
 			pdf.SetXY(curX, curY)
-			pdf.CellFormat(tokW, lh, tok, "", 0, "L", false, 0, "")
+			// Always use pdf.GetStringWidth for the actual cell width (rendering)
+			renderW := pdf.GetStringWidth(tok)
+			pdf.CellFormat(renderW, lh, tok, "", 0, "L", false, 0, "")
 			curX += tokW
 			firstOnLine = false
 		}
@@ -351,7 +405,7 @@ func renderTable(pdf *fpdf.Fpdf, td *TableData, x0, y0, tableW, tableH float64) 
 
 // ── Fidelity export (coordinate-based — preserves exact bounding boxes) ───────
 
-func exportFidelity(model DocumentModel) ([]byte, error) {
+func exportFidelity(model DocumentModel, metrics map[string]map[string]float64) ([]byte, error) {
 	// Build page dimension index
 	dims := map[int]PageDimension{}
 	for _, d := range model.PageDimensions {
@@ -436,7 +490,7 @@ func exportFidelity(model DocumentModel) ([]byte, error) {
 				lh = block.Spacing.LineHeight
 			}
 
-			if !renderRichSpans(pdf, block.RichSpans, x0, y0, cellW, lh, block.FontMeta, block.Alignment) {
+			if !renderRichSpans(pdf, block.RichSpans, x0, y0, cellW, lh, block.FontMeta, block.Alignment, metrics) {
 				pdf.SetXY(x0, y0)
 				pdf.MultiCell(cellW, lh, block.Content, "", blockAlign(block.Alignment), false)
 			}
@@ -452,7 +506,7 @@ func exportFidelity(model DocumentModel) ([]byte, error) {
 
 // ── Flow export (reading order — used for PDF/A and Tagged PDF) ───────────────
 
-func exportFlow(model DocumentModel, mode string) ([]byte, error) {
+func exportFlow(model DocumentModel, mode string, metrics map[string]map[string]float64) ([]byte, error) {
 	const (
 		marginL = 72.0
 		marginR = 72.0
@@ -543,7 +597,7 @@ func exportFlow(model DocumentModel, mode string) ([]byte, error) {
 		}
 
 		x, y := pdf.GetXY()
-		if !renderRichSpans(pdf, block.RichSpans, x, y, usableW, lh, block.FontMeta, block.Alignment) {
+		if !renderRichSpans(pdf, block.RichSpans, x, y, usableW, lh, block.FontMeta, block.Alignment, metrics) {
 			pdf.MultiCell(usableW, lh, block.Content, "", blockAlign(block.Alignment), false)
 		} else {
 			// After span rendering, move the cursor past the block
@@ -688,7 +742,7 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	model, _, err := parseRequest(r)
+	model, _, _, err := parseRequest(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -729,20 +783,20 @@ func authorized(r *http.Request) bool {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-func parseRequest(r *http.Request) (DocumentModel, string, error) {
+func parseRequest(r *http.Request) (DocumentModel, string, map[string]map[string]float64, error) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 32<<20)) // 32 MB limit
 	if err != nil {
-		return DocumentModel{}, "", fmt.Errorf("read body: %w", err)
+		return DocumentModel{}, "", nil, fmt.Errorf("read body: %w", err)
 	}
 	var req ExportRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		return DocumentModel{}, "", fmt.Errorf("parse JSON: %w", err)
+		return DocumentModel{}, "", nil, fmt.Errorf("parse JSON: %w", err)
 	}
 	cs := req.ColorSpace
 	if cs == "" {
 		cs = "rgb"
 	}
-	return req.DocumentModel, cs, nil
+	return req.DocumentModel, cs, req.FontMetrics, nil
 }
 
 func writeError(w http.ResponseWriter, code int, msg string) {
@@ -762,7 +816,7 @@ func makePDFHandler(mode string) http.HandlerFunc {
 			return
 		}
 
-		model, _, err := parseRequest(r)
+		model, _, metrics, err := parseRequest(r)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
@@ -771,9 +825,9 @@ func makePDFHandler(mode string) http.HandlerFunc {
 		var pdfBytes []byte
 		switch mode {
 		case "fidelity":
-			pdfBytes, err = exportFidelity(model)
+			pdfBytes, err = exportFidelity(model, metrics)
 		default:
-			pdfBytes, err = exportFlow(model, mode)
+			pdfBytes, err = exportFlow(model, mode, metrics)
 		}
 		if err != nil {
 			log.Printf("[export-service] %s export error: %v", mode, err)

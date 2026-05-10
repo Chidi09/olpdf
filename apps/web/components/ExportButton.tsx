@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DocumentModel } from "@olpdf/document-model";
 import PreflightPanel, { PreflightIssue } from "./editor/PreflightPanel";
+import { collectFontMetrics, fontsFromBlocks } from "@/engine/fontMetrics";
 
 const FORMATS = [
   { id: "fidelity", label: "PDF (Fidelity)" },
@@ -74,12 +75,14 @@ export default function ExportButton({ model, documentId }: { model: DocumentMod
                 URL.revokeObjectURL(url);
                 return;
             }
+            const fontMetas = fontsFromBlocks(model.blocks ?? []);
+            const fontMetrics = collectFontMetrics(fontMetas);
             const response = await fetch(`/api/bff/documents/${documentId}/export/${format}`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify(model)
+                body: JSON.stringify({ document_model: model, font_metrics: fontMetrics })
             });
             
             if (response.status === 401) {

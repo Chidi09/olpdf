@@ -17,6 +17,7 @@ import type { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
+import { useFidelityCanvasStore } from "@/store/useFidelityCanvasStore";
 
 // ─── ASTSpan ↔ TipTap JSON conversion (mirrors TipTapOverlay helpers) ─────────
 
@@ -181,6 +182,31 @@ function BlockCell({
     cbRef.current = { onNavigateNext, onNavigatePrev, onMergeWithPrev, onChange };
   });
 
+  // Stable ref for isFocused — readable inside editor callbacks without stale closure
+  const focusedRef = useRef(isFocused);
+  useEffect(() => { focusedRef.current = isFocused; });
+
+  // Store access for FormatBar integration
+  const { pendingFormat, clearPendingFormat } = useFidelityCanvasStore();
+
+  const pushSelectionToStore = (e: Editor) => {
+    if (!focusedRef.current) return;
+    useFidelityCanvasStore.getState().setSelectedBlock({
+      blockId: block.id,
+      blockType: block.type,
+      fontFamily: String(fm.family ?? "Georgia"),
+      fontSize: Number(fm.size ?? 11),
+      isBold: e.isActive("bold"),
+      isItalic: e.isActive("italic"),
+      color: (e.getAttributes("textStyle").color as string | undefined) ?? String(fm.color ?? "#000000"),
+      alignment: block.alignment ?? "left",
+      left: x0,
+      top: y0,
+      width: x1 - x0,
+      height: y1 - y0,
+    });
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -215,7 +241,43 @@ function BlockCell({
       const json = e.getJSON() as Record<string, unknown>;
       cbRef.current.onChange(e.getText(), docToRichSpans(json));
     },
+    onSelectionUpdate: ({ editor: e }) => {
+      pushSelectionToStore(e);
+    },
   });
+
+  // Push block selection to store when this cell gains focus
+  useEffect(() => {
+    if (!isFocused || !editor) return;
+    pushSelectionToStore(editor);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused, editor]);
+
+  // Clear store when this focused cell unmounts
+  useEffect(() => {
+    return () => {
+      if (focusedRef.current) {
+        useFidelityCanvasStore.getState().setSelectedBlock(null);
+      }
+    };
+  }, []);
+
+  // Apply FormatBar commands to the focused editor
+  useEffect(() => {
+    if (!pendingFormat || !isFocused || !editor) return;
+    if (pendingFormat.isBold !== undefined) {
+      if (pendingFormat.isBold) editor.chain().focus().setBold().run();
+      else editor.chain().focus().unsetBold().run();
+    }
+    if (pendingFormat.isItalic !== undefined) {
+      if (pendingFormat.isItalic) editor.chain().focus().setItalic().run();
+      else editor.chain().focus().unsetItalic().run();
+    }
+    if (pendingFormat.color !== undefined) {
+      editor.chain().focus().setColor(pendingFormat.color).run();
+    }
+    clearPendingFormat();
+  }, [pendingFormat, isFocused, editor, clearPendingFormat]);
 
   // Focus management: move cursor to start/end when this cell gains focus
   useEffect(() => {

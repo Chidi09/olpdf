@@ -387,6 +387,8 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
   useEffect(() => {
     if (!pendingFormat) return;
+    // DocumentFlowEditor's BlockCell handles pendingFormat when active
+    if (documentEdit) return;
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
       const obj = canvas.getActiveObject();
       if (!obj || obj.type !== "textbox") continue;
@@ -1063,6 +1065,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
                       setDocumentEdit({ pageIndex: targetPage, blockId, cursorTarget: cursorTgt });
                     }}
                     onClose={() => {
+                      setSelectedBlock(null);
                       const canvas = fabricCanvasesRef.current.get(dim.page_index);
                       if (canvas) {
                         for (const obj of canvas.getObjects()) {

@@ -289,6 +289,54 @@ def _draw_image_block(c: canvas.Canvas, block: Dict[str, Any], page_height: floa
         pass
 
 
+def _draw_rich_spans(
+    c: canvas.Canvas,
+    spans: List[Dict[str, Any]],
+    x0: float,
+    y0_rl: float,
+    cell_w: float,
+    default_fm: Dict[str, Any],
+    color_space: str,
+) -> None:
+    """Render inline-formatted rich spans with word-wrap inside [x0, x0+cell_w]."""
+    cur_x = x0
+    cur_y = y0_rl
+    default_size = float(default_fm.get("size", 11.0) or 11.0)
+    default_family = str(default_fm.get("family", "Helvetica"))
+    default_bold = bool(default_fm.get("is_bold", False))
+    default_italic = bool(default_fm.get("is_italic", False))
+    default_color = str(default_fm.get("color", "#000000"))
+
+    for span in spans:
+        text = str(span.get("text", ""))
+        if not text:
+            continue
+        size = float(span.get("font_size") or default_size)
+        family = str(span.get("font_family") or default_family)
+        is_bold = bool(span.get("bold", default_bold))
+        is_italic = bool(span.get("italic", default_italic))
+        color = str(span.get("color") or default_color)
+        lh = max(size * 1.2, 1.0)
+        rl_name = _font_family_to_reportlab_name(family, is_bold, is_italic)
+        rl_font = _register_font_if_needed(rl_name)
+        c.setFont(rl_font, max(size, 1.0))
+        if color_space == "cmyk":
+            c.setFillColorCMYK(*_hex_to_cmyk(color))
+        else:
+            c.setFillColorRGB(*_hex_to_rgb(color))
+        sp_w = c.stringWidth(" ", rl_font, size)
+        for word in text.split():
+            w = c.stringWidth(word, rl_font, size)
+            if cur_x > x0 and cur_x + sp_w + w > x0 + cell_w:
+                cur_x = x0
+                cur_y -= lh
+            elif cur_x > x0:
+                c.drawString(cur_x, cur_y, " ")
+                cur_x += sp_w
+            c.drawString(cur_x, cur_y, word)
+            cur_x += w
+
+
 def _draw_fidelity_block(c: canvas.Canvas, block: Dict[str, Any], page_height: float, color_space: str = "rgb") -> None:
     btype = block.get("type")
     if btype == "image":
@@ -329,6 +377,13 @@ def _draw_fidelity_block(c: canvas.Canvas, block: Dict[str, Any], page_height: f
         c.setFillColorRGB(*_hex_to_rgb(hex_color))
 
     rl_y = float(page_height) - float(top)
+
+    # Prefer rich_spans for inline-formatted rendering
+    rich_spans = block.get("rich_spans") or []
+    if rich_spans:
+        _draw_rich_spans(c, rich_spans, float(x0), rl_y, bbox_width, font_meta, color_space)
+        return
+
     if c.stringWidth(content, rl_font, size) <= bbox_width:
         c.drawString(float(x0), rl_y, content)
         return
@@ -453,7 +508,7 @@ def _render_shapes_with_pymupdf(pdf_bytes: bytes, shape_blocks_by_page: Dict[int
     return out.getvalue()
 
 
-def export_fidelity(document_model: Dict[str, Any], color_space: str = "rgb") -> bytes:
+def export_fidelity(document_model: Dict[str, Any], color_space: str = "rgb", font_metrics: Optional[Dict[str, Any]] = None) -> bytes:
     buffer = io.BytesIO()
     page_dims = {
         int(dim.get("page_index", 0)): {"width": float(dim.get("width", 595.28)), "height": float(dim.get("height", 841.89))}

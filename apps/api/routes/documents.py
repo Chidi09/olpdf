@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
-from ..models import DocumentModel, DocumentSnapshotPayload, VersionHistoryEntry, ImportStartPayload
+from ..models import DocumentModel, DocumentSnapshotPayload, VersionHistoryEntry, ImportStartPayload, ExportRequest
 from ..repositories import DocumentRepository
 from ..auth_utils import require_auth, check_ownership
 from ..security_utils import sanitize_document_model
@@ -103,7 +103,7 @@ async def delete_document(doc_id: str, user: dict = Depends(require_auth)) -> di
 
 @router.post("/{doc_id}/export/{format_type}")
 @limiter.limit("5/minute")
-async def export_document(request: Request, doc_id: str, format_type: str, doc: DocumentModel, user: dict = Depends(require_auth)) -> dict:
+async def export_document(request: Request, doc_id: str, format_type: str, export_req: ExportRequest, user: dict = Depends(require_auth)) -> dict:
     check_ownership(doc_id, user)
     try:
         format_alias = {
@@ -112,6 +112,8 @@ async def export_document(request: Request, doc_id: str, format_type: str, doc: 
             "text": "txt",
         }
         normalized_format = format_alias.get(format_type, format_type)
+        doc = export_req.document_model
+        font_metrics = export_req.font_metrics or {}
         doc_dict = doc.model_dump()
         if normalized_format == "fidelity" or doc.meta.layout_mode == "fidelity":
             from ..reflow_engine import reflow_document
@@ -119,10 +121,10 @@ async def export_document(request: Request, doc_id: str, format_type: str, doc: 
             doc_dict = reflow_document(doc_dict)
 
         engine = ExportEngineFactory.get_engine(normalized_format)
-        
+
         if normalized_format == "fidelity":
             color_space = doc.meta.color_space if hasattr(doc.meta, "color_space") else "rgb"
-            pdf_bytes = engine(doc_dict, color_space=color_space)
+            pdf_bytes = engine(doc_dict, color_space=color_space, font_metrics=font_metrics)
         else:
             pdf_bytes = engine(doc_dict)
 

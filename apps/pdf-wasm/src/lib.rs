@@ -186,17 +186,65 @@ fn make_block(
     })
 }
 
-/// Post-process: assign column_index and next_block_id by proximity.
+/// Post-process: assign column_index and next_block_id using gap-histogram detection.
+///
+/// Algorithm (mirrors Python's `_detect_columns`):
+///   1. Build a 5pt-bin occupation histogram over the page width.
+///   2. Scan the middle 80% (10%–90%) for runs of unoccupied bins ≥ 20pt.
+///   3. Each such gap's midpoint becomes a column divider.
+///   4. A block's column_index = number of dividers to the left of its centre.
 fn assign_columns_and_links(blocks: &mut Vec<WasmBlock>, page_width: f64) {
-    // Simple two-column heuristic: blocks whose left edge is > 45% of page width
-    // are in column 1; all others are column 0.
-    let col_threshold = page_width * 0.45;
-
-    for b in blocks.iter_mut() {
-        b.column_index = if b.bounding_box[0] > col_threshold { 1 } else { 0 };
+    if blocks.is_empty() {
+        return;
     }
 
-    // Sort by reading order (col asc, y asc) to assign next_block_id
+    // Build occupation histogram (5pt bins).
+    let bin_size = 5.0_f64;
+    let n_bins = ((page_width / bin_size).ceil() as usize) + 1;
+    let mut occupied = vec![false; n_bins];
+
+    for b in blocks.iter() {
+        let lo = (b.bounding_box[0] / bin_size).floor() as usize;
+        let hi = ((b.bounding_box[2] / bin_size).ceil() as usize).min(n_bins.saturating_sub(1));
+        for i in lo..=hi {
+            occupied[i] = true;
+        }
+    }
+
+    // Find gaps in the middle 80% of the page width.
+    let lo_limit = ((page_width * 0.10) / bin_size).floor() as usize;
+    let hi_limit = ((page_width * 0.90) / bin_size).ceil() as usize;
+    let min_gap_bins = ((20.0 / bin_size).ceil() as usize).max(1);
+
+    let mut dividers: Vec<f64> = Vec::new();
+    let mut gap_start: Option<usize> = None;
+
+    let scan_hi = hi_limit.min(n_bins.saturating_sub(1));
+    for i in lo_limit..=scan_hi {
+        if !occupied[i] {
+            if gap_start.is_none() {
+                gap_start = Some(i);
+            }
+        } else if let Some(gs) = gap_start.take() {
+            if i - gs >= min_gap_bins {
+                dividers.push((gs + i) as f64 * 0.5 * bin_size);
+            }
+        }
+    }
+    // Gap extending to the scan boundary
+    if let Some(gs) = gap_start {
+        if scan_hi + 1 - gs >= min_gap_bins {
+            dividers.push((gs + scan_hi) as f64 * 0.5 * bin_size);
+        }
+    }
+
+    // Assign column_index: how many dividers lie to the left of the block centre.
+    for b in blocks.iter_mut() {
+        let centre_x = (b.bounding_box[0] + b.bounding_box[2]) * 0.5;
+        b.column_index = dividers.iter().filter(|&&d| centre_x > d).count();
+    }
+
+    // Sort by reading order (col asc, y asc), then chain next_block_id within each column.
     blocks.sort_by(|a, b_blk| {
         if a.column_index != b_blk.column_index {
             return a.column_index.cmp(&b_blk.column_index);
