@@ -128,12 +128,12 @@ function NavbarInner() {
             ) : !loading ? (
               <div className="flex items-center gap-2">
                 <Link href="/login">
-                  <Button variant="ghost" className="rounded-full px-6 font-bold text-sm hidden sm:flex" aria-label="Sign In">
+                  <Button className="rounded-full px-6 font-bold text-sm hidden sm:flex bg-orange-500 hover:bg-orange-400 text-white transition-colors" aria-label="Sign In">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="rounded-full px-6 bg-[var(--text-primary)] text-[var(--bg-base)] font-bold text-sm shadow-lg hover:shadow-xl transition-all" aria-label="Join Beta">
+                  <Button className="rounded-full px-6 font-bold text-sm bg-orange-500 hover:bg-orange-400 text-white transition-colors" aria-label="Join Beta">
                     Join Beta
                   </Button>
                 </Link>
