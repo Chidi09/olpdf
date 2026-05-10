@@ -51,6 +51,48 @@ export function useEmbedBridge({
     postToParent("READY", undefined, parentOrigin);
   }, [parentOrigin]);
 
+  /**
+   * MODEL_UPDATE — emitted whenever the DocumentModel changes.
+   * Carries the full model including rich_spans, next_block_id, page_dimensions, etc.
+   * Replaces the deprecated BLOCK_CHANGE event which only carried a flat content string.
+   *
+   * Host SDK usage:
+   *   editor.on('MODEL_UPDATE', ({ documentModel }) => { ... })
+   */
+  const emitModelUpdate = useCallback(
+    (documentId: string, model: DocumentModel) => {
+      postToParent("MODEL_UPDATE", { documentId, documentModel: model }, parentOrigin);
+    },
+    [parentOrigin],
+  );
+
+  /**
+   * PAGE_ADDED — emitted when the layout engine adds a new overflow page.
+   *
+   * Host SDK usage:
+   *   editor.on('PAGE_ADDED', ({ pageIndex, width, height }) => { ... })
+   */
+  const emitPageAdded = useCallback(
+    (pageIndex: number, width: number, height: number) => {
+      postToParent("PAGE_ADDED", { pageIndex, width, height }, parentOrigin);
+    },
+    [parentOrigin],
+  );
+
+  /**
+   * PAGE_REMOVED — emitted when the layout engine removes a previously-added overflow page.
+   *
+   * Host SDK usage:
+   *   editor.on('PAGE_REMOVED', ({ pageIndex }) => { ... })
+   */
+  const emitPageRemoved = useCallback(
+    (pageIndex: number) => {
+      postToParent("PAGE_REMOVED", { pageIndex }, parentOrigin);
+    },
+    [parentOrigin],
+  );
+
+  /** @deprecated Use emitModelUpdate — BLOCK_CHANGE loses rich_spans formatting. */
   const emitBlockChange = useCallback(
     (blockId: string, content: string) => {
       postToParent("BLOCK_CHANGE", { blockId, content }, parentOrigin);
@@ -60,7 +102,11 @@ export function useEmbedBridge({
 
   const emitSave = useCallback(
     (documentId: string, model: DocumentModel) => {
-      postToParent("SAVE", { documentId, blockCount: model.blocks?.length ?? 0 }, parentOrigin);
+      postToParent("SAVE", {
+        documentId,
+        blockCount: model.blocks?.length ?? 0,
+        pageCount: model.page_dimensions?.length ?? 1,
+      }, parentOrigin);
     },
     [parentOrigin],
   );
@@ -72,5 +118,5 @@ export function useEmbedBridge({
     [parentOrigin],
   );
 
-  return { emitBlockChange, emitSave, emitExportComplete };
+  return { emitModelUpdate, emitPageAdded, emitPageRemoved, emitBlockChange, emitSave, emitExportComplete };
 }

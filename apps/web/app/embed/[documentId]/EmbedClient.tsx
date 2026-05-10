@@ -69,7 +69,7 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
     document.dispatchEvent(new CustomEvent("olpdf:embed:download"));
   }, []);
 
-  const { emitBlockChange, emitSave, emitExportComplete } = useEmbedBridge({
+  const { emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave, emitExportComplete } = useEmbedBridge({
     parentOrigin,
     onLoad: handleLoad,
     onSetTheme: handleSetTheme,
@@ -78,13 +78,27 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
 
   const handleModelChange = useCallback(
     (updated: DocumentModel) => {
-      setModel(updated);
+      setModel((prev) => {
+        // Emit PAGE_ADDED / PAGE_REMOVED when page count changes
+        const prevPages = prev?.page_dimensions ?? [];
+        const nextPages = updated.page_dimensions ?? [];
+        if (nextPages.length > prevPages.length) {
+          for (let i = prevPages.length; i < nextPages.length; i++) {
+            const dim = nextPages[i];
+            if (dim) emitPageAdded(dim.page_index, dim.width, dim.height);
+          }
+        } else if (nextPages.length < prevPages.length) {
+          for (let i = nextPages.length; i < prevPages.length; i++) {
+            const dim = prevPages[i];
+            if (dim) emitPageRemoved(dim.page_index);
+          }
+        }
+        return updated;
+      });
+      emitModelUpdate(documentId, updated);
       emitSave(documentId, updated);
-      // Emit a BLOCK_CHANGE for each block that changed would require diffing;
-      // for simplicity we emit a single SAVE event which carries block count.
-      void emitBlockChange; // available for fine-grained use in FidelityCanvas
     },
-    [documentId, emitSave, emitBlockChange],
+    [documentId, emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave],
   );
 
   // Expose emitExportComplete so FidelityCanvas can call it when export finishes.
