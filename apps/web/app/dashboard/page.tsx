@@ -65,17 +65,17 @@ export default function Dashboard() {
   const projects: Project[] = [
     ...(documentsQuery.data || []).map(d => ({
       id: d.id,
-      title: d.title || "Untitled Document",
+      title: d.title ?? "Untitled Document",
       type: "Document" as const,
-      updated_at: d.updated_at || d.created_at,
-      pages: d.page_count || 0
+      updated_at: d.updated_at ?? d.created_at ?? new Date(0).toISOString(),
+      pages: d.page_count ?? 0
     })),
     ...(booksQuery.data || []).map(b => ({
       id: b.id,
-      title: b.title || "Untitled Book",
+      title: b.title ?? "Untitled Book",
       type: "Book" as const,
-      updated_at: b.updated_at || b.created_at,
-      pages: b.chapters?.length || 0
+      updated_at: b.updated_at ?? b.created_at ?? new Date(0).toISOString(),
+      pages: b.chapters?.length ?? 0
     }))
   ].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
