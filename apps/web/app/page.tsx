@@ -32,6 +32,7 @@ const jsonLd = {
 };
 import ApiSection from "@/components/ApiSection";
 import EmbedSection from "@/components/EmbedSection";
+import RaccoonAssistant from "@/components/RaccoonAssistant";
 import {
   FileJson,
   Layers,
@@ -626,6 +627,7 @@ export default function LandingPage() {
           </div>
       </footer>
 
+      <RaccoonAssistant />
     </main>
   );
 }
