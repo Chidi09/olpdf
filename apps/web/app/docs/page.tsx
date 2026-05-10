@@ -155,6 +155,175 @@ function CodeExamplesBlock() {
     </div>
   );
 }
+
+// ─── API Key Examples tab block ──────────────────────────────────────────────
+
+const API_KEY_CODES: Record<string, string> = {
+  curl: `# Step 1 — create an API key (one time)
+curl -X POST https://api.olpdf.xyz/api/api-keys \\
+  -H "Authorization: Bearer <supabase_jwt>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "Production Backend"}'
+# => { "key": "olpdf_live_xxxx..." }  ← save this, shown once
+
+# Step 2 — use the key in any request
+curl -X POST https://api.olpdf.xyz/v1/extract \\
+  -H "Authorization: Bearer olpdf_live_xxxx..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"url":"https://example.com/doc.pdf","mode":"semantic"}'`,
+
+  python: `import requests
+
+API_KEY = "olpdf_live_xxxx..."  # from your dashboard
+BASE    = "https://api.olpdf.xyz"
+HEADERS = {"Authorization": f"Bearer {API_KEY}"}
+
+# Extract a document
+resp = requests.post(
+    f"{BASE}/v1/extract",
+    headers=HEADERS,
+    json={"url": "https://example.com/doc.pdf", "mode": "semantic"},
+)
+blocks = resp.json()["blocks"]
+print(f"Extracted {len(blocks)} blocks")`,
+
+  node: `const API_KEY = process.env.OLPDF_API_KEY; // "olpdf_live_xxxx..."
+const BASE    = "https://api.olpdf.xyz";
+
+async function extract(url: string) {
+  const res = await fetch(\`\${BASE}/v1/extract\`, {
+    method: "POST",
+    headers: {
+      "Authorization": \`Bearer \${API_KEY}\`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ url, mode: "semantic" }),
+  });
+  if (!res.ok) throw new Error(\`OLPDF error: \${res.status}\`);
+  const { blocks } = await res.json();
+  return blocks;
+}`,
+
+  java: `import java.net.http.*;
+import java.net.URI;
+
+public class OlpdfClient {
+    private static final String BASE    = "https://api.olpdf.xyz";
+    private static final String API_KEY = System.getenv("OLPDF_API_KEY");
+    private final HttpClient client     = HttpClient.newHttpClient();
+
+    public String extract(String docUrl) throws Exception {
+        var body = String.format(
+            "{\\"url\\":\\"%s\\",\\"mode\\":\\"semantic\\"}", docUrl);
+        var req = HttpRequest.newBuilder()
+            .uri(URI.create(BASE + "/v1/extract"))
+            .header("Authorization", "Bearer " + API_KEY)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build();
+        return client.send(req, HttpResponse.BodyHandlers.ofString()).body();
+    }
+}`,
+
+  go: `package olpdf
+
+import (
+    "bytes"; "encoding/json"; "fmt"
+    "net/http"; "os"
+)
+
+var (
+    apiKey = os.Getenv("OLPDF_API_KEY")
+    base   = "https://api.olpdf.xyz"
+)
+
+func Extract(docURL string) (*http.Response, error) {
+    payload, _ := json.Marshal(map[string]string{
+        "url": docURL, "mode": "semantic",
+    })
+    req, _ := http.NewRequest("POST",
+        fmt.Sprintf("%s/v1/extract", base),
+        bytes.NewBuffer(payload))
+    req.Header.Set("Authorization", "Bearer "+apiKey)
+    req.Header.Set("Content-Type", "application/json")
+    return http.DefaultClient.Do(req)
+}`,
+
+  rust: `use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+use serde_json::json;
+use std::env;
+
+pub struct OlpdfClient {
+    api_key: String,
+    client: reqwest::Client,
+}
+
+impl OlpdfClient {
+    pub fn new() -> Self {
+        Self {
+            api_key: env::var("OLPDF_API_KEY").expect("OLPDF_API_KEY not set"),
+            client: reqwest::Client::new(),
+        }
+    }
+
+    pub async fn extract(&self, url: &str) -> reqwest::Result<serde_json::Value> {
+        self.client
+            .post("https://api.olpdf.xyz/v1/extract")
+            .header(AUTHORIZATION, format!("Bearer {}", self.api_key))
+            .header(CONTENT_TYPE, "application/json")
+            .json(&json!({"url": url, "mode": "semantic"}))
+            .send().await?
+            .json().await
+    }
+}`,
+};
+
+function ApiKeyExamplesBlock() {
+  const [active, setActive] = useState("curl");
+  const [copied, setCopied] = useState(false);
+  const lang = EXAMPLE_LANGS.find((l) => l.id === active)!;
+  const copy = useCallback(async () => {
+    await navigator.clipboard.writeText(API_KEY_CODES[active]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [active]);
+  const iconSrc = (l: typeof EXAMPLE_LANGS[number]) =>
+    l.color ? `https://cdn.simpleicons.org/${l.slug}/${l.color}` : `https://cdn.simpleicons.org/${l.slug}`;
+  return (
+    <div className="mt-6">
+      <p className="text-base font-black text-[var(--text-primary)] mb-3">Usage examples</p>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {EXAMPLE_LANGS.map((l) => (
+          <button key={l.id} onClick={() => setActive(l.id)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-bold font-mono transition-all ${
+              active === l.id
+                ? "border-orange-500/60 bg-orange-500/10 text-white"
+                : "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={iconSrc(l)} alt={l.label} width={14} height={14} className="shrink-0" />
+            {l.label}
+          </button>
+        ))}
+      </div>
+      <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c]">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#0f0f11] border-b border-[#1e1e21]">
+          <div className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={iconSrc(lang)} alt={lang.label} width={12} height={12} />
+            <span className="text-sm font-mono text-gray-500">{lang.file}</span>
+          </div>
+          <button onClick={copy} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-200 transition-colors font-bold">
+            {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        <pre className="p-5 overflow-x-auto leading-relaxed text-sm font-mono text-gray-300 min-h-[200px]"
+          dangerouslySetInnerHTML={{ __html: highlight(API_KEY_CODES[active]) }} />
+      </div>
+    </div>
+  );
+}
 // ─── Code Block ──────────────────────────────────────────────────────────────
 
 function CodeBlock({ code, lang = "json", filename }: { code: string; lang?: string; filename?: string }) {
@@ -1009,6 +1178,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 }`}
               />
               <Callout type="warn">The <code>key</code> value is shown exactly once. OLPDF stores only the SHA-256 hash. Copy it now.</Callout>
+              <ApiKeyExamplesBlock />
               <Endpoint method="DELETE" path="/api/api-keys/{key_id}"
                 desc="Revoke an API key immediately. Any requests using this key will return 401."
                 response={`{ "deleted": true }`}
