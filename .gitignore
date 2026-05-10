@@ -41,3 +41,17 @@ CLAUDE.md
 AGENTS.md
 **/CLAUDE.md
 **/AGENTS.md
+
+# Claude Code / AI tooling state
+/.claude/
+/.mcp.json
+/skills-lock.json
+
+# Agent configuration
+/.agents
+
+# CI/CD workflows (managed separately, not bundled in source)
+/.github/
+
+# Internal scripts (deployment, migration helpers — not for public repo)
+/scripts/
