@@ -2,18 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import * as Y from "yjs";
-import SupabaseProvider from "y-supabase";
 import { IndexeddbPersistence } from "y-indexeddb";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DocumentModel } from "@olpdf/document-model";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
-
-function generateColor(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) hash = (hash << 5) - hash + seed.charCodeAt(i);
-  const hue = Math.abs(hash % 360);
-  return `hsl(${hue} 78% 46%)`;
-}
 
 function initYDoc(model: DocumentModel): Y.Doc {
   const ydoc = new Y.Doc();
@@ -34,41 +25,41 @@ function initYDoc(model: DocumentModel): Y.Doc {
 
 export function useCollaboration(documentId: string, model: DocumentModel) {
   const ydocRef = useRef<Y.Doc | null>(null);
-  const providerRef = useRef<SupabaseProvider | null>(null);
+  // providerRef kept for API compatibility with useCollaborationBridge
+  const providerRef = useRef<null>(null);
 
   useEffect(() => {
     const ydoc = initYDoc(model);
     const localPersist = new IndexeddbPersistence(`olpdf-${documentId}`, ydoc);
     ydocRef.current = ydoc;
 
-    let provider: SupabaseProvider | null = null;
-    const init = async () => { try {
-      const supabase = createSupabaseBrowserClient();
-      const { data: sessionData } = await supabase.auth.getSession();
-      const displayName =
-        sessionData.session?.user?.user_metadata?.full_name ??
-        sessionData.session?.user?.email ??
-        "Collaborator";
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase.channel(`doc-collab:${documentId}`, {
+      config: { broadcast: { self: false } },
+    });
 
-      provider = new SupabaseProvider(ydoc, supabase as SupabaseClient, {
-        channel: `document:${documentId}`,
-        tableName: "yjs_updates",
-        columnName: "data",
-      } as any);
-      providerRef.current = provider;
+    channel.on("broadcast", { event: "y-update" }, ({ payload }) => {
+      try {
+        const update = new Uint8Array(payload.update as number[]);
+        Y.applyUpdate(ydoc, update);
+      } catch { /* ignore malformed updates */ }
+    });
 
-      provider.awareness.setLocalStateField("user", {
-        id: `local-${provider.awareness.clientID}`,
-        name: displayName,
-        color: generateColor(String(provider.awareness.clientID)),
-        selectedBlockId: null,
+    const updateHandler = (update: Uint8Array) => {
+      void channel.send({
+        type: "broadcast",
+        event: "y-update",
+        payload: { update: Array.from(update) },
       });
-    } catch { providerRef.current = null; } };
-    void init();
+    };
+
+    ydoc.on("update", updateHandler);
+    void channel.subscribe();
 
     return () => {
-      provider?.destroy();
-      localPersist.destroy();
+      ydoc.off("update", updateHandler);
+      void supabase.removeChannel(channel);
+      void localPersist.destroy();
       ydoc.destroy();
     };
   }, [documentId]);
