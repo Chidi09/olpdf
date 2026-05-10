@@ -1918,6 +1918,92 @@ add_action('wp_ajax_olpdf_save', function () {
                 ))}
               </div>
             </div>
+
+            {/* ── .NET / Windows ── */}
+            <div className="mt-12 pt-12 border-t border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/dotnet/512BD4" alt=".NET" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">.NET — WinForms / WPF / MAUI</h3>
+              </div>
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Embed OLPDF into any Windows desktop app using <strong className="text-[var(--text-primary)]">WebView2</strong> — Microsoft&apos;s
+                Chromium-based webview. Install the <code className="font-mono text-amber-500 text-sm">Olpdf</code> NuGet package for the API client
+                and <code className="font-mono text-amber-500 text-sm">Microsoft.Web.WebView2</code> to host the editor iframe natively.
+              </p>
+              <div className="bg-[#111113] rounded-xl border border-[#2a2a2e] px-5 py-3 font-mono text-sm mb-5 text-[#e5e7eb]">
+                <span className="text-[#6b7280]">$</span> <span className="text-white">dotnet add package </span><span className="text-[#c084fc]">Olpdf</span>
+                <br />
+                <span className="text-[#6b7280]">$</span> <span className="text-white">dotnet add package </span><span className="text-[#c084fc]">Microsoft.Web.WebView2</span>
+              </div>
+              <HCode code={`// OlpdfWindow.cs — WinForms example
+using Microsoft.Web.WebView2.WinForms;
+using Olpdf;
+using System.Text.Json;
+
+public partial class OlpdfWindow : Form
+{
+    private readonly WebView2 _view   = new() { Dock = DockStyle.Fill };
+    private readonly OlpdfClient _api;
+
+    public OlpdfWindow(string apiKey, string documentId, string embedToken)
+    {
+        _api = new OlpdfClient(apiKey);
+        Controls.Add(_view);
+        Text = "OLPDF Editor";
+        ClientSize = new Size(1280, 800);
+        _ = InitAsync(documentId, embedToken);
+    }
+
+    private async Task InitAsync(string documentId, string embedToken)
+    {
+        // Boot WebView2 runtime
+        await _view.EnsureCoreWebView2Async();
+
+        // Load the embed URL — OLPDF renders inside the webview
+        _view.Source = new Uri(
+            $"https://olpdf.xyz/embed/{documentId}?token={embedToken}");
+
+        // Receive postMessage events from the iframe
+        _view.CoreWebView2.WebMessageReceived += async (_, e) =>
+        {
+            var msg = JsonSerializer.Deserialize<OlpdfMessage>(e.WebMessageAsJson);
+            if (msg?.Type == "MODEL_UPDATE" && msg.Data is not null)
+            {
+                // Persist the updated AST via the REST API
+                await _api.SaveDocumentAsync(documentId, msg.Data);
+            }
+            if (msg?.Type == "EXPORT_COMPLETE")
+            {
+                System.Diagnostics.Process.Start(new ProcessStartInfo
+                {
+                    FileName = msg.Url, UseShellExecute = true
+                });
+            }
+        };
+    }
+}
+
+// OlpdfMessage.cs
+public record OlpdfMessage(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("data")] DocumentModel? Data,
+    [property: JsonPropertyName("url")]  string? Url
+);`} />
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "WebView2 runtime ships with Windows 11 and Edge — no installer needed on modern systems.",
+                  "For WPF use Microsoft.Web.WebView2.Wpf; for MAUI use a BlazorWebView or WebView.",
+                  "Generate a short-lived embed token server-side (POST /api/embed-token) and pass it to the client — never expose your API key in the desktop app.",
+                  "Call _api.ExportAsync(documentId, 'pdf') from a toolbar button to download the finished PDF directly via the REST API.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
 
           <div className="py-12 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">

@@ -1,0 +1,25 @@
+name: Publish Olpdf to NuGet
+
+on:
+  push:
+    tags:
+      - "dotnet/v*"   # git tag dotnet/v0.1.0 && git push origin dotnet/v0.1.0
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x"
+
+      - name: Build
+        run: dotnet build packages/olpdf-dotnet/src/Olpdf/Olpdf.csproj -c Release
+
+      - name: Pack
+        run: dotnet pack packages/olpdf-dotnet/src/Olpdf/Olpdf.csproj -c Release --no-build -o nupkg
+
+      - name: Publish to NuGet
+        run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

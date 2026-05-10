@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- NuGet metadata -->
+    <PackageId>Olpdf</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>OLPDF</Authors>
+    <Company>OLPDF</Company>
+    <Description>C# client for the OLPDF PDF editing API</Description>
+    <PackageTags>pdf;editor;ai;document;olpdf</PackageTags>
+    <PackageProjectUrl>https://olpdf.xyz</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Chidi09/olpdf</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

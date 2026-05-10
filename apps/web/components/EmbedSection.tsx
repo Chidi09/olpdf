@@ -15,6 +15,7 @@ const FRAMEWORKS = [
   { id: "analog",    label: "Analog",    slug: "angular",   colorOverride: "DD0031", file: "pdf-editor.ts"    },
   { id: "wix",       label: "Wix",       slug: "wix",       colorOverride: null,    file: "page.js"           },
   { id: "wordpress", label: "WordPress", slug: "wordpress", colorOverride: null,    file: "functions.php"     },
+  { id: "dotnet",    label: ".NET",      slug: "dotnet",    colorOverride: "512BD4", file: "OlpdfEmbed.cs"    },
 ] as const;
 
 function iconUrl(slug: string, colorOverride: string | null) {
@@ -152,6 +153,40 @@ $w.onReady(() => {
   editor.on('MODEL_UPDATE', ({ documentModel }) =>
     wixData.save('documents', documentModel));
 });`,
+
+  dotnet:
+`// Install: dotnet add package Olpdf
+// Requires: Microsoft.Web.WebView2 NuGet package
+using Microsoft.Web.WebView2.WinForms; // or .Wpf
+using System.Text.Json;
+
+public partial class EditorForm : Form
+{
+    private readonly WebView2 _webView = new();
+
+    public EditorForm(string documentId, string token)
+    {
+        Controls.Add(_webView);
+        _webView.Dock = DockStyle.Fill;
+        InitAsync(documentId, token);
+    }
+
+    private async void InitAsync(string documentId, string token)
+    {
+        await _webView.EnsureCoreWebView2Async();
+        // Load the OLPDF embed URL with your token
+        _webView.Source = new Uri(
+            $"https://olpdf.xyz/embed/{documentId}?token={token}");
+        // Listen for MODEL_UPDATE / SAVE events over postMessage
+        _webView.CoreWebView2.WebMessageReceived += (_, e) =>
+        {
+            var msg = JsonSerializer.Deserialize<OlpdfMessage>(
+                e.WebMessageAsJson);
+            if (msg?.Type == "MODEL_UPDATE")
+                MyDb.Save(msg.Data);
+        };
+    }
+}`,
 
   wordpress:
 `<?php // functions.php
