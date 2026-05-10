@@ -45,6 +45,7 @@ export function useModelSyncAndReflow(args: {
           style_overrides: {},
           z_index: idx,
           page_index: pageIndex,
+          float: "none",
         } as DocumentBlock;
       }
 
@@ -61,6 +62,7 @@ export function useModelSyncAndReflow(args: {
           page_index: pageIndex,
           confidence_score: 1,
           needs_review: false,
+          float: "none",
         } as DocumentBlock;
       }
 
@@ -79,6 +81,7 @@ export function useModelSyncAndReflow(args: {
         page_index: pageIndex,
         confidence_score: 1,
         needs_review: false,
+        float: "none",
       } as DocumentBlock;
     });
 

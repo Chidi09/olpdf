@@ -54,8 +54,7 @@ export function useCollaboration(documentId: string, model: DocumentModel) {
         channel: `document:${documentId}`,
         tableName: "yjs_updates",
         columnName: "data",
-        docId: documentId,
-      });
+      } as any);
       providerRef.current = provider;
 
       provider.awareness.setLocalStateField("user", {

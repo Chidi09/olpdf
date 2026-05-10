@@ -3,6 +3,7 @@ from typing import List
 from ..core.supabase_client import get_supabase
 from ..core.auth import get_current_user
 from ..models import TemplateResponse
+from ..models.requests import PublishTemplatePayload
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -14,6 +15,35 @@ async def list_templates(category: str = None):
         query = query.eq("category", category)
     response = query.execute()
     return response.data
+
+@router.post("/publish")
+async def publish_template(
+    payload: PublishTemplatePayload,
+    current_user: dict = Depends(get_current_user)
+):
+    supabase = get_supabase()
+    
+    # Verify document ownership and get model
+    doc = supabase.table("documents").select("document_model").eq("id", payload.document_id).eq("user_id", current_user["user_id"]).single().execute()
+    if not doc.data:
+        raise HTTPException(status_code=404, detail="Document not found or access denied")
+        
+    # Create template
+    new_template = supabase.table("templates").insert({
+        "title": payload.title,
+        "category": payload.category,
+        "description": payload.description,
+        "document_model": doc.data["document_model"],
+        "author_id": current_user["user_id"],
+        "author_name": current_user.get("user_metadata", {}).get("full_name", "Community Contributor"),
+        "is_public": True,
+        "uses_count": 0
+    }).execute()
+    
+    if not new_template.data:
+        raise HTTPException(status_code=500, detail="Failed to publish template")
+        
+    return {"status": "success", "template_id": new_template.data[0]["id"]}
 
 @router.post("/{template_id}/apply")
 async def apply_template(

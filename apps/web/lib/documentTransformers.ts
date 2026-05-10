@@ -132,6 +132,7 @@ export function tiptapToDocumentModel(tiptapDoc: unknown, documentId: string): E
       style_overrides: (node.attrs?.style_overrides as Record<string, unknown>) || {},
       z_index: 0,
       page_index: 0,
+      float: "none" as const,
     }));
 
   return {

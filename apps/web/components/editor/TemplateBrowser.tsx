@@ -19,8 +19,8 @@ const templates: { id: string; title: string; model: DocumentModel }[] = [
       styles: { font_family: "Lora" },
       page_dimensions: [],
       blocks: [
-        { id: "tpl-h1", type: "heading1", content: "Executive Summary", z_index: 0, page_index: 0 },
-        { id: "tpl-p1", type: "paragraph", content: "{{COMPANY_NAME}} proposes the following scope.", z_index: 0, page_index: 0 },
+        { id: "tpl-h1", type: "heading1", content: "Executive Summary", z_index: 0, page_index: 0, float: "none" },
+        { id: "tpl-p1", type: "paragraph", content: "{{COMPANY_NAME}} proposes the following scope.", z_index: 0, page_index: 0, float: "none" },
       ],
     },
   },

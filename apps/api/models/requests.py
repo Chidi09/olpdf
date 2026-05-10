@@ -184,3 +184,10 @@ class TenantMemberAddPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
     user_id: str
     role: Literal["admin", "member"] = "member"
+
+class PublishTemplatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    document_id: str = Field(min_length=1, max_length=100)
+    title: str = Field(min_length=1, max_length=100)
+    category: str = Field(min_length=1, max_length=50)
+    description: str = Field(max_length=1000)

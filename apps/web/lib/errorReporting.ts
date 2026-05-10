@@ -21,7 +21,7 @@ export function reportError(error: unknown, context: ErrorContext = {}) {
   try {
     // posthog-js attaches to window.posthog after init.
     // We read it dynamically so this file has no hard import dependency.
-    const ph = (typeof window !== "undefined" ? (window as Record<string, unknown>).posthog : undefined) as
+    const ph = (typeof window !== "undefined" ? (window as unknown as Record<string, unknown>).posthog : undefined) as
       | { capture: (event: string, props: Record<string, unknown>) => void }
       | undefined;
 

@@ -13,6 +13,7 @@ export const FontMeta = z.object({
   is_bold: z.boolean().default(false),
   is_italic: z.boolean().default(false),
 });
+export type FontMeta = z.infer<typeof FontMeta>;
 
 // ── Inline span (sub-block rich text fragment) ────────────────────────────────
 export const ASTSpan = z.object({

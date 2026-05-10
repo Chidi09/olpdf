@@ -18,6 +18,7 @@ import type {
   ASTDocument,
   ASTNode,
   ASTSpan,
+  ASTSection,
   DocumentBlock,
   DocumentModel,
   FontMeta,
