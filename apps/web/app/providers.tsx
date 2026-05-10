@@ -46,52 +46,51 @@ export default function Providers({ children }: ProvidersProps) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    if (typeof window === "undefined") return;
 
-    // Capture whether a SW is already in control BEFORE registration.
-    // If false this is a first-ever visit — we must NOT reload when the
-    // initial SW takes control or we'd create an infinite reload loop.
-    const hadController = !!navigator.serviceWorker.controller;
+    // Register SW for offline caching only — we do NOT rely on SW events
+    // for update detection because the timing is unpredictable.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .catch((err) => reportError(err, { source: "service-worker-registration" }));
+    }
 
-    let intervalId: ReturnType<typeof setInterval>;
+    // ── Build-hash deploy detection (same technique as VarianTrade) ──────────
+    // Next.js embeds the current buildId in window.__NEXT_DATA__.
+    // Each Vercel deployment generates a new buildId, which changes the
+    // asset filenames under /_next/static/{buildId}/.
+    // We poll that path every 30 s — if it 404s the build has rotated.
+    const buildId = (window as { __NEXT_DATA__?: { buildId?: string } })
+      .__NEXT_DATA__?.buildId;
 
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((reg) => {
-        // Poll for new deployments every 30 s.
-        // The browser only auto-checks on navigation, so this makes
-        // updates near-instant without requiring a page refresh.
-        intervalId = setInterval(() => reg.update(), 30_000);
+    if (!buildId) return; // dev / SSR edge case — skip
 
-        // updatefound fires when a new SW starts installing.
-        reg.addEventListener("updatefound", () => {
-          const incoming = reg.installing;
-          if (!incoming) return;
+    let reloading = false;
 
-          incoming.addEventListener("statechange", () => {
-            // 'installed' + existing controller = update ready, not first install.
-            if (incoming.state === "installed" && navigator.serviceWorker.controller) {
-              // next-pwa sets skipWaiting:true so the new SW activates
-              // immediately; controllerchange will fire and reload.
-              // Belt-and-suspenders: also send SKIP_WAITING in case config changed.
-              incoming.postMessage({ type: "SKIP_WAITING" });
-            }
-          });
-        });
-      })
-      .catch((err) => reportError(err, { source: "service-worker-registration" }));
-
-    // controllerchange fires when the new SW claims the page.
-    // Only reload if there was already a controller (= a real update, not first install).
-    const onControllerChange = () => {
-      if (hadController) window.location.reload();
+    const checkForUpdate = async () => {
+      if (document.visibilityState !== "visible" || reloading) return;
+      try {
+        const res = await fetch(
+          `/_next/static/${buildId}/_buildManifest.js`,
+          { cache: "no-store", method: "HEAD" }
+        );
+        if (!res.ok && res.status === 404) {
+          // New build deployed — assets for this buildId no longer exist.
+          reloading = true;
+          window.location.reload();
+        }
+      } catch {
+        // Network error — skip silently, try again next interval
+      }
     };
-    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
-    return () => {
-      clearInterval(intervalId);
-      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
-    };
+    // Check immediately on mount (catches deployments that happened while
+    // the tab was open in the background), then every 30 seconds.
+    void checkForUpdate();
+    const intervalId = setInterval(checkForUpdate, 30_000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
