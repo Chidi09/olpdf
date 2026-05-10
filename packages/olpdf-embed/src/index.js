@@ -8,7 +8,8 @@ export class OlPDFEmbed {
     this.handlers = new Map();
 
     const iframe = document.createElement("iframe");
-    iframe.src = `${this.host}/embed/${this.documentId}?token=${encodeURIComponent(this.token)}`;
+    const embedOrigin = encodeURIComponent(window.location.origin);
+    iframe.src = `${this.host}/embed/${this.documentId}?token=${encodeURIComponent(this.token)}&origin=${embedOrigin}`;
     iframe.style.width = "100%";
     iframe.style.height = "100%";
     iframe.style.border = "0";

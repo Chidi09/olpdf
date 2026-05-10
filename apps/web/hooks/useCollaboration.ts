@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as Y from "yjs";
-import { SupabaseProvider } from "y-supabase";
+import SupabaseProvider from "y-supabase";
 import { IndexeddbPersistence } from "y-indexeddb";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DocumentModel } from "@olpdf/document-model";

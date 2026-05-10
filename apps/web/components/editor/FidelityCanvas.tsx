@@ -445,13 +445,13 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     const provider = providerRef.current;
     if (!provider) return;
     const onAwareness = () => {
-      const states = Array.from(provider.awareness.getStates().entries());
+      const states = Array.from(provider.awareness.getStates().entries()) as [number, AwarenessState][];
       const users = states
         .map(([id, state]) => ({
           id: String(id),
-          name: (state as AwarenessState).user?.name ?? "?",
-          color: (state as AwarenessState).user?.color ?? "#64748b",
-          selectedBlockId: (state as AwarenessState).user?.selectedBlockId ?? null,
+          name: state.user?.name ?? "?",
+          color: state.user?.color ?? "#64748b",
+          selectedBlockId: state.user?.selectedBlockId ?? null,
         }))
         .filter((u) => u.id !== String(provider.awareness.clientID));
       setAwarenessUsers(users);
