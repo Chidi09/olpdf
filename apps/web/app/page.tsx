@@ -407,40 +407,83 @@ export default function LandingPage() {
       </section>
 
       {/* HOW IT WORKS / THE LOOP */}
-      <section id="extraction-loop" className="py-16 px-6 relative bg-[#fdfdfc] dark:bg-[#101011] animate-reveal opacity-0 border-b border-[var(--border-subtle)]" style={{ animationDelay: '240ms' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-20 relative">
-            {/* Scribble */}
-            <svg className="absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-32 text-blue-500 opacity-10 pointer-events-none" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="animate-[spin_20s_linear_infinite]" />
-            </svg>
-            <h2 className="text-4xl md:text-5xl font-mono font-bold uppercase tracking-widest mb-4 text-[var(--text-primary)]">The Extraction Loop</h2>
-            <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto font-medium">
-              We reconstruct the semantic DOM from raw coordinates.
-            </p>
+      <section id="extraction-loop" className="py-28 px-6 border-b border-[var(--border-subtle)] relative overflow-hidden" style={{ background: '#0d0d10' }}>
+        {/* keyframes injected via dangerouslySetInnerHTML on a style tag */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes olpdf-pulse {
+            0%   { left: 0%;   opacity: 0; }
+            6%   { opacity: 1; }
+            94%  { opacity: 1; }
+            100% { left: calc(100% - 2rem); opacity: 0; }
+          }
+          @keyframes olpdf-node-breathe {
+            0%,100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+            50%      { box-shadow: 0 0 24px 4px rgba(249,115,22,0.18); }
+          }
+        `}} />
+
+        {/* Faint grid */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
+
+        <div className="relative z-10 max-w-5xl mx-auto">
+          {/* Heading */}
+          <div className="text-center mb-24">
+            <p className="text-[10px] font-mono font-black uppercase tracking-[0.25em] text-orange-500 mb-5">Pipeline</p>
+            <h2 className="font-sans font-black text-4xl md:text-5xl text-white tracking-tight mb-5">The Extraction Loop</h2>
+            <p className="text-[#6b7280] text-lg max-w-md mx-auto font-medium">We reconstruct the semantic DOM from raw coordinates.</p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6 relative">
-             {/* Connecting dashed line */}
-             <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px border-t-2 border-dashed border-[var(--border-strong)] -translate-y-1/2 z-0"></div>
-
-            {[
-                { icon: FileJson, title: "1. Extract", desc: "Raw PDF binaries are parsed to extract untagged text and coordinates." },
-                { icon: Layers, title: "2. Reconstruct", desc: "Python heuristics engine rebuilds paragraphs, tables, and lists." },
-                { icon: Wand2, title: "3. AI Edit", desc: "Gemini 1.5 Pro performs precise JSON tree mutations seamlessly." },
-                { icon: Download, title: "4. Export", desc: "Compiled back into a pristine PDF/A or EPUB3 document." }
-            ].map((step, idx) => (
-                <div key={idx} className="relative bg-white dark:bg-[#1a1a1c] p-8 rounded border border-[var(--border-strong)] shadow-[4px_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-transform duration-300 z-10 group">
-                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-[#fdfdfc] dark:bg-[#101011] rounded-full border border-[var(--border-strong)] flex items-center justify-center shadow-sm">
-                      <div className="w-2 h-2 rounded-full bg-[var(--text-primary)] group-hover:bg-orange-500 transition-colors"></div>
-                  </div>
-                  <div className="h-12 w-12 rounded flex items-center justify-center mb-6 text-[var(--text-primary)] border border-[var(--border-subtle)] bg-[#f9f9f8] dark:bg-[#252528]">
-                    <step.icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-mono font-bold text-xl mb-3">{step.title}</h3>
-                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed font-medium">{step.desc}</p>
+          {/* Pipeline */}
+          <div className="relative">
+            {/* Desktop orange connector line with traveling pulses */}
+            <div className="hidden md:block absolute top-10 z-0" style={{ left: 'calc(12.5% + 2.5rem)', right: 'calc(12.5% + 2.5rem)', height: '1px', background: '#1e1e21' }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} className="absolute inset-y-0 overflow-hidden" style={{ left: `${i * 33.34}%`, width: '33.33%' }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: '-3px',
+                    width: '2rem',
+                    height: '7px',
+                    borderRadius: '9999px',
+                    background: 'linear-gradient(90deg, transparent, #f97316 40%, transparent)',
+                    animation: `olpdf-pulse 2.4s ease-in-out infinite ${i * 0.8}s`,
+                  }} />
                 </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Mobile vertical line */}
+            <div className="md:hidden absolute left-10 top-20 bottom-20 w-px" style={{ background: 'linear-gradient(180deg, transparent, #f97316 30%, #f97316 70%, transparent)' }} />
+
+            <div className="grid md:grid-cols-4 gap-8 md:gap-4">
+              {[
+                { n: '01', name: 'Extract',     desc: 'Raw PDF binaries are parsed to extract untagged text and coordinates.' },
+                { n: '02', name: 'Reconstruct', desc: 'Python heuristics engine rebuilds paragraphs, tables, and lists.' },
+                { n: '03', name: 'AI Edit',     desc: 'Gemini performs precise JSON tree mutations seamlessly.' },
+                { n: '04', name: 'Export',      desc: 'Compiled back into a pristine PDF/A or EPUB3 document.' },
+              ].map(({ n, name, desc }) => (
+                <div key={n} className="flex flex-col items-center text-center group relative z-10 pl-6 md:pl-0">
+                  {/* Node */}
+                  <div className="relative mb-7">
+                    <div
+                      className="h-20 w-20 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1"
+                      style={{
+                        background: '#111113',
+                        border: '1px solid #2a2a2e',
+                        animation: 'olpdf-node-breathe 4s ease-in-out infinite',
+                        animationDelay: `${parseInt(n) * 0.6}s`,
+                      }}
+                    >
+                      <span className="font-mono font-black text-2xl text-orange-500">{n}</span>
+                    </div>
+                    {/* Hover ring */}
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ boxShadow: '0 0 0 2px rgba(249,115,22,0.4)' }} />
+                  </div>
+                  <h3 className="font-sans font-black text-base text-white mb-2 tracking-tight">{name}</h3>
+                  <p className="text-[#6b7280] text-sm leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -451,80 +494,81 @@ export default function LandingPage() {
       {/* EMBED SECTION */}
       <EmbedSection />
 
-      {/* FREE COMMITMENT SECTION */}
-      <section className="py-24 px-6 bg-[var(--bg-surface)] animate-reveal opacity-0 relative border-b border-[var(--border-subtle)]" style={{ animationDelay: '320ms' }}>
+      {/* FREE COMMITMENT + COMMUNITY — combined manifesto section */}
+      <section className="py-28 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]">
         <div className="max-w-5xl mx-auto">
-          {/* Heading */}
+
+          {/* Badge */}
+          <div className="flex justify-center mb-10">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-orange-500/30 bg-orange-500/8 text-orange-400 text-[11px] font-mono font-black uppercase tracking-widest">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+              100% Free Forever
+            </span>
+          </div>
+
+          {/* Manifesto headline */}
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-strong)] text-[var(--text-secondary)] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">
-              <Bookmark className="h-3 w-3" /> 100% Free Forever
-            </div>
-            <h2 className="text-5xl md:text-7xl font-serif italic font-bold tracking-tighter text-[var(--text-primary)] leading-none mb-6">
+            <h2 className="font-sans font-black text-6xl md:text-8xl tracking-tight text-[var(--text-primary)] leading-[0.9] mb-8">
               No Paywalls.<br />
-              <span className="relative inline-block">
-                Just Documents.
-                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 400 10" preserveAspectRatio="none" fill="none">
-                  <path d="M2,7 Q100,1 200,7 T398,7" stroke="currentColor" strokeWidth="3" className="text-blue-500/50" />
-                </svg>
-              </span>
+              <span className="text-orange-500">Just Documents.</span>
             </h2>
-            <p className="text-lg text-[var(--text-secondary)] max-w-lg mx-auto font-medium leading-relaxed">
+            <p className="text-[var(--text-secondary)] text-xl max-w-xl mx-auto leading-relaxed font-medium">
               Document intelligence should be a public good. Free for individuals and open-source projects, always.
             </p>
           </div>
 
-          {/* Feature strip */}
-          <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--border-subtle)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden bg-[var(--bg-elevated)] mb-6">
+          {/* Feature cards */}
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
             {[
-              { label: "Unlimited Projects", desc: "No cap on documents or books. Create without limits." },
-              { label: "Full AI Access", desc: "Gemini-powered structural editing, no subscription needed." },
-              { label: "Open API", desc: "Integrate our extraction engine into your own apps for free." },
-            ].map(({ label, desc }) => (
-              <div key={label} className="p-8">
-                <div className="w-2 h-2 rounded-full bg-orange-500 mb-5" />
-                <h4 className="font-sans font-black text-base text-[var(--text-primary)] mb-2">{label}</h4>
-                <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{desc}</p>
+              { icon: Layers,   label: 'Unlimited Projects', desc: 'No cap on documents or books. Create without limits.' },
+              { icon: Sparkles, label: 'Full AI Access',      desc: 'Gemini-powered structural editing, no subscription needed.' },
+              { icon: Terminal, label: 'Open API',            desc: 'Integrate our extraction engine into your own apps for free.' },
+            ].map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="group flex items-start gap-4 p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:border-orange-500/30 transition-colors duration-300">
+                <div className="h-10 w-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:bg-orange-500/15 transition-colors">
+                  <Icon className="h-5 w-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="font-sans font-black text-[var(--text-primary)] mb-1">{label}</p>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{desc}</p>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* How we survive */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 px-8 py-7 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-            <div>
-              <h3 className="font-serif font-bold text-lg text-[var(--text-primary)] mb-1.5">How do we survive?</h3>
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed max-w-md">
-                Supported by infrastructure grants and contributors. We don&apos;t want your credit card — we want your feedback and pull requests.
-              </p>
-            </div>
-            <Link href="/contribute" className="shrink-0 inline-flex items-center gap-2 h-11 px-7 rounded-xl bg-[var(--text-primary)] text-[var(--bg-base)] font-sans font-black uppercase tracking-widest text-xs hover:opacity-90 transition-opacity">
-              Join the Community <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+          {/* How we survive — dark inset callout */}
+          <div className="mb-20 rounded-2xl px-8 py-7" style={{ background: '#0d0d10', border: '1px solid #1e1e21' }}>
+            <p className="text-[10px] font-mono font-black uppercase tracking-widest text-[#4b5563] mb-3">How do we survive?</p>
+            <p className="text-[var(--text-secondary)] text-lg italic leading-relaxed">
+              &ldquo;Supported by infrastructure grants and contributors. We don&apos;t want your credit card — we want your feedback and pull requests.&rdquo;
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* CONTRIBUTE CTA */}
-      <section className="py-16 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] animate-reveal opacity-0" style={{ animationDelay: '360ms' }}>
-        <div className="max-w-4xl mx-auto text-center">
-          <BookOpen className="h-12 w-12 text-[var(--text-primary)] mx-auto mb-8 opacity-50" />
-          <h2 className="text-3xl md:text-5xl font-sans font-black tracking-tight mb-6 text-[var(--text-primary)]">Open Source & <br/>Community Driven</h2>
-          <p className="text-[var(--text-secondary)] mb-6 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-            OLPDF is built by developers, for developers. Check out our good first issues, sponsor the project, or build your own custom extraction plugins.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-             <Link href="https://github.com/chidi09/olpdf" target="_blank" className="inline-flex items-center justify-center h-12 bg-[var(--text-primary)] text-[var(--bg-base)] hover:opacity-90 px-8 rounded font-sans font-black shadow-lg transition-opacity text-sm uppercase tracking-widest">
-                  <Github className="mr-3 h-5 w-5 not-italic" /> Star on GitHub
-             </Link>
-             <Link href="/contribute" className="inline-flex items-center justify-center h-12 px-8 rounded font-sans font-bold border border-[var(--border-strong)] hover:bg-[#fdfdfc] dark:hover:bg-[#1a1a1c] bg-white dark:bg-[#1e1e20] text-[var(--text-primary)] shadow-sm transition-colors text-sm uppercase tracking-widest">
-                  <Code2 className="mr-3 h-5 w-5 not-italic" /> Contribution Guide
-             </Link>
-             <Link href="/docs" className="inline-flex items-center justify-center h-12 px-8 rounded font-sans font-bold border border-[var(--border-strong)] hover:bg-[#fdfdfc] dark:hover:bg-[#1a1a1c] bg-white dark:bg-[#1e1e20] text-[var(--text-primary)] shadow-sm transition-colors text-sm uppercase tracking-widest">
-                  API Docs
-             </Link>
-             <Link href="/marketplace" className="inline-flex items-center justify-center h-12 px-8 rounded font-sans font-bold border border-[var(--border-strong)] hover:bg-[#fdfdfc] dark:hover:bg-[#1a1a1c] bg-white dark:bg-[#1e1e20] text-[var(--text-primary)] shadow-sm transition-colors text-sm uppercase tracking-widest">
-                  Plugin Marketplace
-             </Link>
+          {/* Community CTA */}
+          <div className="text-center">
+            <p className="text-[10px] font-mono font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-5">Open Source & Community Driven</p>
+            <h3 className="font-sans font-black text-3xl md:text-4xl text-[var(--text-primary)] tracking-tight mb-4">
+              Built by developers,<br />for developers.
+            </h3>
+            <p className="text-[var(--text-secondary)] text-base max-w-md mx-auto mb-10 leading-relaxed">
+              Check out our good first issues, sponsor the project, or build your own custom extraction plugins.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="https://github.com/chidi09/olpdf" target="_blank" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-orange-500 hover:bg-orange-400 text-white font-sans font-black text-sm uppercase tracking-widest transition-colors shadow-lg shadow-orange-500/20">
+                <Github className="h-4 w-4" /> Star on GitHub
+              </Link>
+              {[
+                { label: 'Contribution Guide', href: '/contribute' },
+                { label: 'API Docs',           href: '/docs' },
+                { label: 'Plugin Marketplace', href: '/marketplace' },
+              ].map(({ label, href }) => (
+                <Link key={label} href={href} className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[var(--border-strong)] text-[var(--text-primary)] hover:bg-[var(--bg-surface)] font-bold text-sm transition-colors">
+                  {label}
+                </Link>
+              ))}
+            </div>
           </div>
+
         </div>
       </section>
 
