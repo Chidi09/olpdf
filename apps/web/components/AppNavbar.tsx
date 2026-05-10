@@ -68,14 +68,19 @@ export default function AppNavbar() {
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex items-center gap-8">
             <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-3 group">
-              <div className="relative h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+              <div className="relative h-9 w-9 sm:h-10 sm:w-10 shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                 <Image src={DEFAULT_BRAND.icon192} alt={`${branding.name || "OLPDF"} Logo`} fill className="object-contain" priority />
               </div>
-              {pathname !== "/" && (
-                <span className="text-xl font-extrabold tracking-tighter text-[var(--text-primary)] hidden sm:block">
-                  {branding.name || "OLPDF"}
+              <span className="hidden sm:inline-flex items-baseline">
+                <span className="font-sans font-black tracking-tighter text-orange-500 text-xl">O</span>
+                <span className="font-serif font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-xl">L</span>
+                <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded-md inline-flex items-baseline relative">
+                  <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-md pointer-events-none" />
+                  <span className="font-mono font-bold text-base opacity-90 relative z-10">P</span>
+                  <span className="font-serif font-black text-base -ml-0.5 relative z-10">D</span>
+                  <span className="font-sans font-thin italic text-base ml-0.5 relative z-10">F</span>
                 </span>
-              )}
+              </span>
             </Link>
 
             <nav className="hidden lg:flex items-center gap-1 text-sm font-bold">
