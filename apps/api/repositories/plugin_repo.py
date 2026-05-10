@@ -49,8 +49,16 @@ class PluginRepository:
         supabase.rpc("increment_plugin_installs", {"plugin_id": plugin_id}).execute()
 
     @staticmethod
-    def install_for_workspace(workspace_id: str, plugin_id: str, installed_by: str) -> None:
-        supabase.table("workspace_plugins").upsert({"workspace_id": workspace_id, "plugin_id": plugin_id, "installed_by": installed_by}).execute()
+    def install_for_workspace(workspace_id: str, plugin_id: str, installed_by: str, locked_version: Optional[str] = None) -> None:
+        payload = {
+            "workspace_id": workspace_id, 
+            "plugin_id": plugin_id, 
+            "installed_by": installed_by
+        }
+        if locked_version:
+            payload["locked_version"] = locked_version
+            
+        supabase.table("workspace_plugins").upsert(payload).execute()
         PluginRepository.increment_installs(plugin_id)
 
     @staticmethod

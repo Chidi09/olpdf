@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS workspace_plugins (
     workspace_id    UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     plugin_id       UUID NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
     installed_by    UUID NOT NULL REFERENCES profiles(id) ON DELETE SET NULL,
+    locked_version  TEXT,
     installed_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (workspace_id, plugin_id)
 );

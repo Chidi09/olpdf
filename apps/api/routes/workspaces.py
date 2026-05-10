@@ -59,8 +59,13 @@ async def list_workspace_plugins(workspace_id: str, role: str = Depends(require_
 
 @router.post("/{workspace_id}/plugins/{plugin_id}")
 async def install_plugin(workspace_id: str, plugin_id: str, user: dict = Depends(require_auth), role: str = Depends(require_role(["owner", "admin"]))) -> Dict[str, Any]:
-    PluginRepository.install_for_workspace(workspace_id, plugin_id, user["sub"])
-    return {"status": "success"}
+    plugin = PluginRepository.get_by_id(plugin_id)
+    if not plugin:
+        raise HTTPException(status_code=404, detail="Plugin not found")
+        
+    locked_version = plugin.get("version")
+    PluginRepository.install_for_workspace(workspace_id, plugin_id, user["sub"], locked_version)
+    return {"status": "success", "locked_version": locked_version}
 
 @router.delete("/{workspace_id}/plugins/{plugin_id}")
 async def uninstall_plugin(workspace_id: str, plugin_id: str, role: str = Depends(require_role(["owner", "admin"]))) -> Dict[str, Any]:
