@@ -31,7 +31,7 @@ export default function SignupPage() {
     });
     setLoading(false);
     if (signUpError) { setError(signUpError.message); return; }
-    router.replace(redirectTo);
+    router.replace("/onboarding");
   };
 
   const signInWithGoogle = async () => {
