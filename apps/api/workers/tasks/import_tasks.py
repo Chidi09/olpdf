@@ -1,4 +1,5 @@
 """PDF import routing: classify pages, extract native text, dispatch OCR worker."""
+import logging
 import os
 from io import BytesIO
 from typing import Any, Dict, List
@@ -8,6 +9,8 @@ import pdfplumber
 from ...core.supabase_client import supabase
 from ...core.security import sanitize_document_model
 from ...engine.extractor import extract_page_blocks_from_pdf
+
+logger = logging.getLogger("olpdf-api.import")
 
 
 def classify_page(page: Any) -> dict:
@@ -45,8 +48,8 @@ def classify_page(page: Any) -> dict:
 def _safe_update_document(document_id: str, payload: dict) -> None:
     try:
         supabase.table("documents").update(payload).eq("id", document_id).execute()
-    except Exception:
-        return
+    except Exception as e:
+        logger.error("Failed to update document %s: %s", document_id, e)
 
 
 def _safe_insert_page_metadata(rows: list) -> None:
@@ -54,11 +57,29 @@ def _safe_insert_page_metadata(rows: list) -> None:
         return
     try:
         supabase.table("page_metadata").insert(rows).execute()
-    except Exception:
-        return
+    except Exception as e:
+        logger.error("Failed to insert page metadata: %s", e)
 
 
 async def route_pdf_import(
+    file_bytes: bytes,
+    document_id: str,
+    layout_mode: str = "editable",
+    request_id: str = "",
+) -> dict:
+    try:
+        return await _route_pdf_import_inner(file_bytes, document_id, layout_mode, request_id)
+    except Exception as e:
+        logger.error(
+            "route_pdf_import crashed for document %s: %s",
+            document_id, e, exc_info=True,
+            extra={"request_id": request_id},
+        )
+        _safe_update_document(document_id, {"status": "failed", "error": "Import pipeline crashed unexpectedly"})
+        return {"status": "failed", "document_id": document_id}
+
+
+async def _route_pdf_import_inner(
     file_bytes: bytes,
     document_id: str,
     layout_mode: str = "editable",
@@ -113,7 +134,7 @@ async def route_pdf_import(
                         json={"document_id": document_id, "page_indices": pages_needing_ocr},
                     )
             except Exception as e:
-                print(f"[import] OCR worker dispatch failed: {e}")
+                logger.error("OCR worker dispatch failed for document %s: %s", document_id, e)
 
     final_status = "partial" if pages_needing_ocr else "ready"
     _safe_update_document(document_id, {"status": final_status, "import_progress": 100})
@@ -129,8 +150,8 @@ async def route_pdf_import(
                     notify_import_complete(user_id, title, document_id)
                 else:
                     notify_ocr_partial(user_id, title, document_id, len(pages_needing_ocr))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Import notification failed for document %s: %s", document_id, e)
 
     return {
         "status": final_status,
@@ -173,4 +194,4 @@ async def index_chapter_embeddings(chapter_id: str) -> None:
         supabase.table("chapter_embeddings").insert(rows).execute()
         supabase.table("book_chapters").update({"embedding_indexed": True}).eq("id", chapter_id).execute()
     except Exception as e:
-        print(f"Failed to index chapter {chapter_id}: {e}")
+        logger.error("Failed to index chapter %s: %s", chapter_id, e, exc_info=True)

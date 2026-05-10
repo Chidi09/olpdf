@@ -1,3 +1,4 @@
+import logging
 from io import BytesIO
 from typing import Any
 
@@ -5,6 +6,8 @@ import pdfplumber
 
 from .supabase_client import supabase
 from .security_utils import sanitize_document_model
+
+logger = logging.getLogger("olpdf-api.worker_utils")
 
 
 def classify_page(page: Any) -> dict:
@@ -114,7 +117,7 @@ async def index_chapter_embeddings(chapter_id: str) -> None:
         supabase.table("book_chapters").update({"embedding_indexed": True}).eq("id", chapter_id).execute()        
 
     except Exception as e:
-        print(f"Failed to index chapter {chapter_id}: {e}")
+        logger.error("Failed to index chapter %s: %s", chapter_id, e, exc_info=True)
         return
 
 import json

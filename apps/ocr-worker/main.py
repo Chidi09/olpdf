@@ -6,6 +6,8 @@ writes blocks back to Supabase, then calls back to /api/worker/ocr-complete.
 Deploy on any VPS with 4+ vCPUs and 8 GB RAM (e.g. Hetzner CX32 ~$7.40/mo).
 """
 import io
+import json
+import logging
 import os
 import time
 from typing import Any
@@ -15,10 +17,46 @@ import fitz  # PyMuPDF
 import httpx
 import numpy as np
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from paddleocr import PaddleOCR
 from supabase import create_client
 
+
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "name": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload)
+
+
+def _build_logger(name: str) -> logging.Logger:
+    log = logging.getLogger(name)
+    log.setLevel(logging.INFO)
+    if not log.handlers:
+        h = logging.StreamHandler()
+        h.setFormatter(_JsonFormatter())
+        log.addHandler(h)
+    return log
+
+
+logger = _build_logger("olpdf-ocr-worker")
+
 app = FastAPI(title="OLPDF OCR Worker")
+
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=exc)
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_server_error", "message": "An unexpected error occurred"},
+    )
 
 # Initialise once at startup — downloads pre-trained models on first run
 ocr_engine = PaddleOCR(use_angle_cls=True, lang="en", use_gpu=False)
@@ -63,6 +101,18 @@ def _estimate_font_meta(bbox: list[float]) -> dict[str, Any]:
 
 def _process_ocr_pages(document_id: str, page_indices: list[int]) -> None:
     """Background task: fetch PDF, run PaddleOCR, merge blocks back into Supabase."""
+    try:
+        _process_ocr_pages_inner(document_id, page_indices)
+    except Exception as exc:
+        logger.error("OCR background task crashed for document %s: %s", document_id, exc, exc_info=True)
+        try:
+            client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            client.table("documents").update({"status": "failed", "error": "unexpected_crash"}).eq("id", document_id).execute()
+        except Exception:
+            pass
+
+
+def _process_ocr_pages_inner(document_id: str, page_indices: list[int]) -> None:
     client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
     def _fail(reason: str) -> None:
@@ -128,7 +178,7 @@ def _process_ocr_pages(document_id: str, page_indices: list[int]) -> None:
                     "page_index": idx,
                 })
         except Exception as e:
-            print(f"[ocr-worker] Page {idx} failed: {e}")
+            logger.error("Page %d OCR failed for document %s: %s", idx, document_id, e, exc_info=True)
             failed_pages.append(idx)
 
     # Merge: keep existing non-OCR blocks, replace/add OCR blocks for processed pages
@@ -169,7 +219,7 @@ def _process_ocr_pages(document_id: str, page_indices: list[int]) -> None:
                     if r.status_code < 400:
                         break
             except Exception as e:
-                print(f"[ocr-worker] Callback attempt {attempt + 1} failed: {e}")
+                logger.warning("Callback attempt %d failed for document %s: %s", attempt + 1, document_id, e)
             time.sleep(2 ** attempt)
 
 
