@@ -17,84 +17,19 @@ import {
 import { Button } from "@/components/ui/button";
 import BackLink from "@/components/BackLink";
 
-// ── Brand-accurate provider icons ────────────────────────────────────────────
+// ── Provider icon via Simple Icons CDN ───────────────────────────────────────
+// cdn.simpleicons.org/{slug}/{hex-color} returns a coloured SVG at runtime.
 
-function GeminiIcon({ size = 20 }: { size?: number }) {
+function ProviderIcon({ slug, color, size = 22 }: { slug: string; color: string; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
-      <defs>
-        <linearGradient id="gem-a" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#4285F4" />
-          <stop offset="100%" stopColor="#9B72CB" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M14 2C14 2 16.5 10 22 14C16.5 18 14 26 14 26C14 26 11.5 18 6 14C11.5 10 14 2 14 2Z"
-        fill="url(#gem-a)"
-      />
-    </svg>
-  );
-}
-
-function AnthropicIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="4" fill="#D97706" />
-      <path
-        d="M13.8 6h-1.8L8 18h2l.9-2.5h4.2l.9 2.5h2L13.8 6Zm-2.3 7.5 1.5-4.2 1.5 4.2h-3Z"
-        fill="white"
-      />
-    </svg>
-  );
-}
-
-function OpenAIIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="4" fill="#10A37F" />
-      <path
-        d="M21 12a9 9 0 0 0-9-9 9 9 0 0 0-6.36 2.64A9 9 0 0 0 3 12a9 9 0 0 0 9 9 9 9 0 0 0 6.36-2.64A9 9 0 0 0 21 12Zm-9 6.5a6.5 6.5 0 1 1 0-13 6.5 6.5 0 0 1 0 13Z"
-        fill="white"
-        opacity="0.3"
-      />
-      <path
-        d="M14.83 8.28a3.45 3.45 0 0 0-4.24-.54l-2.5 1.44a3.44 3.44 0 0 0-1.72 2.99v.83a3.44 3.44 0 0 0 1.72 2.99l2.5 1.44a3.45 3.45 0 0 0 4.24-.54 3.44 3.44 0 0 0 .86-3.45l-.5-1.44.5-1.44a3.44 3.44 0 0 0-.86-3.28Z"
-        fill="white"
-      />
-    </svg>
-  );
-}
-
-function DeepSeekIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="4" fill="#1A56E8" />
-      <path
-        d="M6 17c1.5-2 4-5.5 4-5.5s-1-2.5 1-4c1.5-1.1 3.5-.5 4.5.5s1.5 2.5.5 4l-1 1.5L17 17"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <circle cx="15.5" cy="8.5" r="1" fill="#7DD3FC" />
-    </svg>
-  );
-}
-
-function KimiIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="4" fill="#111827" />
-      <path
-        d="M17 7a6 6 0 0 1 0 10M7 7a6 6 0 0 0 0 10"
-        stroke="#60A5FA"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <circle cx="12" cy="12" r="2.5" fill="white" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://cdn.simpleicons.org/${slug}/${color.replace("#", "")}`}
+      alt={slug}
+      width={size}
+      height={size}
+      style={{ display: "block" }}
+    />
   );
 }
 
@@ -107,7 +42,7 @@ const PROVIDERS = [
     sublabel: "Gemini 1.5 Flash — no key needed",
     requiresKey: false,
     models: ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"],
-    icon: GeminiIcon,
+    iconSlug: "googlegemini",
     accent: "#4285F4",
   },
   {
@@ -116,7 +51,7 @@ const PROVIDERS = [
     sublabel: "Claude Haiku · Sonnet · Opus",
     requiresKey: true,
     models: ["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-7"],
-    icon: AnthropicIcon,
+    iconSlug: "anthropic",
     accent: "#D97706",
   },
   {
@@ -125,7 +60,7 @@ const PROVIDERS = [
     sublabel: "GPT-4o · o1 · o3",
     requiresKey: true,
     models: ["gpt-4o-mini", "gpt-4o", "o1-mini", "o3-mini"],
-    icon: OpenAIIcon,
+    iconSlug: "openai",
     accent: "#10A37F",
   },
   {
@@ -134,8 +69,8 @@ const PROVIDERS = [
     sublabel: "deepseek-chat · deepseek-reasoner",
     requiresKey: true,
     models: ["deepseek-chat", "deepseek-reasoner"],
-    icon: DeepSeekIcon,
-    accent: "#1A56E8",
+    iconSlug: "deepseek",
+    accent: "#4D6BFE",
   },
   {
     id: "kimi",
@@ -143,7 +78,7 @@ const PROVIDERS = [
     sublabel: "Moonshot AI",
     requiresKey: true,
     models: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
-    icon: KimiIcon,
+    iconSlug: "moonshot",
     accent: "#3B82F6",
   },
   {
@@ -152,7 +87,7 @@ const PROVIDERS = [
     sublabel: "Custom key — higher limits",
     requiresKey: true,
     models: ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-2.5-pro-preview-05-06"],
-    icon: GeminiIcon,
+    iconSlug: "googlegemini",
     accent: "#9B72CB",
   },
 ] as const;
@@ -327,7 +262,6 @@ export default function SettingsPage() {
               <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3 block">Provider</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {PROVIDERS.map((p) => {
-                  const Icon = p.icon;
                   const active = provider === p.id;
                   return (
                     <button
@@ -335,12 +269,12 @@ export default function SettingsPage() {
                       onClick={() => setProvider(p.id)}
                       className={`relative flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left transition-all ${
                         active
-                          ? "border-transparent ring-2 bg-[var(--bg-surface)]"
+                          ? "border-transparent bg-[var(--bg-surface)]"
                           : "border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]"
                       }`}
-                      style={active ? { ringColor: p.accent, boxShadow: `0 0 0 2px ${p.accent}` } : {}}
+                      style={active ? { boxShadow: `0 0 0 2px ${p.accent}` } : {}}
                     >
-                      <Icon size={22} />
+                      <ProviderIcon slug={p.iconSlug} color={p.accent} size={22} />
                       <div className="min-w-0">
                         <div className="text-xs font-black truncate">{p.label}</div>
                         {!p.requiresKey && (
