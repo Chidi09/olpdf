@@ -13,7 +13,7 @@ from .limiter import limiter
 from .core.auth import verify_jwt_token
 from .core.security import hash_api_key
 from .repositories.user_repo import ApiKeyRepository
-from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments
+from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments, ai_settings
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -252,6 +252,7 @@ def create_app() -> FastAPI:
     app.include_router(plugins.router)
     app.include_router(tenants.router)
     app.include_router(avatar.router)
+    app.include_router(ai_settings.router)
 
     return app
 

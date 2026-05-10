@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 import google.generativeai as genai
 
 from ..core.supabase_client import supabase
+from .ai_providers import get_provider_for_user, ToolCall as _ToolCall
 
 GENAI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GENAI_API_KEY:
@@ -22,9 +23,9 @@ _TOOL_DECLARATIONS = [{"function_declarations": [
 ]}]
 
 
-def apply_tool_call(document: Dict[str, Any], tool_call: Any) -> Dict[str, Any]:
+def apply_tool_call(document: Dict[str, Any], tool_call: "_ToolCall | Any") -> Dict[str, Any]:
     name = tool_call.name
-    args = tool_call.args
+    args = tool_call.args if isinstance(tool_call.args, dict) else dict(tool_call.args)
     blocks = document.get("blocks", [])
 
     if name == "RewriteBlock":
@@ -133,15 +134,14 @@ def apply_tool_call(document: Dict[str, Any], tool_call: Any) -> Dict[str, Any]:
     return document
 
 
-async def execute_ai_instruction(document_id: str, instruction: str) -> Dict[str, Any]:
+async def execute_ai_instruction(document_id: str, instruction: str, user_id: str = "") -> Dict[str, Any]:
     res = supabase.table("documents").select("*").eq("id", document_id).single().execute()
     document = res.data
     doc_model = document["document_model"]
 
     doc_context = [{"id": b["id"], "type": b["type"], "preview": (b.get("content") or "")[:120]} for b in doc_model.get("blocks", [])]
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    chat = model.start_chat()
+    provider = await get_provider_for_user(user_id) if user_id else None
     prompt = f"""You are a document editor with access to precise editing tools.
 Document structure:
 {json.dumps(doc_context, indent=2)}
@@ -152,15 +152,25 @@ Document structure:
 
 Use your tools to make the requested changes. Be precise."""
 
-    response = chat.send_message(prompt, tools=_TOOL_DECLARATIONS, tool_config={"function_calling_config": {"mode": "ANY"}})
+    if provider:
+        tool_calls = await provider.run_with_tools(prompt, _TOOL_DECLARATIONS)
+    else:
+        # Fallback: env Gemini key
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        chat = model.start_chat()
+        response = chat.send_message(prompt, tools=_TOOL_DECLARATIONS, tool_config={"function_calling_config": {"mode": "ANY"}})
+        tool_calls = []
+        for part in response.candidates[0].content.parts:
+            if part.function_call:
+                fn = part.function_call
+                tool_calls.append(fn)
 
     updated_doc = json.loads(json.dumps(doc_model))
     tool_calls_log = []
-    for part in response.candidates[0].content.parts:
-        if part.function_call:
-            fn = part.function_call
-            tool_calls_log.append({"name": fn.name, "args": dict(fn.args)})
-            updated_doc = apply_tool_call(updated_doc, fn)
+    for tc in tool_calls:
+        args = tc.args if isinstance(tc.args, dict) else dict(tc.args)
+        tool_calls_log.append({"name": tc.name, "args": args})
+        updated_doc = apply_tool_call(updated_doc, tc)
 
     log_res = supabase.table("ai_edit_logs").insert({
         "document_id": document_id,
@@ -178,27 +188,27 @@ Use your tools to make the requested changes. Be precise."""
     }
 
 
-async def rewrite_block_with_tone(document_id: str, block_id: str, tone: str) -> Dict[str, Any]:
-    return await execute_ai_instruction(document_id, f"Rewrite block {block_id} with a {tone} tone. Keep meaning intact.")
+async def rewrite_block_with_tone(document_id: str, block_id: str, tone: str, user_id: str = "") -> Dict[str, Any]:
+    return await execute_ai_instruction(document_id, f"Rewrite block {block_id} with a {tone} tone. Keep meaning intact.", user_id)
 
 
-async def summarise_document(document_id: str, focus: Optional[str] = None) -> Dict[str, Any]:
+async def summarise_document(document_id: str, focus: Optional[str] = None, user_id: str = "") -> Dict[str, Any]:
     clause = f" Focus on: {focus}." if focus else ""
-    return await execute_ai_instruction(document_id, "Create a concise executive summary and insert it at the top as heading2 + paragraph." + clause)
+    return await execute_ai_instruction(document_id, "Create a concise executive summary and insert it at the top as heading2 + paragraph." + clause, user_id)
 
 
-async def suggest_structure(document_id: str, objective: str) -> Dict[str, Any]:
-    return await execute_ai_instruction(document_id, f"Suggest and apply a clearer section structure for: {objective}. Use heading blocks and short transition paragraphs only where needed.")
+async def suggest_structure(document_id: str, objective: str, user_id: str = "") -> Dict[str, Any]:
+    return await execute_ai_instruction(document_id, f"Suggest and apply a clearer section structure for: {objective}. Use heading blocks and short transition paragraphs only where needed.", user_id)
 
 
-async def expand_block(document_id: str, block_id: str, guidance: Optional[str] = None) -> Dict[str, Any]:
+async def expand_block(document_id: str, block_id: str, guidance: Optional[str] = None, user_id: str = "") -> Dict[str, Any]:
     clause = f" Guidance: {guidance}." if guidance else ""
-    return await execute_ai_instruction(document_id, f"Expand block {block_id} with useful detail while preserving intent and style." + clause)
+    return await execute_ai_instruction(document_id, f"Expand block {block_id} with useful detail while preserving intent and style." + clause, user_id)
 
 
-async def continue_chapter(document_id: str, direction: Optional[str] = None) -> Dict[str, Any]:
+async def continue_chapter(document_id: str, direction: Optional[str] = None, user_id: str = "") -> Dict[str, Any]:
     clause = f" Narrative direction: {direction}." if direction else ""
-    return await execute_ai_instruction(document_id, "Continue this chapter from the end with coherent narrative progression. Insert one to three paragraph blocks at the end." + clause)
+    return await execute_ai_instruction(document_id, "Continue this chapter from the end with coherent narrative progression. Insert one to three paragraph blocks at the end." + clause, user_id)
 
 
 async def fill_template(document_id: str, values: Dict[str, str]) -> Dict[str, Any]:
@@ -285,29 +295,33 @@ Format as JSON with 'analysis' (string) and 'inconsistencies' (list of {{passage
     return {"analysis": result.get("analysis"), "inconsistencies": final_inconsistencies, "passages_checked": len(passages.data)}
 
 
-async def chat_with_document(document_id: str, message: str) -> Dict[str, Any]:
+async def chat_with_document(document_id: str, message: str, user_id: str = "") -> Dict[str, Any]:
     res = supabase.table("documents").select("document_model").eq("id", document_id).single().execute()
     document = res.data or {}
-    model = document.get("document_model", {})
-    blocks = model.get("blocks", [])
+    doc_model = document.get("document_model", {})
+    blocks = doc_model.get("blocks", [])
     corpus = "\n".join(str(b.get("content", "")) for b in blocks if isinstance(b.get("content"), str))
     if not corpus.strip():
         return {"reply": "I could not find text content in this document yet."}
 
-    if not GENAI_API_KEY:
-        snippet = corpus[:700]
-        return {"reply": f"DEV MODE fallback. I cannot call Gemini without API key. Document excerpt:\n\n{snippet}"}
-
-    model_client = genai.GenerativeModel("gemini-1.5-flash")
     prompt = (
         "You are answering questions about a single document. "
         "Use only the provided document text. If missing, say so.\n\n"
         f"Document text:\n{corpus[:50000]}\n\n"
         f"User question: {message}"
     )
-    response = model_client.generate_content(prompt)
-    text = getattr(response, "text", None) or "I could not generate a response."
-    return {"reply": text}
+
+    if user_id:
+        provider = await get_provider_for_user(user_id)
+        text = await provider.generate(prompt)
+    elif GENAI_API_KEY:
+        model_client = genai.GenerativeModel("gemini-1.5-flash")
+        response = model_client.generate_content(prompt)
+        text = getattr(response, "text", None) or ""
+    else:
+        return {"reply": f"DEV MODE fallback. Document excerpt:\n\n{corpus[:700]}"}
+
+    return {"reply": text or "I could not generate a response."}
 
 
 async def detect_pii(document_id: str) -> Dict[str, Any]:

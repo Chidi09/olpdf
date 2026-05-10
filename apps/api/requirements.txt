@@ -6,6 +6,9 @@ pydantic-settings
 python-dotenv
 httpx
 google-generativeai
+anthropic
+openai
+cryptography
 pymupdf
 boto3
 pdfplumber
