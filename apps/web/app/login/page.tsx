@@ -3,8 +3,10 @@
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { ArrowRight } from "lucide-react";
+import { DEFAULT_BRAND } from "@/lib/branding";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,15 +46,11 @@ export default function LoginPage() {
         <div className="flex flex-col flex-1 justify-center max-w-sm w-full mx-auto">
 
           <div className="flex justify-center mb-8">
-            <Link href="/" className="inline-flex items-baseline select-none">
-              <span className="font-sans font-black tracking-tighter text-orange-500 text-2xl">O</span>
-              <span className="font-serif font-light text-white -ml-0.5 mr-0.5 text-2xl">L</span>
-              <span className="bg-[#e21818] text-white px-2 py-0.5 rounded-md inline-flex items-baseline relative">
-                <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-md pointer-events-none" />
-                <span className="font-mono font-bold text-lg opacity-90 relative z-10">P</span>
-                <span className="font-serif font-black text-lg -ml-0.5 relative z-10">D</span>
-                <span className="font-sans font-thin italic text-lg ml-0.5 relative z-10">F</span>
-              </span>
+            <Link href="/" className="flex items-center gap-3 select-none group">
+              <div className="relative h-10 w-10">
+                <Image src={DEFAULT_BRAND.icon192} alt="OLPDF" fill className="object-contain" priority />
+              </div>
+              <span className="text-2xl font-extrabold tracking-tighter text-white group-hover:text-orange-400 transition-colors">OLPDF</span>
             </Link>
           </div>
           <h1 className="text-4xl font-sans font-black tracking-tight text-white mb-2">Welcome back.</h1>

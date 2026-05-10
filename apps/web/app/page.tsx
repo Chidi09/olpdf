@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_BRAND } from "@/lib/branding";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://olpdf.xyz";
 
@@ -576,16 +577,11 @@ export default function LandingPage() {
       <footer className="py-20 px-6 bg-[#fdfdfc] dark:bg-[#101011] relative">
           <div className="mx-auto max-w-6xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-8">
               <div className="col-span-2 lg:col-span-2">
-                  <Link href="/" className="text-3xl mb-6 inline-flex items-baseline group">
-                      <span className="font-sans font-black tracking-tighter text-orange-500">O</span>
-                      <span className="font-serif italic font-light text-[#fff3e6] dark:text-[#ffedd6] -ml-1 transform -rotate-3 translate-y-0.5 mr-1.5">L</span>
-                      <span className="bg-[#e21818] text-white px-2.5 py-0.5 rounded-lg shadow-sm border border-[#b31212] inline-flex items-baseline relative transform rotate-1 group-hover:rotate-2 transition-transform">
-                          <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg pointer-events-none"></div>
-                          <span className="font-mono font-bold tracking-tight opacity-90 relative z-10">P</span>
-                          <span className="font-serif font-black -ml-0.5 relative z-10">D</span>
-                          <span className="font-sans font-thin italic ml-0.5 scale-110 origin-bottom relative z-10">F</span>
-                      </span>
-                      <span className="text-[var(--text-primary)] font-serif font-bold ml-1">.</span>
+                  <Link href="/" className="flex items-center gap-3 mb-6 group select-none">
+                      <div className="relative h-10 w-10 shrink-0">
+                          <Image src={DEFAULT_BRAND.icon192} alt="OLPDF" fill className="object-contain" />
+                      </div>
+                      <span className="text-2xl font-extrabold tracking-tighter text-[var(--text-primary)] group-hover:text-orange-400 transition-colors">OLPDF</span>
                   </Link>
                   <p className="text-[var(--text-secondary)] text-sm max-w-xs mb-8 font-medium leading-relaxed">
                       The structure-first AI document operating system. Reconstructing the semantic DOM from raw coordinates since 2026.

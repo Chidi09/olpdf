@@ -5,12 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
-  LayoutDashboard,
-  FileEdit,
-  BookOpen,
   LayoutTemplate,
-  Wrench,
-  Settings,
   HelpCircle,
   Menu,
   X,
@@ -22,14 +17,11 @@ import { useTenant } from "@/components/providers/TenantProvider";
 import { DEFAULT_BRAND } from "@/lib/branding";
 import { useNavStore } from "@/store/useNavStore";
 
+// AppNavbar is only rendered on public pages (landing, docs, etc.)
+// Logged-in app routes use AppSidebar instead — no overlap.
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, auth: "required" },
-  { href: "/editor", label: "Editor", icon: FileEdit, auth: "required" },
-  { href: "/books", label: "Books", icon: BookOpen, auth: "required" },
-  { href: "/templates", label: "Templates", icon: LayoutTemplate, auth: "required" },
-  { href: "/toolkit", label: "Toolkit", icon: Wrench, auth: "required" },
-  { href: "/settings", label: "Settings", icon: Settings, auth: "required" },
-  { href: "/help", label: "Help", icon: HelpCircle, auth: "required" },
+  { href: "/templates", label: "Templates", icon: LayoutTemplate, auth: "always" },
+  { href: "/help",      label: "Help",       icon: HelpCircle,     auth: "always" },
 ];
 
 const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password"];

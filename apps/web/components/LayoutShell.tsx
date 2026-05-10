@@ -2,22 +2,59 @@
 
 import { usePathname } from "next/navigation";
 import AppNavbar from "@/components/AppNavbar";
+import AppSidebar from "@/components/AppSidebar";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 
+// Pages that render with absolutely no chrome
+const BARE_ROUTES = ["/embed"];
+
+// Pages that render with no navbar and no sidebar (auth flow)
 const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password"];
-const BARE_ROUTES = ["/embed"]; // rendered without navbar or padding
+
+// Logged-in app shell — gets sidebar, no top navbar
+const APP_ROUTES = [
+  "/dashboard",
+  "/editor",
+  "/books",
+  "/templates",
+  "/toolkit",
+  "/settings",
+  "/help",
+  "/profile",
+];
+
+function matchesPrefix(pathname: string, routes: string[]) {
+  return routes.some((r) => pathname === r || pathname.startsWith(r + "/"));
+}
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuth = AUTH_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
-  const isBare = BARE_ROUTES.some((r) => pathname.startsWith(r));
 
-  if (isBare) return <>{children}</>;
+  if (matchesPrefix(pathname, BARE_ROUTES)) {
+    return <>{children}</>;
+  }
 
+  if (matchesPrefix(pathname, AUTH_ROUTES)) {
+    return <>{children}</>;
+  }
+
+  if (matchesPrefix(pathname, APP_ROUTES)) {
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <AppSidebar />
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+        <OfflineIndicator />
+      </div>
+    );
+  }
+
+  // Public pages — landing, docs, etc.
   return (
     <>
       <AppNavbar />
-      <div className={isAuth ? undefined : "pt-14"}>{children}</div>
+      <div>{children}</div>
       <OfflineIndicator />
     </>
   );
