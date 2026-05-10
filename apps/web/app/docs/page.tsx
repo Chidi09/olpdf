@@ -57,15 +57,15 @@ function CodeBlock({ code, lang = "json", filename }: { code: string; lang?: str
   }, [code]);
 
   return (
-    <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c] text-sm font-mono">
+    <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c] text-base font-mono">
       <div className="flex items-center justify-between px-4 py-2.5 bg-[#0f0f11] border-b border-[#1e1e21]">
-        <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{filename ?? lang}</span>
-        <button onClick={copy} className="flex items-center gap-1.5 text-[10px] text-gray-500 hover:text-gray-200 transition-colors font-bold">
+        <span className="text-sm font-mono text-gray-500 uppercase tracking-widest">{filename ?? lang}</span>
+        <button onClick={copy} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-200 transition-colors font-bold">
           {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="p-5 overflow-x-auto text-gray-300 leading-relaxed text-xs">{code}</pre>
+      <pre className="p-5 overflow-x-auto text-gray-300 leading-relaxed text-sm">{code}</pre>
     </div>
   );
 }
@@ -81,7 +81,7 @@ function MethodBadge({ method }: { method: string }) {
     DELETE: "bg-red-500/15 text-red-400 border-red-500/30",
   };
   return (
-    <span className={`text-[10px] font-black px-2.5 py-1 rounded border ${colors[method] ?? "bg-gray-500/15 text-gray-400 border-gray-500/30"} shrink-0 w-16 text-center`}>
+    <span className={`text-sm font-black px-2.5 py-1 rounded border ${colors[method] ?? "bg-gray-500/15 text-gray-400 border-gray-500/30"} shrink-0 w-16 text-center`}>
       {method}
     </span>
   );
@@ -92,13 +92,13 @@ function MethodBadge({ method }: { method: string }) {
 function ParamTable({ rows }: { rows: { name: string; type: string; required?: boolean; desc: string }[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-      <table className="w-full text-xs">
+      <table className="w-full text-sm">
         <thead>
           <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-subtle)]">
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-[10px]">Field</th>
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-[10px]">Type</th>
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-[10px]">Required</th>
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-[10px]">Description</th>
+            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Field</th>
+            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Type</th>
+            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Required</th>
+            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Description</th>
           </tr>
         </thead>
         <tbody>
@@ -144,8 +144,8 @@ function Endpoint({ method, path, desc, params, request, response, auth = true }
       >
         <MethodBadge method={method} />
         <div className="flex-1 min-w-0">
-          <code className="font-mono font-black text-sm text-[var(--text-primary)] block truncate">{path}</code>
-          <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">{desc}</p>
+          <code className="font-mono font-black text-base text-[var(--text-primary)] block truncate">{path}</code>
+          <p className="text-sm text-[var(--text-secondary)] mt-0.5 font-medium">{desc}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {auth && <span className="text-[9px] font-bold text-amber-500 border border-amber-500/30 px-1.5 py-0.5 rounded">AUTH</span>}
@@ -157,19 +157,19 @@ function Endpoint({ method, path, desc, params, request, response, auth = true }
         <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-base)] p-5 space-y-5">
           {params && (
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Parameters</p>
+              <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Parameters</p>
               <ParamTable rows={params} />
             </div>
           )}
           {request && (
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Request Body</p>
+              <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Request Body</p>
               <CodeBlock code={request} lang="json" />
             </div>
           )}
           {response && (
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Response</p>
+              <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Response</p>
               <CodeBlock code={response} lang="json" />
             </div>
           )}
@@ -194,7 +194,7 @@ function SectionHead({ icon: Icon, title, subtitle, color = "text-[var(--accent)
       </div>
       <div>
         <h2 className="text-3xl font-black tracking-tight text-[var(--text-primary)]">{title}</h2>
-        {subtitle && <p className="text-[var(--text-secondary)] text-sm font-medium mt-1">{subtitle}</p>}
+        {subtitle && <p className="text-[var(--text-secondary)] text-base font-medium mt-1">{subtitle}</p>}
       </div>
     </div>
   );
@@ -211,8 +211,8 @@ function Callout({ type = "info", children }: { type?: "info" | "warn" | "tip"; 
   const labels = { info: "Note", warn: "Warning", tip: "Tip" };
   return (
     <div className={`border rounded-xl p-4 ${styles[type]}`}>
-      <p className="text-[10px] font-black uppercase tracking-widest mb-1.5">{labels[type]}</p>
-      <div className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{children}</div>
+      <p className="text-sm font-black uppercase tracking-widest mb-1.5">{labels[type]}</p>
+      <div className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">{children}</div>
     </div>
   );
 }
@@ -241,8 +241,8 @@ export default function DocsPage() {
           <Link href="/" className="inline-flex items-baseline mb-8 group">
             <span className="font-sans font-black tracking-tighter text-orange-500 text-lg">O</span>
             <span className="font-serif italic font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-lg">L</span>
-            <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded font-mono font-bold text-sm">PDF</span>
-            <span className="text-[10px] font-mono text-[var(--text-tertiary)] ml-2">Docs</span>
+            <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded font-mono font-bold text-base">PDF</span>
+            <span className="text-sm font-mono text-[var(--text-tertiary)] ml-2">Docs</span>
           </Link>
           <nav>
             {NAV.map((item, i) => {
@@ -253,7 +253,7 @@ export default function DocsPage() {
               const active = activeSection === item.id;
               return (
                 <Link key={item.id} href={`#${item.id}`}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all mb-0.5 ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all mb-0.5 ${
                     active ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]"
                   }`}>
                   {Icon && <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "" : "opacity-60"}`} />}
@@ -271,7 +271,7 @@ export default function DocsPage() {
             <BackLink href="/" label="Back to home" className="mb-8" />
             <div className="flex items-center gap-3 mb-4">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest">API v1 · Beta</span>
+              <span className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest">API v1 · Beta</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-6">OLPDF Documentation</h1>
             <p className="text-xl text-[var(--text-secondary)] leading-relaxed max-w-2xl font-medium">
@@ -285,7 +285,7 @@ export default function DocsPage() {
 
             <div className="space-y-6">
               <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Base URL</p>
+                <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Base URL</p>
                 <code className="font-mono font-black text-lg text-[var(--accent)]">https://api.olpdf.xyz</code>
               </div>
 
@@ -296,13 +296,13 @@ export default function DocsPage() {
                   { label: "Versioning",   value: "/v1 prefix" },
                 ].map(({ label, value }) => (
                   <div key={label} className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-1">{label}</p>
-                    <p className="font-mono font-bold text-sm text-[var(--text-primary)]">{value}</p>
+                    <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-1">{label}</p>
+                    <p className="font-mono font-bold text-base text-[var(--text-primary)]">{value}</p>
                   </div>
                 ))}
               </div>
 
-              <p className="text-[var(--text-secondary)] font-medium leading-relaxed text-sm">
+              <p className="text-[var(--text-secondary)] font-medium leading-relaxed text-base">
                 All request bodies must be <code className="font-mono text-amber-500">application/json</code>. Binary uploads (PDF ingestion)
                 use <code className="font-mono text-amber-500">multipart/form-data</code>. Every response includes
                 an <code className="font-mono text-amber-500">X-Request-ID</code> header for distributed tracing.
@@ -318,8 +318,8 @@ export default function DocsPage() {
               <div className="flex flex-col gap-2">
                 {["Upload a PDF to extract its semantic model", "Use the AI instruction endpoint to edit it", "Export back to PDF or EPUB3"].map((step, i) => (
                   <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-                    <span className="h-7 w-7 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-black flex items-center justify-center shrink-0">{i + 1}</span>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">{step}</p>
+                    <span className="h-7 w-7 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-black flex items-center justify-center shrink-0">{i + 1}</span>
+                    <p className="text-base font-medium text-[var(--text-primary)]">{step}</p>
                   </div>
                 ))}
               </div>
@@ -371,7 +371,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
             <SectionHead icon={Lock} title="Authentication" subtitle="Bearer JWT tokens and persistent API keys" color="text-purple-400" />
 
             <div className="space-y-8">
-              <p className="text-[var(--text-secondary)] font-medium leading-relaxed text-sm">
+              <p className="text-[var(--text-secondary)] font-medium leading-relaxed text-base">
                 All <code className="font-mono text-amber-500">/api/*</code> endpoints require authentication via one of two mechanisms.
                 Worker callback routes (<code className="font-mono text-amber-500">/api/worker/*</code>) use QStash signature verification instead.
               </p>
@@ -380,9 +380,9 @@ open("result.pdf", "wb").write(pdf.content)`} />
                 <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] space-y-3">
                   <div className="flex items-center gap-2">
                     <Lock className="h-4 w-4 text-purple-400" />
-                    <h4 className="font-black text-sm">Bearer JWT (User Sessions)</h4>
+                    <h4 className="font-black text-base">Bearer JWT (User Sessions)</h4>
                   </div>
-                  <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
+                  <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
                     Issued by Supabase Auth. Short-lived (1 hour), auto-refreshed by the SDK.
                     Use for user-facing integrations.
                   </p>
@@ -391,9 +391,9 @@ open("result.pdf", "wb").write(pdf.content)`} />
                 <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] space-y-3">
                   <div className="flex items-center gap-2">
                     <Key className="h-4 w-4 text-amber-400" />
-                    <h4 className="font-black text-sm">API Key (Machine-to-Machine)</h4>
+                    <h4 className="font-black text-base">API Key (Machine-to-Machine)</h4>
                   </div>
-                  <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
+                  <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
                     Long-lived keys generated in the dashboard. Stored as SHA-256 hashes server-side. Never expire unless rotated.
                   </p>
                   <CodeBlock lang="http" code={`X-API-Key: olpdf_live_xxxxxxxxxxxx`} />
@@ -405,7 +405,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
               </Callout>
 
               <div>
-                <h4 className="font-black text-sm mb-4 text-[var(--text-primary)]">Error Responses</h4>
+                <h4 className="font-black text-base mb-4 text-[var(--text-primary)]">Error Responses</h4>
                 <CodeBlock lang="json" code={`// 401 — Missing or invalid credential
 {
   "error": "api_error",
@@ -427,11 +427,11 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
             <div className="space-y-6">
               <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-                <table className="w-full text-xs">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-subtle)]">
                       {["Tier", "Limit", "Window", "Scope"].map(h => (
-                        <th key={h} className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-[10px]">{h}</th>
+                        <th key={h} className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -452,7 +452,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-[var(--text-secondary)] font-medium">
+              <p className="text-sm text-[var(--text-secondary)] font-medium">
                 When a limit is exceeded the API returns <code className="font-mono text-red-400">429 Too Many Requests</code> with a
                 <code className="font-mono text-amber-500"> Retry-After</code> header in seconds.
               </p>
@@ -551,7 +551,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
             <SectionHead icon={Wand2} title="AI Operations" subtitle="Gemini-powered structural editing with full audit trail" color="text-[var(--accent)]" />
 
             <div className="space-y-6 mb-6">
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
+              <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
                 AI operations use a <strong>propose → review → accept</strong> flow. The model never directly mutates your document;
                 it proposes a diff which you can inspect and accept or discard. Every accepted change is logged with the original instruction,
                 the model&apos;s reasoning, and a full before/after diff.
@@ -703,7 +703,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
             <SectionHead icon={Book} title="Books" subtitle="Multi-chapter publication workspace with cross-chapter consistency" color="text-purple-400" />
 
             <div className="space-y-6 mb-6">
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
+              <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
                 A Book is a container that aggregates individual Documents as ordered chapters. The consistency engine uses RAG across all
                 chapter embeddings to detect terminology drift, name mismatches, and font hierarchy violations before export.
               </p>
@@ -802,19 +802,19 @@ open("result.pdf", "wb").write(pdf.content)`} />
             <SectionHead icon={Webhook} title="Webhooks" subtitle="Real-time event push to your own HTTPS endpoints" color="text-cyan-400" />
 
             <div className="space-y-6">
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
+              <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
                 Webhooks are signed with HMAC-SHA256 using your webhook secret. Always verify the
                 <code className="font-mono text-amber-500"> X-OLPDF-Signature</code> header before processing events.
               </p>
 
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Available Events</p>
+                <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Available Events</p>
                 <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-subtle)]">
                         {["Event", "Description"].map(h => (
-                          <th key={h} className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-[10px]">{h}</th>
+                          <th key={h} className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -853,7 +853,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
               </div>
 
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Payload Example — document.ready</p>
+                <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Payload Example — document.ready</p>
                 <CodeBlock lang="json" code={`{
   "event": "document.ready",
   "timestamp": "2026-05-09T10:24:15Z",
@@ -903,7 +903,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
             <SectionHead icon={AlertTriangle} title="Error Reference" subtitle="Standard error envelope and HTTP status codes" color="text-red-400" />
 
             <div className="space-y-6">
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
+              <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
                 All errors follow a consistent envelope format:
               </p>
               <CodeBlock lang="json" code={`{
@@ -913,11 +913,11 @@ open("result.pdf", "wb").write(pdf.content)`} />
 }`} />
 
               <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-                <table className="w-full text-xs">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-subtle)]">
                       {["HTTP Status", "Meaning", "Common Cause"].map(h => (
-                        <th key={h} className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-[10px]">{h}</th>
+                        <th key={h} className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -951,16 +951,16 @@ open("result.pdf", "wb").write(pdf.content)`} />
             <SectionHead icon={Database} title="Self-Hosting" subtitle="Deploy your own OLPDF instance on Fly.io or Docker" color="text-emerald-400" />
 
             <div className="space-y-8">
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
+              <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
                 OLPDF is fully open-source under the MIT license. The stack comprises a Next.js frontend (Vercel or self-hosted),
                 a FastAPI backend (Fly.io or Docker), and a Modal GPU worker for OCR. This guide covers Fly.io deployment.
               </p>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">Prerequisites</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">Prerequisites</h4>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {["Supabase project (PostgreSQL + Auth + Storage)", "Cloudflare R2 bucket", "Google Gemini API key", "Upstash QStash (job queue)", "Upstash Redis (rate limiting)", "Modal Labs account (OCR worker)"].map(p => (
-                    <div key={p} className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
+                    <div key={p} className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                       {p}
                     </div>
@@ -969,20 +969,20 @@ open("result.pdf", "wb").write(pdf.content)`} />
               </div>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">1. Clone and install</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">1. Clone and install</h4>
                 <CodeBlock filename="terminal" code={`git clone https://github.com/chidi09/olpdf.git
 cd olpdf
 pnpm install`} />
               </div>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">2. Deploy Redis on Fly.io</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">2. Deploy Redis on Fly.io</h4>
                 <CodeBlock filename="terminal" code={`fly redis create --name olpdf-redis --region ams --no-replicas
 # Copy the redis:// URL printed — you'll need it below`} />
               </div>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">3. Deploy the FastAPI backend</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">3. Deploy the FastAPI backend</h4>
                 <CodeBlock filename="terminal" code={`# Launch the app (reads apps/api/fly.toml)
 cd apps/api
 fly launch --no-deploy
@@ -1009,7 +1009,7 @@ fly deploy`} />
               </div>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">4. Deploy the Next.js frontend to Vercel</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">4. Deploy the Next.js frontend to Vercel</h4>
                 <CodeBlock filename="terminal" code={`vercel --prod
 # Add these environment variables in Vercel dashboard:
 # NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
@@ -1018,14 +1018,14 @@ fly deploy`} />
               </div>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">5. Run Supabase migrations</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">5. Run Supabase migrations</h4>
                 <CodeBlock filename="terminal" code={`supabase db push
 # Or apply manually:
 psql $SUPABASE_DB_URL < supabase/migrations/*.sql`} />
               </div>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">6. Deploy the Modal OCR worker</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">6. Deploy the Modal OCR worker</h4>
                 <CodeBlock filename="terminal" code={`cd apps/worker
 pip install modal
 modal deploy modal_worker.py
@@ -1038,7 +1038,7 @@ modal deploy modal_worker.py
               </Callout>
 
               <div>
-                <h4 className="font-black text-sm mb-3 text-[var(--text-primary)]">Fly.io machine configuration (fly.toml)</h4>
+                <h4 className="font-black text-base mb-3 text-[var(--text-primary)]">Fly.io machine configuration (fly.toml)</h4>
                 <CodeBlock filename="apps/api/fly.toml" code={`app = 'olpdf'
 primary_region = 'ams'
 
@@ -1064,7 +1064,7 @@ primary_region = 'ams'
           {/* ── Embed SDK ──────────────────────────────────────────────── */}
           <section id="embed-overview" className="scroll-mt-24">
             <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Embed SDK — Overview</h2>
-            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">The <code className="font-mono text-amber-500 text-sm">@olpdf/embed</code> package lets you embed the full OLPDF editor inside any web application via a lightweight postMessage bridge. The host page renders an iframe pointing at your OLPDF instance; the SDK handles all communication transparently.</p>
+            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">The <code className="font-mono text-amber-500 text-base">@olpdf/embed</code> package lets you embed the full OLPDF editor inside any web application via a lightweight postMessage bridge. The host page renders an iframe pointing at your OLPDF instance; the SDK handles all communication transparently.</p>
             <div className="grid sm:grid-cols-3 gap-4 mb-6">
               {[
                 { label: "Zero dependencies", desc: "No React, Vue, or Angular required in the host app." },
@@ -1072,8 +1072,8 @@ primary_region = 'ams'
                 { label: "Full AST events", desc: "Receive the complete DocumentModel on every edit." },
               ].map(({ label, desc }) => (
                 <div key={label} className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-                  <div className="text-xs font-black text-orange-500 uppercase tracking-widest mb-1">{label}</div>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{desc}</p>
+                  <div className="text-sm font-black text-orange-500 uppercase tracking-widest mb-1">{label}</div>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{desc}</p>
                 </div>
               ))}
             </div>
@@ -1081,24 +1081,24 @@ primary_region = 'ams'
 
           <section id="embed-install" className="scroll-mt-24 mt-12">
             <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Installation</h2>
-            <div className="bg-[#111113] rounded-xl border border-[#2a2a2e] px-5 py-4 font-mono text-sm mb-4">
+            <div className="bg-[#111113] rounded-xl border border-[#2a2a2e] px-5 py-4 font-mono text-base mb-4">
               <span className="text-[#6b7280]">$</span> <span className="text-white">npm install </span><span className="text-orange-400">@olpdf/embed</span>
             </div>
-            <p className="text-[var(--text-secondary)] text-sm mb-3">Or load from CDN (no bundler required):</p>
-            <div className="bg-[#111113] rounded-xl border border-[#2a2a2e] px-5 py-4 font-mono text-sm mb-6">
+            <p className="text-[var(--text-secondary)] text-base mb-3">Or load from CDN (no bundler required):</p>
+            <div className="bg-[#111113] rounded-xl border border-[#2a2a2e] px-5 py-4 font-mono text-base mb-6">
               <span className="text-[#60a5fa]">import</span> <span className="text-white">{"{ OlPDFEmbed }"}</span> <span className="text-[#60a5fa]">from</span> <span className="text-orange-400">&apos;https://cdn.jsdelivr.net/npm/@olpdf/embed&apos;</span><span className="text-[#6b7280]">;</span>
             </div>
           </section>
 
           <section id="embed-events" className="scroll-mt-24 mt-12">
             <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Events</h2>
-            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">Subscribe to events using <code className="font-mono text-amber-500 text-sm">editor.on(event, handler)</code>. Each call returns an unsubscribe function.</p>
+            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">Subscribe to events using <code className="font-mono text-amber-500 text-base">editor.on(event, handler)</code>. Each call returns an unsubscribe function.</p>
             <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-              <table className="w-full text-sm">
+              <table className="w-full text-base">
                 <thead className="bg-[var(--bg-elevated)] border-b border-[var(--border-subtle)]">
                   <tr>
                     {["Event", "Payload", "Description"].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">{h}</th>
+                      <th key={h} className="text-left px-4 py-3 text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)]">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1112,9 +1112,9 @@ primary_region = 'ams'
                     { event: "EXPORT_COMPLETE", payload: "{ url }", desc: "Export finished; download URL (24h TTL)." },
                   ].map(({ event, payload, desc }) => (
                     <tr key={event} className="hover:bg-[var(--bg-elevated)]/50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-orange-400 whitespace-nowrap">{event}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)] whitespace-nowrap">{payload}</td>
-                      <td className="px-4 py-3 text-xs text-[var(--text-secondary)]">{desc}</td>
+                      <td className="px-4 py-3 font-mono text-sm text-orange-400 whitespace-nowrap">{event}</td>
+                      <td className="px-4 py-3 font-mono text-sm text-[var(--text-secondary)] whitespace-nowrap">{payload}</td>
+                      <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{desc}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1126,8 +1126,8 @@ primary_region = 'ams'
             <h2 className="text-2xl font-black mb-2 text-[var(--text-primary)]">Framework Guides</h2>
             <p className="text-[var(--text-secondary)] mb-10 leading-relaxed">
               The SDK is framework-agnostic — it only needs a mounted DOM element as a container.
-              The golden rule: call <code className="font-mono text-amber-500 text-sm">new OlPDFEmbed(el, opts)</code> <strong className="text-[var(--text-primary)]">after</strong> the element is in the DOM,
-              and always call <code className="font-mono text-amber-500 text-sm">editor.destroy()</code> when the component unmounts to avoid iframe leaks.
+              The golden rule: call <code className="font-mono text-amber-500 text-base">new OlPDFEmbed(el, opts)</code> <strong className="text-[var(--text-primary)]">after</strong> the element is in the DOM,
+              and always call <code className="font-mono text-amber-500 text-base">editor.destroy()</code> when the component unmounts to avoid iframe leaks.
             </p>
 
             {/* ── Next.js ── */}
@@ -1137,10 +1137,10 @@ primary_region = 'ams'
                 <img src="https://cdn.simpleicons.org/nextdotjs/ffffff" alt="Next.js" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Next.js</h3>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
-                Because OlPDFEmbed interacts with the DOM directly, you must mark the file with <code className="font-mono text-amber-500 text-xs">&apos;use client&apos;</code>.
-                Use <code className="font-mono text-amber-500 text-xs">useRef</code> to get a stable reference to the container div, and <code className="font-mono text-amber-500 text-xs">useEffect</code> to
-                instantiate the editor after the component mounts. Return <code className="font-mono text-amber-500 text-xs">editor.destroy()</code> from the effect cleanup
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Because OlPDFEmbed interacts with the DOM directly, you must mark the file with <code className="font-mono text-amber-500 text-sm">&apos;use client&apos;</code>.
+                Use <code className="font-mono text-amber-500 text-sm">useRef</code> to get a stable reference to the container div, and <code className="font-mono text-amber-500 text-sm">useEffect</code> to
+                instantiate the editor after the component mounts. Return <code className="font-mono text-amber-500 text-sm">editor.destroy()</code> from the effect cleanup
                 so React Hot Reload and strict-mode double-invocation don&apos;t leak iframes.
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`'use client';
@@ -1197,7 +1197,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
                   "For App Router, this component can be imported into any Server Component page without extra config.",
                   "If you use React Strict Mode the effect runs twice in development — destroy() handles cleanup correctly.",
                 ].map((note) => (
-                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                     <span className="text-orange-500 mt-0.5 shrink-0">→</span>
                     <span>{note}</span>
                   </div>
@@ -1212,10 +1212,10 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
                 <img src="https://cdn.simpleicons.org/svelte" alt="Svelte" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Svelte</h3>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
-                Use <code className="font-mono text-amber-500 text-xs">bind:this</code> to obtain the DOM element, then
-                instantiate inside <code className="font-mono text-amber-500 text-xs">onMount</code>. Svelte guarantees the element exists by the time <code className="font-mono text-amber-500 text-xs">onMount</code> fires.
-                Destroy in <code className="font-mono text-amber-500 text-xs">onDestroy</code>.
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Use <code className="font-mono text-amber-500 text-sm">bind:this</code> to obtain the DOM element, then
+                instantiate inside <code className="font-mono text-amber-500 text-sm">onMount</code>. Svelte guarantees the element exists by the time <code className="font-mono text-amber-500 text-sm">onMount</code> fires.
+                Destroy in <code className="font-mono text-amber-500 text-sm">onDestroy</code>.
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<script lang="ts">
   import { onMount, onDestroy } from 'svelte';
@@ -1258,7 +1258,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
                   "Use $: reactive statements to re-initialise if documentId or token change at runtime.",
                   "SSR is disabled by default for the embed — no special config needed in SvelteKit.",
                 ].map((note) => (
-                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                     <span className="text-orange-500 mt-0.5 shrink-0">→</span>
                     <span>{note}</span>
                   </div>
@@ -1273,9 +1273,9 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
                 <img src="https://cdn.simpleicons.org/nuxt" alt="Nuxt" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Nuxt / Vue 3</h3>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
-                Use the Composition API with <code className="font-mono text-amber-500 text-xs">ref()</code> for the container element and <code className="font-mono text-amber-500 text-xs">onMounted</code> for instantiation.
-                In Nuxt, wrap in <code className="font-mono text-amber-500 text-xs">&lt;ClientOnly&gt;</code> or add <code className="font-mono text-amber-500 text-xs">process.client</code> guard to avoid SSR errors since the SDK requires a browser DOM.
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Use the Composition API with <code className="font-mono text-amber-500 text-sm">ref()</code> for the container element and <code className="font-mono text-amber-500 text-sm">onMounted</code> for instantiation.
+                In Nuxt, wrap in <code className="font-mono text-amber-500 text-sm">&lt;ClientOnly&gt;</code> or add <code className="font-mono text-amber-500 text-sm">process.client</code> guard to avoid SSR errors since the SDK requires a browser DOM.
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<!-- components/PDFEditor.vue -->
 <script setup lang="ts">
@@ -1325,7 +1325,7 @@ onUnmounted(() => editor?.destroy());
                   "In Nuxt, wrap the component in <ClientOnly> in your page to skip SSR entirely.",
                   "The watch() call ensures a fresh editor if the documentId or token prop changes.",
                 ].map((note) => (
-                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                     <span className="text-orange-500 mt-0.5 shrink-0">→</span>
                     <span>{note}</span>
                   </div>
@@ -1340,10 +1340,10 @@ onUnmounted(() => editor?.destroy());
                 <img src="https://cdn.simpleicons.org/astro" alt="Astro" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Astro</h3>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
-                Astro is server-first. Place the <code className="font-mono text-amber-500 text-xs">&lt;script&gt;</code> tag inside the <code className="font-mono text-amber-500 text-xs">.astro</code> file
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Astro is server-first. Place the <code className="font-mono text-amber-500 text-sm">&lt;script&gt;</code> tag inside the <code className="font-mono text-amber-500 text-sm">.astro</code> file
                 (not the frontmatter fence). Astro bundles and defers client-side scripts automatically.
-                No <code className="font-mono text-amber-500 text-xs">client:*</code> directive is needed since this is vanilla JS, not a framework component.
+                No <code className="font-mono text-amber-500 text-sm">client:*</code> directive is needed since this is vanilla JS, not a framework component.
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`---
 // src/pages/editor/[id].astro
@@ -1388,7 +1388,7 @@ const token = await getEmbedToken(id);
                   "define:vars passes server-side variables into the client script safely.",
                   "For View Transitions (Astro 3+), re-init the editor on astro:page-load and destroy on astro:before-swap.",
                 ].map((note) => (
-                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                     <span className="text-orange-500 mt-0.5 shrink-0">→</span>
                     <span>{note}</span>
                   </div>
@@ -1403,10 +1403,10 @@ const token = await getEmbedToken(id);
                 <img src="https://cdn.simpleicons.org/angular" alt="Analog" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Analog (Angular)</h3>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
-                Analog is the meta-framework built on Angular. Use <code className="font-mono text-amber-500 text-xs">@ViewChild</code> to obtain the native DOM element
-                and <code className="font-mono text-amber-500 text-xs">ngAfterViewInit</code> to instantiate the editor — this lifecycle hook guarantees the view is fully rendered.
-                Implement <code className="font-mono text-amber-500 text-xs">OnDestroy</code> to clean up.
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Analog is the meta-framework built on Angular. Use <code className="font-mono text-amber-500 text-sm">@ViewChild</code> to obtain the native DOM element
+                and <code className="font-mono text-amber-500 text-sm">ngAfterViewInit</code> to instantiate the editor — this lifecycle hook guarantees the view is fully rendered.
+                Implement <code className="font-mono text-amber-500 text-sm">OnDestroy</code> to clean up.
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`// pdf-editor.component.ts
 import {
@@ -1462,7 +1462,7 @@ export class PDFEditorComponent implements AfterViewInit, OnDestroy {
                   "If documentId changes at runtime, call destroy() and re-init in ngOnChanges().",
                   "Use Angular's HttpClient in the MODEL_UPDATE callback instead of raw fetch for interceptor support.",
                 ].map((note) => (
-                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                     <span className="text-orange-500 mt-0.5 shrink-0">→</span>
                     <span>{note}</span>
                   </div>
@@ -1477,11 +1477,11 @@ export class PDFEditorComponent implements AfterViewInit, OnDestroy {
                 <img src="https://cdn.simpleicons.org/wix" alt="Wix" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Wix (Velo)</h3>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
                 In Wix Velo, all custom code runs in the <strong className="text-[var(--text-primary)]">Page Code panel</strong> (not a file you upload).
-                Add an HTML Component element to your page, give it an ID (e.g. <code className="font-mono text-amber-500 text-xs">#editorBox</code>),
-                then call <code className="font-mono text-amber-500 text-xs">$w(&apos;#editorBox&apos;).getEl()</code> inside <code className="font-mono text-amber-500 text-xs">$w.onReady</code> to get the underlying DOM element.
-                Use the Wix NPM Packages panel to install <code className="font-mono text-amber-500 text-xs">@olpdf/embed</code>.
+                Add an HTML Component element to your page, give it an ID (e.g. <code className="font-mono text-amber-500 text-sm">#editorBox</code>),
+                then call <code className="font-mono text-amber-500 text-sm">$w(&apos;#editorBox&apos;).getEl()</code> inside <code className="font-mono text-amber-500 text-sm">$w.onReady</code> to get the underlying DOM element.
+                Use the Wix NPM Packages panel to install <code className="font-mono text-amber-500 text-sm">@olpdf/embed</code>.
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`// Page Code panel (Wix Velo)
 import wixData from 'wix-data';
@@ -1525,7 +1525,7 @@ $w.onReady(async () => {
                   "The HTML Component must have Allow Scrolling enabled in its settings panel.",
                   "wixUsers.currentUser.getToken() returns a Wix session token — pass this to your backend to exchange for an OLPDF embed token.",
                 ].map((note) => (
-                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                     <span className="text-orange-500 mt-0.5 shrink-0">→</span>
                     <span>{note}</span>
                   </div>
@@ -1540,9 +1540,9 @@ $w.onReady(async () => {
                 <img src="https://cdn.simpleicons.org/wordpress" alt="WordPress" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">WordPress</h3>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
-                WordPress has no npm build pipeline by default, so load the SDK from a CDN via <code className="font-mono text-amber-500 text-xs">wp_enqueue_script</code>
-                and wire up the editor with <code className="font-mono text-amber-500 text-xs">wp_add_inline_script</code>. For block-based themes, create a
+              <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
+                WordPress has no npm build pipeline by default, so load the SDK from a CDN via <code className="font-mono text-amber-500 text-sm">wp_enqueue_script</code>
+                and wire up the editor with <code className="font-mono text-amber-500 text-sm">wp_add_inline_script</code>. For block-based themes, create a
                 custom block or use a Classic Widget with the HTML widget.
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<?php
@@ -1608,8 +1608,8 @@ add_action('wp_ajax_olpdf_save', function () {
     update_post_meta($document_id, '_olpdf_model', $model);
     wp_send_json_success();
 });`}</pre>
-              <p className="text-sm text-[var(--text-secondary)] mt-4 mb-3">
-                Add the container div to your page template (<code className="font-mono text-amber-500 text-xs">page-pdf-editor.php</code>):
+              <p className="text-base text-[var(--text-secondary)] mt-4 mb-3">
+                Add the container div to your page template (<code className="font-mono text-amber-500 text-sm">page-pdf-editor.php</code>):
               </p>
               <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-4 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<!-- page-pdf-editor.php -->
 <?php get_header(); ?>
@@ -1623,7 +1623,7 @@ add_action('wp_ajax_olpdf_save', function () {
                   "wp_create_nonce() + check_ajax_referer() protect the save endpoint from CSRF.",
                   "For Gutenberg blocks, use @wordpress/scripts and import the SDK normally via npm in your block's edit.js.",
                 ].map((note) => (
-                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                  <div key={note} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                     <span className="text-orange-500 mt-0.5 shrink-0">→</span>
                     <span>{note}</span>
                   </div>
@@ -1634,16 +1634,16 @@ add_action('wp_ajax_olpdf_save', function () {
 
           <div className="py-12 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
-              <p className="font-black text-sm text-[var(--text-primary)] mb-1">Something missing?</p>
-              <p className="text-xs text-[var(--text-secondary)] font-medium">Open an issue or submit a PR on GitHub.</p>
+              <p className="font-black text-base text-[var(--text-primary)] mb-1">Something missing?</p>
+              <p className="text-sm text-[var(--text-secondary)] font-medium">Open an issue or submit a PR on GitHub.</p>
             </div>
             <div className="flex gap-3">
               <Link href="https://github.com/chidi09/olpdf/issues" target="_blank"
-                className="inline-flex items-center gap-2 px-5 h-10 rounded-xl border border-[var(--border-strong)] text-xs font-black uppercase tracking-widest hover:bg-[var(--bg-surface)] transition-colors">
+                className="inline-flex items-center gap-2 px-5 h-10 rounded-xl border border-[var(--border-strong)] text-sm font-black uppercase tracking-widest hover:bg-[var(--bg-surface)] transition-colors">
                 Open Issue <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link href="https://github.com/chidi09/olpdf" target="_blank"
-                className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-[var(--text-primary)] text-[var(--bg-base)] text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity">
+                className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-[var(--text-primary)] text-[var(--bg-base)] text-sm font-black uppercase tracking-widest hover:opacity-90 transition-opacity">
                 GitHub <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
