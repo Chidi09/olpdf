@@ -29,6 +29,9 @@ venv/
 ChatGPT\ Image*.png
 *.tmp
 
+# Compiled binaries
+*.exe
+
 # Internal planning & protocol docs (not for public repo)
 /docs/
 olpdf-plan.md
