@@ -151,7 +151,7 @@ export function handleMock(path: string, init?: RequestInit): NextResponse | nul
 
   const templateApply = path.match(/^\/api\/templates\/([^/]+)\/apply$/);
   if (templateApply && method === "POST") {
-    const documentId = String(body.document_id || body.documentId || "demo-doc-1");
+    const documentId = String(body.document_id || body.documentId || `doc_${Math.random().toString(36).slice(2, 11)}`);
     const target = getOrCreateDocument(documentId);
     target.document_model = {
       ...createDefaultModel(documentId),

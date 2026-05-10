@@ -79,7 +79,7 @@ export function PluginHost({
       } else if (type === 'NOTIFY') {
         onEmitNotification(payload.message, payload.type);
       } else if (type === 'READY') {
-        console.log('[PluginHost] Plugin initialized:', bundleUrl);
+        // Plugin ready
       } else if (type === 'ERROR') {
         onEmitNotification('Failed to load plugin: ' + payload, 'error');
       }

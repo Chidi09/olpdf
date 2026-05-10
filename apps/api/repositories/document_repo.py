@@ -9,6 +9,10 @@ class DocumentRepository:
         return res.data
 
     @staticmethod
+    def list_for_user(user_id: str) -> List[Dict[str, Any]]:
+        return supabase.table("documents").select("id, title, status, created_at, updated_at, document_model->meta->>page_count").eq("user_id", user_id).order("updated_at", desc=True).execute().data
+
+    @staticmethod
     def create(title: str, model: Dict[str, Any], status: str = "ready", user_id: Optional[str] = None, workspace_id: Optional[str] = None) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"title": title, "document_model": model, "status": status}
         if user_id:

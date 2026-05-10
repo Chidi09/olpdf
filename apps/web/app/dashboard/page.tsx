@@ -24,16 +24,68 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import { useQuery } from "@tanstack/react-query";
+import { Spinner } from "@olpdf/ui";
+
+type Project = {
+  id: string;
+  title: string;
+  type: "Document" | "Book";
+  updated_at: string;
+  pages?: number;
+};
 
 export default function Dashboard() {
   const pathname = usePathname();
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
 
-  const recentProjects = [
-    { id: "1", name: "Technical Specification v2", type: "Document", date: "2 hours ago", pages: 12, icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20", link: "/editor/demo-doc-1" },
-    { id: "2", name: "Q3 Annual Report", type: "Book", date: "Yesterday", pages: 45, icon: BookOpen, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20", link: "/books/demo-book" },
-    { id: "3", name: "NDA Template - Acme Corp", type: "Document", date: "3 days ago", pages: 4, icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20", link: "/editor/demo-doc-1" },
-  ];
+  const documentsQuery = useQuery<any[]>({
+    queryKey: ["documents"],
+    queryFn: async () => {
+      const res = await fetch("/api/bff/documents");
+      if (!res.ok) throw new Error("Failed to fetch documents");
+      return res.json();
+    },
+  });
+
+  const booksQuery = useQuery<any[]>({
+    queryKey: ["books"],
+    queryFn: async () => {
+      const res = await fetch("/api/bff/books");
+      if (!res.ok) throw new Error("Failed to fetch books");
+      return res.json();
+    },
+  });
+
+  const isLoading = documentsQuery.isLoading || booksQuery.isLoading;
+
+  const projects: Project[] = [
+    ...(documentsQuery.data || []).map(d => ({
+      id: d.id,
+      title: d.title || "Untitled Document",
+      type: "Document" as const,
+      updated_at: d.updated_at || d.created_at,
+      pages: d.page_count || 0
+    })),
+    ...(booksQuery.data || []).map(b => ({
+      id: b.id,
+      title: b.title || "Untitled Book",
+      type: "Book" as const,
+      updated_at: b.updated_at || b.created_at,
+      pages: b.chapters?.length || 0
+    }))
+  ].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+  const filtered = projects.filter(p => {
+    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
+    if (activeTab === "recent") return matchesSearch;
+    if (activeTab === "documents") return matchesSearch && p.type === "Document";
+    if (activeTab === "books") return matchesSearch && p.type === "Book";
+    return matchesSearch;
+  });
+
+  const recentLimit = activeTab === "recent" ? 6 : undefined;
+  const displayProjects = recentLimit ? filtered.slice(0, recentLimit) : filtered;
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
@@ -181,26 +233,35 @@ export default function Dashboard() {
               {activeTab === "recent" ? "Recent Projects" : activeTab === "documents" ? "All Documents" : "All Books"}
             </h2>
 
-            {recentProjects.length > 0 ? (
+            {isLoading ? (
+              <div className="py-20 flex flex-col items-center justify-center gap-4">
+                <Spinner size="lg" />
+                <p className="text-sm font-bold text-[var(--text-tertiary)] animate-pulse uppercase tracking-widest">Loading Projects...</p>
+              </div>
+            ) : displayProjects.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {recentProjects.map((item) => (
+                {displayProjects.map((item) => (
                   <div key={item.id} className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 transition-all hover:border-[var(--accent)]/50 hover:shadow-md">
                     <div className="flex items-start justify-between mb-4">
-                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center border ${item.bg} ${item.color} ${item.border} shadow-sm group-hover:scale-110 transition-transform`}>
+                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center border ${
+                        item.type === "Document" 
+                          ? "bg-blue-500/10 text-blue-500 border-blue-500/20" 
+                          : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                      } shadow-sm group-hover:scale-110 transition-transform`}>
                         {item.type === "Document" ? <FileText className="h-6 w-6" /> : <BookOpen className="h-6 w-6" />}
                       </div>
                       <button className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
                         <MoreVertical className="h-5 w-5" />
                       </button>
                     </div>
-                    <Link href={item.link} className="block">
-                      <h4 className="font-bold text-[var(--text-primary)] mb-1 group-hover:text-[var(--accent)] transition-colors truncate">{item.name}</h4>
+                    <Link href={item.type === "Document" ? `/editor/${item.id}` : `/books/${item.id}`} className="block">
+                      <h4 className="font-bold text-[var(--text-primary)] mb-1 group-hover:text-[var(--accent)] transition-colors truncate">{item.title}</h4>
                       <div className="flex items-center gap-2 text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">
                         <span>{item.type}</span>
                         <span>•</span>
-                        <span>{item.pages} Pages</span>
+                        <span>{item.pages || 0} Pages</span>
                         <span>•</span>
-                        <span>{item.date}</span>
+                        <span>{new Date(item.updated_at).toLocaleDateString()}</span>
                       </div>
                     </Link>
                     <div className="mt-6 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
@@ -208,8 +269,8 @@ export default function Dashboard() {
                         <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-[var(--bg-surface)]" />
                         <div className="w-6 h-6 rounded-full bg-amber-500 border-2 border-[var(--bg-surface)]" />
                       </div>
-                      <Link href={item.link} className="text-xs font-bold text-[var(--accent)] flex items-center gap-1 hover:underline">
-                        Open Editor <ArrowRight className="h-3 w-3" />
+                      <Link href={item.type === "Document" ? `/editor/${item.id}` : `/books/${item.id}`} className="text-xs font-bold text-[var(--accent)] flex items-center gap-1 hover:underline">
+                        Open {item.type === "Document" ? "Editor" : "Book"} <ArrowRight className="h-3 w-3" />
                       </Link>
                     </div>
                   </div>

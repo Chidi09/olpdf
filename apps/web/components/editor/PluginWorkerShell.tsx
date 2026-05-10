@@ -22,7 +22,7 @@ export function PluginWorkerShell() {
     worker.onmessage = (e) => {
       const { type, payload } = e.data;
       if (type === 'READY') {
-        console.log('Plugin worker operational');
+        // Operational
       } else if (type === 'ERROR') {
         console.error('Plugin worker error:', payload);
       }

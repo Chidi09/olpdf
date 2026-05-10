@@ -7,7 +7,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 function isDevMockMode() {
   if (typeof process === "undefined") return false;
   const flag = process.env.NEXT_PUBLIC_OLPDF_DEV_MODE ?? process.env.OLPDF_DEV_MODE;
-  return process.env.NODE_ENV !== "production" && (flag === "1" || flag === "true");
+  // Only allow mocks in local development environment.
+  return process.env.NODE_ENV === "development" && (flag === "1" || flag === "true");
 }
 
 export function useAuth() {

@@ -40,7 +40,9 @@ export async function GET(request: Request) {
         fetch(`${origin}/api/bff/avatar/generate`, {
           method: "POST",
           headers: { Cookie: cookieStore.toString() },
-        }).catch(() => {});
+        }).catch((err) => {
+          console.error("Failed to trigger background avatar generation:", err);
+        });
       }
 
       return NextResponse.redirect(`${origin}${next}`);

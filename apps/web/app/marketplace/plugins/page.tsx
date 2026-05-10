@@ -6,12 +6,14 @@ import {
   Puzzle, 
   Sparkles,
   PlusCircle,
-  Filter
+  Filter,
+  AlertCircle
 } from "lucide-react";
 import { Spinner, EmptyState } from "@olpdf/ui";
 import BackLink from "@/components/BackLink";
 import { PluginCard } from "@/components/marketplace/PluginCard";
 import { usePluginsStore } from "@/store/usePluginsStore";
+import { useInstallPlugin } from "@/hooks/usePlugins";
 
 interface Plugin {
   id: string;
@@ -28,35 +30,45 @@ const categories = ["All", "Editor", "Export", "AI", "UI", "Utility"];
 
 export default function PluginMarketplacePage() {
   const { activeCategory, searchQuery, installingId, setActiveCategory, setSearchQuery, setInstallingId } = usePluginsStore();
+  const installMutation = useInstallPlugin();
 
-  const { data: plugins, isLoading } = useQuery<Plugin[]>({
-    queryKey: ["plugins-marketplace", activeCategory],
+  const workspacesQuery = useQuery<any[]>({
+    queryKey: ["user-workspaces"],
     queryFn: async () => {
-      const url = activeCategory === "All" 
-        ? "/api/plugins" 
-        : `/api/plugins?category=${activeCategory}`;
-      
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch plugins");
-        return res.json();
-      } catch (e) {
-        // Mock data for demo
-        return [
-          { id: "p1", name: "Grammar Pro", description: "Advanced structural grammar checking and style suggestions.", version: "1.2.0", installs: 4500, is_verified: true, category: "AI", author_name: "OLPDF Core" },
-          { id: "p2", name: "LaTeX Math Renderer", description: "Seamlessly render complex mathematical equations using KaTeX.", version: "0.9.5", installs: 1200, is_verified: true, category: "Editor", author_name: "AcademicToolbox" },
-          { id: "p3", name: "Dark Theme Pack", description: "High-contrast dark mode skins for the fidelity canvas.", version: "2.0.1", installs: 8900, is_verified: false, category: "UI", author_name: "ThemeMaster" },
-          { id: "p4", name: "Export to Notion", description: "Directly sync your document blocks to a Notion page.", version: "1.0.0", installs: 3100, is_verified: true, category: "Export", author_name: "NotionSync" },
-        ];
-      }
+      const res = await fetch("/api/bff/workspaces");
+      if (!res.ok) throw new Error("Failed to fetch workspaces");
+      return res.json();
     }
   });
 
-  const handleInstall = async (id: string) => {
-    setInstallingId(id);
-    await new Promise(r => setTimeout(r, 1000));
-    setInstallingId(null);
-    alert('Plugin added to your workspace!');
+  const { data: plugins, isLoading, isError } = useQuery<Plugin[]>({
+    queryKey: ["plugins-marketplace", activeCategory],
+    queryFn: async () => {
+      const url = activeCategory === "All" 
+        ? "/api/bff/plugins" 
+        : `/api/bff/plugins?category=${activeCategory}`;
+      
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch plugins");
+      return res.json();
+    }
+  });
+
+  const handleInstall = async (pluginId: string) => {
+    const workspaceId = workspacesQuery.data?.[0]?.id;
+    if (!workspaceId) {
+      console.warn("No workspace found for installation");
+      return;
+    }
+
+    setInstallingId(pluginId);
+    try {
+      await installMutation.mutateAsync({ workspaceId, pluginId });
+    } catch (e) {
+      console.error("Installation failed:", e);
+    } finally {
+      setInstallingId(null);
+    }
   };
 
   const filtered = plugins?.filter(p =>
@@ -130,6 +142,17 @@ export default function PluginMarketplacePage() {
             <Spinner size="lg" />
             <p className="text-sm font-black uppercase tracking-widest animate-pulse">Scanning Registry...</p>
           </div>
+        ) : isError ? (
+          <EmptyState 
+            icon={<AlertCircle className="h-16 w-16 text-red-500 opacity-50" />}
+            title="Registry sync failed"
+            description="We're having trouble connecting to the plugin registry. Please check your connection and try again."
+            action={
+              <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 rounded-full border border-[var(--border-strong)] text-sm font-bold hover:bg-[var(--bg-surface)] transition-colors">
+                Retry Connection
+              </button>
+            }
+          />
         ) : filtered.length === 0 ? (
           <EmptyState 
             icon={<Puzzle className="h-16 w-16 text-[var(--text-tertiary)] opacity-30" />}

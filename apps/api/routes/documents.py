@@ -45,6 +45,10 @@ async def get_import_status(job_id: str, user: dict = Depends(require_auth)) -> 
         "error": doc.get("error")
     }
 
+@router.get("")
+async def list_documents(user: dict = Depends(require_auth)) -> List[dict]:
+    return DocumentRepository.list_for_user(user["sub"])
+
 from ..repositories import DocumentRepository, AuditLogRepository
 
 @router.post("/create")
@@ -68,7 +72,11 @@ async def create_document(request: Request, doc: DocumentModel, user: dict = Dep
 @router.get("/{doc_id}")
 async def get_document(doc_id: str, user: dict = Depends(require_auth)) -> dict:
     doc = check_ownership(doc_id, user)
-    return {"id": doc_id, "document_model": doc["document_model"]}
+    return {
+        "id": doc_id, 
+        "document_model": doc["document_model"],
+        "workspace_id": str(doc.get("workspace_id")) if doc.get("workspace_id") else None
+    }
 
 @router.get("/{doc_id}/preview")
 async def get_document_preview(doc_id: str, user: dict = Depends(require_auth)) -> dict:

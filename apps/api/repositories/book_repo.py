@@ -13,6 +13,10 @@ class BookRepository:
         return supabase.table("book_chapters").select("*").eq("book_id", book_id).order("sort_order").execute().data
 
     @staticmethod
+    def list_for_user(user_id: str) -> List[Dict[str, Any]]:
+        return supabase.table("books").select("*").eq("user_id", user_id).order("updated_at", desc=True).execute().data
+
+    @staticmethod
     def create(title: str, meta: Dict[str, Any], user_id: Optional[str] = None) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"title": title, "meta": meta}
         if user_id:

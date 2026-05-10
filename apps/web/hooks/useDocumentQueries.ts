@@ -7,6 +7,7 @@ import { BffHttpError, bffGet, bffPost } from "@/lib/bffClient";
 type DocumentPayload = {
   id: string;
   document_model: DocumentModel;
+  workspace_id?: string;
 };
 
 type PreviewPayload = {

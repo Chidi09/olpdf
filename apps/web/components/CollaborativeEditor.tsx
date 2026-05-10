@@ -140,7 +140,6 @@ export default function CollaborativeEditor({
         }),
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      console.log("Snapshot successfully created");
     } catch (error) {
       console.error("Failed to create snapshot:", error);
     }

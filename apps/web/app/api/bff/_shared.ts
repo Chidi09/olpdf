@@ -5,7 +5,9 @@ import { createServerClient } from "@supabase/ssr";
 export const API_BASE_URL = process.env.OLPDF_API_BASE_URL || "http://localhost:8000";
 
 function isDevMockMode() {
-  return process.env.NODE_ENV !== "production" && (process.env.OLPDF_DEV_MODE === "1" || process.env.OLPDF_DEV_MODE === "true");
+  // Only allow mocks in local development environment.
+  // process.env.NODE_ENV is 'development' during 'next dev'.
+  return process.env.NODE_ENV === "development" && (process.env.OLPDF_DEV_MODE === "1" || process.env.OLPDF_DEV_MODE === "true");
 }
 
 async function tryDevMock(path: string, init?: RequestInit) {

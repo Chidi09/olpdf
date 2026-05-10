@@ -12,6 +12,10 @@ from ..storage_client import r2_storage
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 
+@router.get("")
+async def list_books(user: dict = Depends(require_auth)) -> List[dict]:
+    return BookRepository.list_for_user(user["sub"])
+
 @router.post("/create")
 async def create_book(book: BookModel, user: dict = Depends(require_auth)) -> dict:
     title = sanitize_string(book.title)
@@ -24,6 +28,14 @@ async def get_book(book_id: str, user: dict = Depends(require_auth)) -> dict:
     book = check_ownership(book_id, user, resource_type="book")
     chapters = BookRepository.get_chapters(book_id)
     return {**book, "chapters": chapters}
+
+@router.patch("/{book_id}/meta")
+async def update_book_meta(book_id: str, meta_updates: dict, user: dict = Depends(require_auth)) -> dict:
+    book = check_ownership(book_id, user, resource_type="book")
+    current_meta = book.get("meta") or {}
+    new_meta = {**current_meta, **meta_updates}
+    BookRepository.update(book_id, {"meta": new_meta})
+    return {"status": "success"}
 
 @router.post("/{book_id}/consistency")
 async def check_book_consistency(book_id: str, query: str, user: dict = Depends(require_auth)) -> dict:

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import BookSidebar from "./BookSidebar";
 import BookInspector from "./BookInspector";
 import CollaborativeEditor from "../CollaborativeEditor";
+import CoverBuilder from "./CoverBuilder";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { BookModel, BookChapter } from "@olpdf/document-model";
 import { useBookStore } from "@/store/useBookStore";
@@ -18,6 +19,7 @@ interface BookWorkspaceProps {
 export default function BookWorkspace({ bookId, userName, userColor }: BookWorkspaceProps) {
   const queryClient = useQueryClient();
   const { activeDocumentId, isSidebarOpen, setActiveDocumentId, toggleSidebar } = useBookStore();
+  const [isCoverBuilderOpen, setIsCoverBuilderOpen] = useState(false);
 
   const { data: book, isLoading } = useQuery<BookModel>({
     queryKey: ["book", bookId],
@@ -39,6 +41,19 @@ export default function BookWorkspace({ bookId, userName, userColor }: BookWorks
   }, [book?.chapters, selectedDocumentId]);
 
   const safeBook: BookModel = book ?? { title: "Untitled Book", meta: {}, chapters: [] };
+
+  const updateBookMetaMutation = useMutation({
+    mutationFn: async (metaUpdates: Record<string, any>) => {
+      const res = await fetch(`/api/bff/books/${bookId}/meta`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(metaUpdates),
+      });
+      if (!res.ok) throw new Error("Failed to update book metadata");
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["book", bookId] }),
+  });
 
   const updateChapterMutation = useMutation({
     mutationFn: async ({ chapterId, updates }: { chapterId: string; updates: Partial<BookChapter> }) => {
@@ -93,13 +108,22 @@ export default function BookWorkspace({ bookId, userName, userColor }: BookWorks
 
   return (
     <div className="h-screen w-full flex bg-[var(--bg-base)] overflow-hidden">
+      {isCoverBuilderOpen && (
+        <CoverBuilder 
+          onClose={() => setIsCoverBuilderOpen(false)} 
+          onSave={(coverUrl) => {
+            updateBookMetaMutation.mutate({ cover_url: coverUrl });
+            setIsCoverBuilderOpen(false);
+          }} 
+        />
+      )}
       <div className={`transition-all duration-300 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] ${isSidebarOpen ? "w-64" : "w-0 overflow-hidden"}`}>
         <BookSidebar
           book={safeBook}
           activeChapterId={selectedDocumentId}
           onSelectChapter={setActiveDocumentId}
           onAddChapter={() => addChapterMutation.mutate()}
-          onOpenCoverBuilder={() => {}}
+          onOpenCoverBuilder={() => setIsCoverBuilderOpen(true)}
         />
       </div>
 

@@ -15,7 +15,8 @@ import {
   User, 
   Globe,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  AlertCircle
 } from "lucide-react";
 import { Spinner, EmptyState } from "@olpdf/ui";
 import BackLink from "@/components/BackLink";
@@ -48,19 +49,9 @@ export default function TemplatesPage() {
   const query = useQuery<Template[]>({
     queryKey: ["templates-library"],
     queryFn: async () => {
-      // For demo, if API fails, return mock templates
-      try {
-        const response = await fetch("/api/bff/templates");
-        if (!response.ok) throw new Error("API error");
-        return response.json();
-      } catch (e) {
-        return [
-          { id: "1", title: "Technical Specification", category: "Academic", author: "OLPDF Team", uses_count: 1240, description: "Standard ISO-ready technical doc structure." },
-          { id: "2", title: "Service Agreement", category: "Legal", author: "LegalDev", uses_count: 850, description: "Professional service contract with clear clauses." },
-          { id: "3", title: "Modern Novel Layout", category: "Books", author: "Inkwell", uses_count: 2100, description: "Perfectly balanced typography for print and EPUB." },
-          { id: "4", title: "Business Proposal", category: "Business", author: "OLPDF Team", uses_count: 3400, description: "High-conversion structural proposal for agencies." },
-        ];
-      }
+      const response = await fetch("/api/bff/templates");
+      if (!response.ok) throw new Error("API error");
+      return response.json();
     },
   });
 
@@ -83,17 +74,24 @@ export default function TemplatesPage() {
   const applyTemplate = async (templateId: string) => {
     setApplyingId(templateId);
     try {
-      const targetDocumentId = "demo-doc-1";
-      await fetch(`/api/bff/templates/${templateId}/apply`, {
+      const response = await fetch(`/api/bff/templates/${templateId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_id: targetDocumentId }),
+        body: JSON.stringify({}),
       });
-      router.push(`/editor/${targetDocumentId}`);
+
+      if (!response.ok) throw new Error("Failed to apply template");
+      
+      const data = await response.json();
+      const targetDocumentId = data.document_id;
+      
+      if (targetDocumentId) {
+        router.push(`/editor/${targetDocumentId}`);
+      } else {
+        throw new Error("API did not return a document ID");
+      }
     } catch (e) {
-      console.error(e);
-      // Fallback for demo
-      router.push(`/editor/demo-doc-1`);
+      console.error("Template application failed:", e);
     } finally {
       setApplyingId(null);
     }
@@ -161,8 +159,21 @@ export default function TemplatesPage() {
           </div>
         )}
 
+        {query.isError && (
+          <EmptyState 
+            icon={<AlertCircle className="h-16 w-16 text-red-500 opacity-50" />}
+            title="Registry sync failed"
+            description="We're having trouble connecting to the blueprint registry. Please check your connection and try again."
+            action={
+              <button onClick={() => query.refetch()} className="mt-4 px-6 py-2 rounded-full border border-[var(--border-strong)] text-sm font-bold hover:bg-[var(--bg-surface)] transition-colors">
+                Retry Connection
+              </button>
+            }
+          />
+        )}
+
         {/* Empty State */}
-        {!query.isLoading && filtered.length === 0 && (
+        {!query.isLoading && !query.isError && filtered.length === 0 && (
           <EmptyState 
             icon={<LayoutTemplate className="h-16 w-16 text-[var(--text-tertiary)] opacity-30" />}
             title="No blueprints found"
@@ -176,7 +187,7 @@ export default function TemplatesPage() {
         )}
 
         {/* Template Grid */}
-        {!query.isLoading && filtered.length > 0 && (
+        {!query.isLoading && !query.isError && filtered.length > 0 && (
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((template) => {
               const CategoryIcon = categoryMap.find(c => c.name === template.category)?.icon || LayoutTemplate;

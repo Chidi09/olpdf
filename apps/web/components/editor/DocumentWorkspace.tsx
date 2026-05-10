@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import dynamic from "next/dynamic";
 import ExportButton from "@/components/ExportButton";
 import AiEditDiffPanel from "@/components/editor/AiEditDiffPanel";
 import AiHistoryPanel from "@/components/editor/AiHistoryPanel";
-import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
+import { useDocumentQuery, useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useInstalledPlugins } from "@/hooks/usePlugins";
 import { PluginHost } from "./PluginHost";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -49,6 +49,7 @@ interface DocumentWorkspaceProps {
 }
 
 export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps) {
+  const documentQuery = useDocumentQuery(documentId);
   const {
     instruction,
     currentModel,
@@ -63,8 +64,15 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   } = useEditorStore();
 
   const saveMutation = useSaveDocumentMutation(documentId);
-  const workspaceId = "default-workspace";
-  const { data: installedPlugins } = useInstalledPlugins(workspaceId);
+  const workspaceId = documentQuery.data?.workspace_id;
+  const { data: installedPlugins } = useInstalledPlugins(workspaceId ?? "");
+
+  // Update store model when data arrives
+  useEffect(() => {
+    if (documentQuery.data?.document_model && !currentModel) {
+      setCurrentModel(documentQuery.data.document_model);
+    }
+  }, [documentQuery.data, currentModel, setCurrentModel]);
 
   const canRunAi = instruction.trim().length > 0 && !isRunningAi;
 
@@ -151,7 +159,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             saveMutation.mutate(nextModel);
           }}
           onEmitNotification={(msg, type) => {
-            console.log(`[Plugin:${p.name}] ${type}: ${msg}`);
+            // Notification handled by system
           }}
         />
       ))}
