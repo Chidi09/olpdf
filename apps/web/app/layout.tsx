@@ -28,12 +28,15 @@ export const metadata: Metadata = {
   keywords: [
     "PDF editor",
     "AI PDF editor",
-    "edit PDF like Word",
-    "free PDF editor",
-    "PDF semantic editing",
-    "PDF AI",
-    "PDF to Word",
-    "document editor",
+    "edit scanned PDF online free",
+    "edit PDF like Word document",
+    "open source PDF editor",
+    "AI document editor",
+    "PDF to semantic HTML",
+    "free PDF AI editor",
+    "PDF block editor",
+    "EPUB3 export from PDF",
+    "PDF text extraction AI",
     "OLPDF",
   ],
   authors: [{ name: "OLPDF" }],
@@ -70,6 +73,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@olpdfxyz",
+    creator: "@olpdfxyz",
     title: "OLPDF — Word for PDFs",
     description:
       "Edit PDFs like a Word document. Free AI-powered PDF editor with semantic structure reconstruction.",
@@ -99,7 +104,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" />
+        {/* Load Typekit non-blocking — preconnect first, then swap in after parse */}
+        <link rel="preconnect" href="https://use.typekit.net" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://p.typekit.net" crossOrigin="anonymous" />
+        <link rel="preload" href="https://use.typekit.net/nlr1ayn.css" as="style" />
+        <link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" media="print" onLoad="this.media='all'" />
+        <noscript><link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" /></noscript>
+        {/* Preconnect for simpleicons CDN used in landing page */}
+        <link rel="preconnect" href="https://cdn.simpleicons.org" crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col">
         <Providers>
