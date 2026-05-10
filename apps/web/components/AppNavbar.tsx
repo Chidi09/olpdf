@@ -153,14 +153,30 @@ function NavbarInner() {
       </header>
 
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[90] bg-[var(--bg-base)] lg:hidden animate-fadeIn">
-          <div className="flex flex-col p-8 pt-24 gap-6">
+        <div className="fixed inset-x-0 top-[57px] z-[90] lg:hidden border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/98 backdrop-blur-md shadow-xl">
+          <div className="flex flex-col gap-3 px-4 py-4">
             {!isAuthenticated && !loading && (
-              <Link href="/signup" className="w-full">
-                <Button className="w-full h-14 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-base)] text-lg font-bold">
-                  Get Started
-                </Button>
-              </Link>
+              <>
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full rounded-xl font-bold text-sm justify-center">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors">
+                    Join Beta
+                  </Button>
+                </Link>
+              </>
+            )}
+            {isAuthenticated && !loading && (
+              <Button
+                variant="ghost"
+                onClick={handleSignOut}
+                className="w-full rounded-xl font-bold text-sm text-[var(--status-error)] hover:bg-[var(--status-error)]/10 justify-center"
+              >
+                Sign Out
+              </Button>
             )}
           </div>
         </div>

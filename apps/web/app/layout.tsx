@@ -108,7 +108,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://use.typekit.net" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://p.typekit.net" crossOrigin="anonymous" />
         <link rel="preload" href="https://use.typekit.net/nlr1ayn.css" as="style" />
-        <link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" media="print" onLoad="this.media='all'" />
+        <link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" media="print" onLoad={(e) => { (e.currentTarget as HTMLLinkElement).media = 'all'; }} />
         <noscript><link rel="stylesheet" href="https://use.typekit.net/nlr1ayn.css" /></noscript>
         {/* Preconnect for simpleicons CDN used in landing page */}
         <link rel="preconnect" href="https://cdn.simpleicons.org" crossOrigin="anonymous" />
