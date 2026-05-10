@@ -4,17 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutTemplate, HelpCircle, Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/components/providers/TenantProvider";
 import { DEFAULT_BRAND } from "@/lib/branding";
 import { useNavStore } from "@/store/useNavStore";
-
-const navItems = [
-  { href: "/templates", label: "Templates", icon: LayoutTemplate },
-  { href: "/help",      label: "Help",       icon: HelpCircle },
-];
 
 const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
@@ -96,26 +91,6 @@ function NavbarInner() {
               <BrandWordmark visible={showWordmark} />
             </Link>
 
-            <nav className="hidden lg:flex items-center gap-1 text-sm font-bold">
-              {navItems.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2 rounded-full px-4 py-2 transition-all ${
-                      active
-                        ? "bg-[var(--accent)]/10 text-[var(--accent)] shadow-sm"
-                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 ${active ? "opacity-100" : "opacity-60"}`} />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
 
           <div className="flex items-center gap-3">
@@ -180,23 +155,6 @@ function NavbarInner() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[90] bg-[var(--bg-base)] lg:hidden animate-fadeIn">
           <div className="flex flex-col p-8 pt-24 gap-6">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-4 text-2xl font-bold text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors"
-                >
-                  <div className="h-12 w-12 rounded-2xl bg-[var(--bg-surface)] flex items-center justify-center">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  {item.label}
-                </Link>
-              );
-            })}
-            <hr className="border-[var(--border-subtle)]" />
             {!isAuthenticated && !loading && (
               <Link href="/signup" className="w-full">
                 <Button className="w-full h-14 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-base)] text-lg font-bold">
