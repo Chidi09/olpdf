@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { ErrorState } from "@olpdf/ui";
+import { reportError } from "@/lib/errorReporting";
 
 export default function GlobalError({
   error,
@@ -11,7 +12,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Global Error Boundary caught:", error);
+    reportError(error, { source: "react-boundary", extra: { digest: error.digest } });
   }, [error]);
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
+import { reportError } from "@/lib/errorReporting";
 
 export class PageErrorBoundary extends Component<
   { children: ReactNode; pageIndex: number },
@@ -13,7 +14,7 @@ export class PageErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error) {
-    console.error(`[FidelityCanvas] Page ${this.props.pageIndex} crashed:`, error);
+    reportError(error, { source: "canvas-page-boundary", extra: { pageIndex: this.props.pageIndex } });
   }
 
   render() {

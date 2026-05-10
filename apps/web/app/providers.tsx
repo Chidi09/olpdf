@@ -5,6 +5,7 @@ import { ReactNode, useEffect } from "react";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import { TenantProvider } from "@/components/providers/TenantProvider";
 import { useWalkthroughStore } from "@/store/useWalkthroughStore";
+import { reportError } from "@/lib/errorReporting";
 
 // Module-level singleton — QueryClient config never changes at runtime
 const queryClient = new QueryClient({
@@ -17,6 +18,9 @@ const queryClient = new QueryClient({
     },
     mutations: {
       retry: 1,
+      onError: (error) => {
+        reportError(error, { source: "mutation" });
+      },
     },
   },
 });
@@ -28,9 +32,27 @@ type ProvidersProps = {
 export default function Providers({ children }: ProvidersProps) {
   const { seen, markSeen } = useWalkthroughStore();
 
+  // Layer 1: catch JS errors and unhandled rejections outside React trees.
+  useEffect(() => {
+    const onError = (e: ErrorEvent) => {
+      reportError(e.error ?? e.message, { source: "window", extra: { filename: e.filename, lineno: e.lineno } });
+    };
+    const onUnhandledRejection = (e: PromiseRejectionEvent) => {
+      reportError(e.reason, { source: "window:unhandledrejection" });
+    };
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onUnhandledRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onUnhandledRejection);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker.register("/sw.js").catch((err) => {
+      reportError(err, { source: "service-worker-registration" });
+    });
   }, []);
 
   return (
