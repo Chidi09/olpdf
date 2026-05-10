@@ -31,6 +31,7 @@ const jsonLd = {
   creator: { "@type": "Organization", name: "OLPDF", url: APP_URL },
 };
 import ApiSection from "@/components/ApiSection";
+import EmbedSection from "@/components/EmbedSection";
 import {
   FileJson,
   Layers,
