@@ -47,15 +47,51 @@ export default function Providers({ children }: ProvidersProps) {
 
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch((err) => {
-      reportError(err, { source: "service-worker-registration" });
-    });
 
-    // When a new SW takes control (new Vercel deployment activated),
-    // reload the page so users get the latest version immediately.
-    const reload = () => window.location.reload();
-    navigator.serviceWorker.addEventListener("controllerchange", reload);
-    return () => navigator.serviceWorker.removeEventListener("controllerchange", reload);
+    // Capture whether a SW is already in control BEFORE registration.
+    // If false this is a first-ever visit — we must NOT reload when the
+    // initial SW takes control or we'd create an infinite reload loop.
+    const hadController = !!navigator.serviceWorker.controller;
+
+    let intervalId: ReturnType<typeof setInterval>;
+
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        // Poll for new deployments every 30 s.
+        // The browser only auto-checks on navigation, so this makes
+        // updates near-instant without requiring a page refresh.
+        intervalId = setInterval(() => reg.update(), 30_000);
+
+        // updatefound fires when a new SW starts installing.
+        reg.addEventListener("updatefound", () => {
+          const incoming = reg.installing;
+          if (!incoming) return;
+
+          incoming.addEventListener("statechange", () => {
+            // 'installed' + existing controller = update ready, not first install.
+            if (incoming.state === "installed" && navigator.serviceWorker.controller) {
+              // next-pwa sets skipWaiting:true so the new SW activates
+              // immediately; controllerchange will fire and reload.
+              // Belt-and-suspenders: also send SKIP_WAITING in case config changed.
+              incoming.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
+      .catch((err) => reportError(err, { source: "service-worker-registration" }));
+
+    // controllerchange fires when the new SW claims the page.
+    // Only reload if there was already a controller (= a real update, not first install).
+    const onControllerChange = () => {
+      if (hadController) window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+
+    return () => {
+      clearInterval(intervalId);
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    };
   }, []);
 
   return (
