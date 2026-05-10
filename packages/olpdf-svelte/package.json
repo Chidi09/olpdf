@@ -1,0 +1,30 @@
+{
+  "name": "@olpdf/svelte",
+  "version": "0.1.0",
+  "description": "Svelte component wrapper for @olpdf/embed",
+  "license": "MIT",
+  "author": "OLPDF <hello@olpdf.xyz>",
+  "homepage": "https://olpdf.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Chidi09/olpdf.git",
+    "directory": "packages/olpdf-svelte"
+  },
+  "keywords": ["pdf", "editor", "svelte", "sveltekit", "olpdf"],
+  "type": "module",
+  "svelte": "./src/OlpdfEditor.svelte",
+  "main": "./src/OlpdfEditor.svelte",
+  "exports": {
+    ".": "./src/OlpdfEditor.svelte"
+  },
+  "files": ["src", "README.md"],
+  "peerDependencies": {
+    "svelte": ">=4"
+  },
+  "dependencies": {
+    "@olpdf/embed": "^0.1.0"
+  },
+  "devDependencies": {
+    "svelte": "^5"
+  }
+}

@@ -1,0 +1,51 @@
+name: Publish framework SDK wrappers to npm
+
+# Trigger by pushing a tag for each package:
+#   git tag react/v0.1.0 && git push origin react/v0.1.0
+#   git tag svelte/v0.1.0 && git push origin svelte/v0.1.0
+#   git tag vue/v0.1.0   && git push origin vue/v0.1.0
+
+on:
+  push:
+    tags:
+      - "react/v*"
+      - "svelte/v*"
+      - "vue/v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Determine package from tag
+        id: pkg
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == react/* ]]; then
+            echo "filter=@olpdf/react" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == svelte/* ]]; then
+            echo "filter=@olpdf/svelte" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == vue/* ]]; then
+            echo "filter=@olpdf/vue" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build
+        run: pnpm --filter "${{ steps.pkg.outputs.filter }}" build
+        # Svelte has no build step — will succeed with no-op
+
+      - name: Publish
+        run: pnpm --filter "${{ steps.pkg.outputs.filter }}" publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
