@@ -50,6 +50,12 @@ export default function Providers({ children }: ProvidersProps) {
     navigator.serviceWorker.register("/sw.js").catch((err) => {
       reportError(err, { source: "service-worker-registration" });
     });
+
+    // When a new SW takes control (new Vercel deployment activated),
+    // reload the page so users get the latest version immediately.
+    const reload = () => window.location.reload();
+    navigator.serviceWorker.addEventListener("controllerchange", reload);
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", reload);
   }, []);
 
   return (

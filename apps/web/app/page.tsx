@@ -259,17 +259,27 @@ export default function LandingPage() {
           <div className="relative mb-64 flex flex-col md:flex-row items-center gap-12 lg:gap-24 group">
              <div className="absolute -left-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">01</div>
              <div className="flex-1 md:pr-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white/40 text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Frontend Runtime</div>
+                <div className="flex items-center gap-4 mb-6">
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src="https://cdn.simpleicons.org/nextdotjs/ffffff" alt="Next.js" width={40} height={40} className="opacity-90 group-hover:scale-110 transition-transform duration-500" />
+                   <div className="h-px w-12 bg-white/20" />
+                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white/40 text-[10px] font-mono font-bold uppercase tracking-widest">Frontend Runtime</div>
+                </div>
                 <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
                   Next.js <br/><span className="text-[#4b5563]">Turbopack.</span>
                 </h3>
                 <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
-                   The frontend is a Next.js 15 application compiled with Turbopack. We use Server Components for the entire marketing and dashboard layer, ensuring zero client bundle cost.
+                   The frontend is a Next.js 15 application compiled with Turbopack. Server Components handle every public-facing page at zero client bundle cost. The document editor is a fully client-rendered surface — TipTap for flow editing, Fabric.js for fidelity canvas — each isolated so framework re-renders never bleed into the canvas layer.
                 </p>
-                <div className="flex flex-col gap-5">
-                   {["App Router for isolated canvas layers", "Dynamic WASM parser loading", "Fabric.js fidelity surface"].map(item => (
-                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px]">
-                        <div className="h-px w-12 bg-orange-500" /> {item}
+                <div className="grid sm:grid-cols-2 gap-x-12 gap-y-6 border-t border-white/5 pt-8">
+                   {[
+                     "Server Components for zero-bundle marketing pages — only the editor ships client JS",
+                     "App Router with isolated canvas layer per PDF page — React never touches the Fabric surface",
+                     "Dynamic import of the Rust/WASM parser and Fabric.js — invisible to the initial load",
+                   ].map(item => (
+                     <div key={item} className="flex items-start gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                        <span className="text-sm text-white/50 leading-snug">{item}</span>
                      </div>
                    ))}
                 </div>
@@ -287,24 +297,34 @@ export default function LandingPage() {
                 <div className="absolute -right-6 -top-6 h-20 w-20 rounded-2xl bg-[#0d0d10] border border-[#1e1e21] flex items-center justify-center text-white shadow-2xl transform rotate-12 group-hover:rotate-0 transition-all duration-500">
                    <Code2 className="h-10 w-10 text-white opacity-80" />
                 </div>
-          </div>
+             </div>
           </div>
 
           {/* Chapter 2: Python Backend */}
           <div className="relative mb-64 flex flex-col md:flex-row-reverse items-center gap-12 lg:gap-24 group">
              <div className="absolute -right-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">02</div>
              <div className="flex-1 md:pl-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#009688]/30 bg-[#009688]/5 text-[#009688] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Extraction Engine</div>
+                <div className="flex items-center gap-4 mb-6 md:flex-row-reverse">
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src="https://cdn.simpleicons.org/fastapi" alt="FastAPI" width={40} height={40} className="opacity-90 group-hover:scale-110 transition-transform duration-500" />
+                   <div className="h-px w-12 bg-[#009688]/30" />
+                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#009688]/30 bg-[#009688]/5 text-[#009688] text-[10px] font-mono font-bold uppercase tracking-widest">Extraction Engine</div>
+                </div>
                 <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
                   FastAPI <br/><span className="text-[#009688]">Python.</span>
                 </h3>
                 <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
-                   Our extraction engine reconstructs the semantic &quot;Span-Tree&quot; from raw PDF coordinates. It detects column gaps and identifies multi-column flows.
+                   The API is a FastAPI application backed by Python&apos;s unmatched PDF ecosystem. A heuristic Vision Router classifies every page before any AI is invoked — native text pages go straight to PyMuPDF extraction, while scanned pages are processed by the AI Vision layer concurrently.
                 </p>
-                <div className="flex flex-col gap-5">
-                   {["PyMuPDF span-tree traversal", "Gap-histogram column detection", "Vision Router for scanned pages"].map(item => (
-                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px] md:flex-row-reverse">
-                        <div className="h-px w-12 bg-[#009688]" /> {item}
+                <div className="grid sm:grid-cols-2 gap-x-12 gap-y-6 border-t border-white/5 pt-8">
+                   {[
+                     "PyMuPDF span-tree traversal: font family, size, weight, and BBox per word",
+                     "Gap-histogram column detection assigns flow indices for multi-column layouts",
+                     "Font metrics collected in-browser for pixel-matched backend exports",
+                   ].map(item => (
+                     <div key={item} className="flex items-start gap-3 md:flex-row-reverse md:text-right">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#009688] mt-1.5 shrink-0" />
+                        <span className="text-sm text-white/50 leading-snug">{item}</span>
                      </div>
                    ))}
                 </div>
@@ -341,17 +361,27 @@ export default function LandingPage() {
           <div className="relative mb-64 flex flex-col md:flex-row items-center gap-12 lg:gap-24 group">
              <div className="absolute -left-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">03</div>
              <div className="flex-1 md:pr-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#F6821F]/30 bg-[#F6821F]/5 text-[#F6821F] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Object Storage</div>
+                <div className="flex items-center gap-4 mb-6">
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src="https://cdn.simpleicons.org/cloudflare" alt="Cloudflare" width={40} height={40} className="opacity-90 group-hover:scale-110 transition-transform duration-500" />
+                   <div className="h-px w-12 bg-[#F6821F]/30" />
+                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#F6821F]/30 bg-[#F6821F]/5 text-[#F6821F] text-[10px] font-mono font-bold uppercase tracking-widest">Object Storage</div>
+                </div>
                 <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
                   Cloudflare <br/><span className="text-[#F6821F]">R2.</span>
                 </h3>
                 <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
-                   All documents live in Cloudflare R2. Zero egress fees regardless of volume. Every exported file gets a time-bounded signed URL.
+                   All uploaded PDFs and processed exports live in Cloudflare R2. There is no cost to serving export downloads to users anywhere in the world. Every file gets a time-bounded signed URL — nothing lives in storage indefinitely.
                 </p>
-                <div className="flex flex-col gap-5">
-                   {["S3-compatible API", "Zero egress fees globally", "Temporary signed URLs"].map(item => (
-                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px]">
-                        <div className="h-px w-12 bg-[#F6821F]" /> {item}
+                <div className="grid sm:grid-cols-2 gap-x-12 gap-y-6 border-t border-white/5 pt-8">
+                   {[
+                     "S3-compatible — swap to any provider by changing one env variable",
+                     "Zero egress fees regardless of download region or monthly volume",
+                     "Export links are signed URLs with 24h TTL, pruned by scheduled cleanup",
+                   ].map(item => (
+                     <div key={item} className="flex items-start gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#F6821F] mt-1.5 shrink-0" />
+                        <span className="text-sm text-white/50 leading-snug">{item}</span>
                      </div>
                    ))}
                 </div>
@@ -375,17 +405,27 @@ export default function LandingPage() {
           <div className="relative mb-64 flex flex-col md:flex-row-reverse items-center gap-12 lg:gap-24 group">
              <div className="absolute -right-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">04</div>
              <div className="flex-1 md:pl-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3ECF8E]/30 bg-[#3ECF8E]/5 text-[#3ECF8E] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">Database · Security</div>
+                <div className="flex items-center gap-4 mb-6 md:flex-row-reverse">
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src="https://cdn.simpleicons.org/supabase" alt="Supabase" width={40} height={40} className="opacity-90 group-hover:scale-110 transition-transform duration-500" />
+                   <div className="h-px w-12 bg-[#3ECF8E]/30" />
+                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3ECF8E]/30 bg-[#3ECF8E]/5 text-[#3ECF8E] text-[10px] font-mono font-bold uppercase tracking-widest">Database · Security</div>
+                </div>
                 <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
                   Supabase <br/><span className="text-[#3ECF8E]">Auth.</span>
                 </h3>
                 <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
-                   PostgreSQL with Row-Level Security is our backbone. Every document is locked at the database layer — the API cannot accidentally leak data across accounts.
+                   PostgreSQL with Row-Level Security is the backbone. Every document and API key is locked at the database layer — the API cannot accidentally leak data across accounts. Supabase Auth handles identity end-to-end.
                 </p>
-                <div className="flex flex-col gap-5">
-                   {["RLS-enforced table isolation", "pgvector semantic search", "Realtime collaboration sync"].map(item => (
-                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px] md:flex-row-reverse">
-                        <div className="h-px w-12 bg-[#3ECF8E]" /> {item}
+                <div className="grid sm:grid-cols-2 gap-x-12 gap-y-6 border-t border-white/5 pt-8">
+                   {[
+                     "RLS on every table — the service role is never used in user-facing paths",
+                     "pgvector cosine similarity for cross-chapter semantic drift detection",
+                     "Realtime Presence for live cursors; Broadcast for Yjs delta sync",
+                   ].map(item => (
+                     <div key={item} className="flex items-start gap-3 md:flex-row-reverse md:text-right">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#3ECF8E] mt-1.5 shrink-0" />
+                        <span className="text-sm text-white/50 leading-snug">{item}</span>
                      </div>
                    ))}
                 </div>
@@ -413,17 +453,27 @@ export default function LandingPage() {
           <div className="relative mb-32 flex flex-col md:flex-row items-center gap-12 lg:gap-24 group">
              <div className="absolute -left-12 top-0 text-[18rem] font-sans font-black text-white/[0.02] select-none pointer-events-none hidden lg:block leading-none">05</div>
              <div className="flex-1 md:pr-12 z-10 animate-reveal opacity-0" style={{ animationDelay: '100ms' }}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#4285F4]/30 bg-[#4285F4]/5 text-[#4285F4] text-[10px] font-mono font-bold uppercase tracking-widest mb-6">AI Intelligence</div>
+                <div className="flex items-center gap-4 mb-6">
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src="https://cdn.simpleicons.org/googlegemini" alt="Gemini" width={40} height={40} className="opacity-90 group-hover:scale-110 transition-transform duration-500" />
+                   <div className="h-px w-12 bg-[#4285F4]/30" />
+                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#4285F4]/30 bg-[#4285F4]/5 text-[#4285F4] text-[10px] font-mono font-bold uppercase tracking-widest">AI Intelligence</div>
+                </div>
                 <h3 className="text-6xl md:text-8xl font-sans font-black text-white mb-8 leading-[0.85] tracking-tighter">
                   Vision <br/><span className="text-[#4285F4]">Intelligence.</span>
                 </h3>
                 <p className="text-[#9ca3af] text-lg leading-relaxed mb-8 max-w-xl font-medium">
-                   The AI layer handles two distinct jobs: Vision OCR for scanned pages and structured document editing via strict tool-calling.
+                   In editing mode, the model is given a precise set of tools and never allowed to produce free-text mutations — every change is logged with a before/after diff and requires user acceptance.
                 </p>
-                <div className="flex flex-col gap-5">
-                   {["Vision OCR for scanned pages", "Strict tool-call editing mode", "Account-level provider keys"].map(item => (
-                     <div key={item} className="flex items-center gap-4 text-white/50 font-bold uppercase tracking-widest text-[10px]">
-                        <div className="h-px w-12 bg-[#4285F4]" /> {item}
+                <div className="grid sm:grid-cols-2 gap-x-12 gap-y-6 border-t border-white/5 pt-8">
+                   {[
+                     "Vision OCR: scanned pages rendered to PNG and processed concurrently",
+                     "Tool-call-only editing mode: AI cannot write free-text, every change is auditable",
+                     "Bring your own key for Claude, GPT, DeepSeek, or Gemini — swappable per account",
+                   ].map(item => (
+                     <div key={item} className="flex items-start gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#4285F4] mt-1.5 shrink-0" />
+                        <span className="text-sm text-white/50 leading-snug">{item}</span>
                      </div>
                    ))}
                 </div>
@@ -448,30 +498,47 @@ export default function LandingPage() {
       </section>
 
       {/* MISSION */}
-      <section className="py-24 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] animate-reveal opacity-0" style={{ animationDelay: '120ms' }}>
+      <section className="py-28 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] animate-reveal opacity-0" style={{ animationDelay: '120ms' }}>
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-serif italic font-bold mb-5 text-[var(--text-primary)]">
-              One Mission: Accessible<br />Document Intelligence
+
+          {/* Statement */}
+          <div className="max-w-3xl mb-20">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-orange-500 mb-6">Mission</p>
+            <h2 className="font-sans font-black text-4xl md:text-5xl lg:text-6xl tracking-tight text-[var(--text-primary)] leading-[1.05] mb-6">
+              PDFs shouldn&apos;t be<br />read-only forever.
             </h2>
-            <p className="text-lg text-[var(--text-secondary)] leading-relaxed font-medium max-w-2xl mx-auto">
-              Most PDFs are &ldquo;digital paper&rdquo; — unstructured and hard to edit. OLPDF turns every document into a semantic, machine-readable, human-editable data structure.
+            <p className="text-xl text-[var(--text-secondary)] leading-relaxed font-medium max-w-2xl">
+              Most PDFs are digital paper — unstructured, unsearchable, and impossible to edit without destroying the layout. OLPDF turns every document into a semantic block model: machine-readable, AI-editable, and always re-exportable to the exact same format it came from.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--border-subtle)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden bg-[var(--bg-elevated)]">
-            <div className="p-8">
-              <div className="font-mono font-bold text-xl mb-3 text-[var(--text-primary)]">Open Source</div>
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">The core extraction heuristics are public. No black boxes or hidden fees.</p>
-            </div>
-            <div className="p-8">
-              <div className="font-sans font-black tracking-tight text-xl mb-3 text-[var(--text-primary)]">Structure-First</div>
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">We don&apos;t just OCR text — we reconstruct headers, lists, and table hierarchies.</p>
-            </div>
-            <div className="p-8">
-              <div className="font-serif font-bold text-xl mb-3 text-[var(--text-primary)]">AI-Native</div>
-              <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">Built specifically to leverage LLM reasoning for non-destructive document editing.</p>
-            </div>
+
+          {/* Three principles — horizontal rule layout */}
+          <div className="grid md:grid-cols-3 gap-0 border-t border-[var(--border-subtle)]">
+            {[
+              {
+                index: "01",
+                title: "Open Source",
+                body: "The extraction heuristics, block model specification, and export pipeline are all public. Audit the logic, fork it, run it yourself. No black boxes, no paywalls on the core engine.",
+              },
+              {
+                index: "02",
+                title: "Structure First",
+                body: "We don't OCR and call it done. Every page is classified before extraction runs — native text, scanned, table-heavy — and each block is assigned a type, confidence score, and column index.",
+              },
+              {
+                index: "03",
+                title: "AI as a Tool",
+                body: "The model is never given a blank document and told to rewrite it. Every AI action goes through a validated tool call. The diff is logged, reversible, and requires explicit user acceptance.",
+              },
+            ].map(({ index, title, body }) => (
+              <div key={index} className="pt-10 pb-2 md:pr-12 md:border-r border-[var(--border-subtle)] last:border-r-0 [&:not(:first-child)]:md:pl-12 border-t md:border-t-0">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)] mb-4">{index}</p>
+                <h3 className="font-sans font-black text-xl text-[var(--text-primary)] mb-3">{title}</h3>
+                <p className="text-[var(--text-secondary)] leading-relaxed text-base font-medium">{body}</p>
+              </div>
+            ))}
           </div>
+
         </div>
       </section>
 
