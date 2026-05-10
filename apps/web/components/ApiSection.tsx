@@ -105,7 +105,7 @@ export default function ApiSection() {
               ))}
             </ul>
             <Link
-              href="/docs"
+              href="/docs#api-keys"
               className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[var(--text-primary)] hover:text-orange-500 transition-colors group"
             >
               Read Full API Docs

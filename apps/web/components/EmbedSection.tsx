@@ -370,7 +370,7 @@ export default function EmbedSection() {
             ))}
           </div>
           <Link
-            href="/docs"
+            href="/docs#embed-frameworks"
             className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-orange-500 hover:bg-orange-400 transition-colors text-white font-sans font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-500/20 shrink-0 group"
           >
             View Embed Docs
