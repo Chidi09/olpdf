@@ -12,7 +12,7 @@ const FRAMEWORKS = [
   { id: "svelte",    label: "Svelte",    slug: "svelte",    colorOverride: null,    file: "PDFEditor.svelte"  },
   { id: "nuxt",      label: "Nuxt",      slug: "nuxt",      colorOverride: null,    file: "pdf-editor.vue"    },
   { id: "astro",     label: "Astro",     slug: "astro",     colorOverride: null,    file: "pdf-editor.astro"  },
-  { id: "analog",    label: "Analog",    slug: "angular",   colorOverride: null,    file: "pdf-editor.ts"     },
+  { id: "analog",    label: "Analog",    slug: "angular",   colorOverride: "DD0031", file: "pdf-editor.ts"    },
   { id: "wix",       label: "Wix",       slug: "wix",       colorOverride: null,    file: "page.js"           },
   { id: "wordpress", label: "WordPress", slug: "wordpress", colorOverride: null,    file: "functions.php"     },
 ] as const;

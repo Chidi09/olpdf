@@ -46,6 +46,38 @@ const NAV: NavItem[] = [
   { id: "embed-frameworks", label: "Framework Guides", icon: Layers },
 ];
 
+// ─── Syntax highlighter ──────────────────────────────────────────────────────
+
+function highlight(raw: string): string {
+  let s = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const strings: string[] = [];
+  s = s.replace(/'[^'\n]*'|"[^"\n]*"/g, (m) => { strings.push(m); return `\x00S${strings.length - 1}\x00`; });
+
+  const comments: string[] = [];
+  s = s.replace(/\/\/[^\n]*/g, (m) => { comments.push(m); return `\x00C${comments.length - 1}\x00`; });
+  s = s.replace(/#[^\n]*/g, (m) => { comments.push(m); return `\x00C${comments.length - 1}\x00`; });
+
+  s = s.replace(
+    /\b(import|export|from|const|let|var|function|return|new|class|extends|implements|interface|type|async|await|default|true|false|null|undefined|void|public|private|static|readonly|if|else|for|while|do|in|of|try|catch|finally|throw|yield|super|this|curl|bash|echo)\b/g,
+    '<span style="color:#60a5fa">$1</span>',
+  );
+  s = s.replace(/@\w+/g, (m) => `<span style="color:#c084fc">${m}</span>`);
+  s = s.replace(/&lt;\?php/g, '<span style="color:#c084fc">&lt;?php</span>');
+  s = s.replace(/^---$/gm, '<span style="color:#4b5563">---</span>');
+  s = s.replace(/\x00S(\d+)\x00/g, (_, i) => `<span style="color:#f97316">${strings[+i]}</span>`);
+  s = s.replace(/\x00C(\d+)\x00/g, (_, i) => `<span style="color:#6b7280">${comments[+i]}</span>`);
+
+  // JSON keys
+  s = s.replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span style="color:#34d399">$1</span>$2');
+  // HTTP methods standalone
+  s = s.replace(/\b(GET|POST|PUT|DELETE|PATCH)\b/g, '<span style="color:#f97316;font-weight:700">$1</span>');
+  // Numbers
+  s = s.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#a78bfa">$1</span>');
+
+  return s;
+}
+
 // ─── Code Block ──────────────────────────────────────────────────────────────
 
 function CodeBlock({ code, lang = "json", filename }: { code: string; lang?: string; filename?: string }) {
@@ -57,7 +89,7 @@ function CodeBlock({ code, lang = "json", filename }: { code: string; lang?: str
   }, [code]);
 
   return (
-    <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c] text-base font-mono">
+    <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c]">
       <div className="flex items-center justify-between px-4 py-2.5 bg-[#0f0f11] border-b border-[#1e1e21]">
         <span className="text-sm font-mono text-gray-500 uppercase tracking-widest">{filename ?? lang}</span>
         <button onClick={copy} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-200 transition-colors font-bold">
@@ -65,7 +97,10 @@ function CodeBlock({ code, lang = "json", filename }: { code: string; lang?: str
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="p-5 overflow-x-auto text-gray-300 leading-relaxed text-sm">{code}</pre>
+      <pre
+        className="p-5 overflow-x-auto leading-relaxed text-sm font-mono text-gray-300"
+        dangerouslySetInnerHTML={{ __html: highlight(code) }}
+      />
     </div>
   );
 }
@@ -1400,7 +1435,7 @@ const token = await getEmbedToken(id);
             <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-3 mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="https://cdn.simpleicons.org/angular" alt="Analog" width={22} height={22} />
+                <img src="https://cdn.simpleicons.org/angular/DD0031" alt="Analog" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Analog (Angular)</h3>
               </div>
               <p className="text-base text-[var(--text-secondary)] mb-4 leading-relaxed">
