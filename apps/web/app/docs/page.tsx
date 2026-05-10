@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
@@ -1209,7 +1209,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
             <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-3 mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="https://cdn.simpleicons.org/svelte/FF3E00" alt="Svelte" width={22} height={22} />
+                <img src="https://cdn.simpleicons.org/svelte" alt="Svelte" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Svelte</h3>
               </div>
               <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
@@ -1270,7 +1270,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
             <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-3 mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="https://cdn.simpleicons.org/nuxtdotjs/00DC82" alt="Nuxt" width={22} height={22} />
+                <img src="https://cdn.simpleicons.org/nuxt" alt="Nuxt" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Nuxt / Vue 3</h3>
               </div>
               <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
@@ -1337,7 +1337,7 @@ onUnmounted(() => editor?.destroy());
             <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-3 mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="https://cdn.simpleicons.org/astro/FF5D01" alt="Astro" width={22} height={22} />
+                <img src="https://cdn.simpleicons.org/astro" alt="Astro" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Astro</h3>
               </div>
               <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
@@ -1400,7 +1400,7 @@ const token = await getEmbedToken(id);
             <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-3 mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="https://cdn.simpleicons.org/angular/DD0031" alt="Analog" width={22} height={22} />
+                <img src="https://cdn.simpleicons.org/angular" alt="Analog" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Analog (Angular)</h3>
               </div>
               <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
@@ -1474,7 +1474,7 @@ export class PDFEditorComponent implements AfterViewInit, OnDestroy {
             <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
               <div className="flex items-center gap-3 mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="https://cdn.simpleicons.org/wix/FAAD4F" alt="Wix" width={22} height={22} />
+                <img src="https://cdn.simpleicons.org/wix" alt="Wix" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">Wix (Velo)</h3>
               </div>
               <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
@@ -1537,7 +1537,7 @@ $w.onReady(async () => {
             <div className="mb-10">
               <div className="flex items-center gap-3 mb-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="https://cdn.simpleicons.org/wordpress/21759B" alt="WordPress" width={22} height={22} />
+                <img src="https://cdn.simpleicons.org/wordpress" alt="WordPress" width={22} height={22} />
                 <h3 className="text-lg font-black text-[var(--text-primary)]">WordPress</h3>
               </div>
               <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">

@@ -7,15 +7,21 @@ import { Copy, Check, ArrowRight } from "lucide-react";
 // ── Framework catalogue ───────────────────────────────────────────────────────
 
 const FRAMEWORKS = [
-  { id: "npm",       label: "npm",       slug: "npm",       color: "CB3837", file: "index.js"          },
-  { id: "nextjs",    label: "Next.js",   slug: "nextdotjs", color: "ffffff", file: "PDFEditor.tsx"     },
-  { id: "svelte",    label: "Svelte",    slug: "svelte",    color: "FF3E00", file: "PDFEditor.svelte"  },
-  { id: "nuxt",      label: "Nuxt",      slug: "nuxtdotjs", color: "00DC82", file: "pdf-editor.vue"    },
-  { id: "astro",     label: "Astro",     slug: "astro",     color: "FF5D01", file: "pdf-editor.astro"  },
-  { id: "analog",    label: "Analog",    slug: "angular",   color: "DD0031", file: "pdf-editor.ts"     },
-  { id: "wix",       label: "Wix",       slug: "wix",       color: "FAAD4F", file: "page.js"           },
-  { id: "wordpress", label: "WordPress", slug: "wordpress", color: "21759B", file: "functions.php"     },
+  { id: "npm",       label: "npm",       slug: "npm",       colorOverride: null,    file: "index.js"          },
+  { id: "nextjs",    label: "Next.js",   slug: "nextdotjs", colorOverride: "ffffff", file: "PDFEditor.tsx"    },
+  { id: "svelte",    label: "Svelte",    slug: "svelte",    colorOverride: null,    file: "PDFEditor.svelte"  },
+  { id: "nuxt",      label: "Nuxt",      slug: "nuxt",      colorOverride: null,    file: "pdf-editor.vue"    },
+  { id: "astro",     label: "Astro",     slug: "astro",     colorOverride: null,    file: "pdf-editor.astro"  },
+  { id: "analog",    label: "Analog",    slug: "angular",   colorOverride: null,    file: "pdf-editor.ts"     },
+  { id: "wix",       label: "Wix",       slug: "wix",       colorOverride: null,    file: "page.js"           },
+  { id: "wordpress", label: "WordPress", slug: "wordpress", colorOverride: null,    file: "functions.php"     },
 ] as const;
+
+function iconUrl(slug: string, colorOverride: string | null) {
+  return colorOverride
+    ? `https://cdn.simpleicons.org/${slug}/${colorOverride}`
+    : `https://cdn.simpleicons.org/${slug}`;
+}
 
 type FrameworkId = typeof FRAMEWORKS[number]["id"];
 
@@ -303,7 +309,7 @@ export default function EmbedSection() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`https://cdn.simpleicons.org/${f.slug}/${f.color}`}
+                src={iconUrl(f.slug, f.colorOverride)}
                 alt={f.label}
                 width={14}
                 height={14}
@@ -327,7 +333,7 @@ export default function EmbedSection() {
               <div className="flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`https://cdn.simpleicons.org/${fw.slug}/${fw.color}`}
+                  src={iconUrl(fw.slug, fw.colorOverride)}
                   alt={fw.label}
                   width={12}
                   height={12}
