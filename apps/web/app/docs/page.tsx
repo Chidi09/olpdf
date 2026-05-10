@@ -1123,27 +1123,513 @@ primary_region = 'ams'
           </section>
 
           <section id="embed-frameworks" className="scroll-mt-24 mt-12">
-            <h2 className="text-2xl font-black mb-3 text-[var(--text-primary)]">Framework Guides</h2>
-            <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">The SDK is framework-agnostic. Call <code className="font-mono text-amber-500 text-sm">new OlPDFEmbed(container, options)</code> once your container element is in the DOM, and call <code className="font-mono text-amber-500 text-sm">editor.destroy()</code> on unmount.</p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[
-                { fw: "Next.js", hint: "Use useEffect + useRef. Pass 'use client' directive. Call destroy() in the cleanup return." },
-                { fw: "Svelte", hint: "Use onMount / onDestroy. Bind container with bind:this." },
-                { fw: "Nuxt / Vue", hint: "Use onMounted. Access ref.value as the container element." },
-                { fw: "Astro", hint: "Place script inside the .astro file. getElementById after the div." },
-                { fw: "Analog (Angular)", hint: "Implement AfterViewInit. Use @ViewChild to get the native element." },
-                { fw: "Wix (Velo)", hint: "Use $w.onReady. Call $w('#element').getEl() for the container." },
-                { fw: "WordPress", hint: "Enqueue via wp_enqueue_script and add usage via wp_add_inline_script." },
-              ].map(({ fw, hint }) => (
-                <div key={fw} className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-                  <div className="text-sm font-black text-[var(--text-primary)] mb-1">{fw}</div>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{hint}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-6 text-sm text-[var(--text-secondary)]">
-              See the full interactive examples on the <a href="/#embed" className="text-orange-500 hover:text-orange-400 font-semibold transition-colors">landing page embed section</a>.
+            <h2 className="text-2xl font-black mb-2 text-[var(--text-primary)]">Framework Guides</h2>
+            <p className="text-[var(--text-secondary)] mb-10 leading-relaxed">
+              The SDK is framework-agnostic — it only needs a mounted DOM element as a container.
+              The golden rule: call <code className="font-mono text-amber-500 text-sm">new OlPDFEmbed(el, opts)</code> <strong className="text-[var(--text-primary)]">after</strong> the element is in the DOM,
+              and always call <code className="font-mono text-amber-500 text-sm">editor.destroy()</code> when the component unmounts to avoid iframe leaks.
             </p>
+
+            {/* ── Next.js ── */}
+            <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/nextdotjs/ffffff" alt="Next.js" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Next.js</h3>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Because OlPDFEmbed interacts with the DOM directly, you must mark the file with <code className="font-mono text-amber-500 text-xs">&apos;use client&apos;</code>.
+                Use <code className="font-mono text-amber-500 text-xs">useRef</code> to get a stable reference to the container div, and <code className="font-mono text-amber-500 text-xs">useEffect</code> to
+                instantiate the editor after the component mounts. Return <code className="font-mono text-amber-500 text-xs">editor.destroy()</code> from the effect cleanup
+                so React Hot Reload and strict-mode double-invocation don&apos;t leak iframes.
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`'use client';
+import { useEffect, useRef } from 'react';
+import { OlPDFEmbed } from '@olpdf/embed';
+
+interface PDFEditorProps {
+  documentId: string;
+  token: string;
+  onSave?: (model: object) => void;
+}
+
+export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const editor = new OlPDFEmbed(containerRef.current, {
+      host: 'https://olpdf.xyz',
+      documentId,
+      token,
+    });
+
+    // READY fires when the iframe is mounted and the editor is initialised
+    editor.on('READY', () => console.log('OLPDF editor ready'));
+
+    // MODEL_UPDATE carries the full AST after every edit
+    editor.on('MODEL_UPDATE', ({ documentModel }) => {
+      onSave?.(documentModel);
+    });
+
+    // PAGE_ADDED / PAGE_REMOVED fire when layout reflows overflow pages
+    editor.on('PAGE_ADDED', ({ pageIndex, width, height }) => {
+      console.log(\`Page \${pageIndex + 1} added (\${width}×\${height}pt)\`);
+    });
+
+    // Always destroy on unmount to remove the iframe and event listeners
+    return () => editor.destroy();
+  }, [documentId, token, onSave]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full h-screen"
+      // Prevent parent scroll from interfering with the editor
+      style={{ overflow: 'hidden' }}
+    />
+  );
+}`}</pre>
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "documentId and token are effect dependencies — a new editor mounts automatically if they change.",
+                  "For App Router, this component can be imported into any Server Component page without extra config.",
+                  "If you use React Strict Mode the effect runs twice in development — destroy() handles cleanup correctly.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Svelte ── */}
+            <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/svelte/FF3E00" alt="Svelte" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Svelte</h3>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Use <code className="font-mono text-amber-500 text-xs">bind:this</code> to obtain the DOM element, then
+                instantiate inside <code className="font-mono text-amber-500 text-xs">onMount</code>. Svelte guarantees the element exists by the time <code className="font-mono text-amber-500 text-xs">onMount</code> fires.
+                Destroy in <code className="font-mono text-amber-500 text-xs">onDestroy</code>.
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
+  import { OlPDFEmbed } from '@olpdf/embed';
+
+  export let documentId: string;
+  export let token: string;
+
+  let container: HTMLDivElement;
+  let editor: OlPDFEmbed;
+
+  onMount(() => {
+    editor = new OlPDFEmbed(container, {
+      host: 'https://olpdf.xyz',
+      documentId,
+      token,
+    });
+
+    editor.on('READY', () => console.log('Editor ready'));
+
+    editor.on('MODEL_UPDATE', ({ documentModel }) => {
+      // Persist or sync the full AST model
+      console.log('Model updated', documentModel);
+    });
+
+    editor.on('EXPORT_COMPLETE', ({ url }) => {
+      // url is a 24-hour signed download link
+      window.open(url, '_blank');
+    });
+  });
+
+  onDestroy(() => {
+    editor?.destroy();
+  });
+</script>
+
+<div bind:this={container} class="w-full h-screen overflow-hidden" />`}</pre>
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "Use $: reactive statements to re-initialise if documentId or token change at runtime.",
+                  "SSR is disabled by default for the embed — no special config needed in SvelteKit.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Nuxt / Vue ── */}
+            <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/nuxtdotjs/00DC82" alt="Nuxt" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Nuxt / Vue 3</h3>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Use the Composition API with <code className="font-mono text-amber-500 text-xs">ref()</code> for the container element and <code className="font-mono text-amber-500 text-xs">onMounted</code> for instantiation.
+                In Nuxt, wrap in <code className="font-mono text-amber-500 text-xs">&lt;ClientOnly&gt;</code> or add <code className="font-mono text-amber-500 text-xs">process.client</code> guard to avoid SSR errors since the SDK requires a browser DOM.
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<!-- components/PDFEditor.vue -->
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { OlPDFEmbed } from '@olpdf/embed';
+
+const props = defineProps<{
+  documentId: string;
+  token: string;
+}>();
+
+const emit = defineEmits<{
+  modelUpdate: [model: object];
+}>();
+
+const container = ref<HTMLDivElement | null>(null);
+let editor: OlPDFEmbed | null = null;
+
+function initEditor() {
+  if (!container.value) return;
+  editor?.destroy();
+
+  editor = new OlPDFEmbed(container.value, {
+    host: 'https://olpdf.xyz',
+    documentId: props.documentId,
+    token: props.token,
+  });
+
+  editor.on('MODEL_UPDATE', ({ documentModel }) => {
+    emit('modelUpdate', documentModel);
+  });
+}
+
+onMounted(initEditor);
+
+// Re-init when props change
+watch(() => [props.documentId, props.token], initEditor);
+
+onUnmounted(() => editor?.destroy());
+</script>
+
+<template>
+  <div ref="container" class="w-full h-screen overflow-hidden" />
+</template>`}</pre>
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "In Nuxt, wrap the component in <ClientOnly> in your page to skip SSR entirely.",
+                  "The watch() call ensures a fresh editor if the documentId or token prop changes.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Astro ── */}
+            <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/astro/FF5D01" alt="Astro" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Astro</h3>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Astro is server-first. Place the <code className="font-mono text-amber-500 text-xs">&lt;script&gt;</code> tag inside the <code className="font-mono text-amber-500 text-xs">.astro</code> file
+                (not the frontmatter fence). Astro bundles and defers client-side scripts automatically.
+                No <code className="font-mono text-amber-500 text-xs">client:*</code> directive is needed since this is vanilla JS, not a framework component.
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`---
+// src/pages/editor/[id].astro
+import Layout from '../layouts/Layout.astro';
+
+const { id } = Astro.params;
+// Fetch a short-lived embed token from your API
+const token = await getEmbedToken(id);
+---
+
+<Layout>
+  <div id="olpdf-container" class="w-full h-screen overflow-hidden"></div>
+</Layout>
+
+<script define:vars={{ documentId: id, token }}>
+  // This script runs in the browser after hydration
+  import { OlPDFEmbed } from '@olpdf/embed';
+
+  const container = document.getElementById('olpdf-container');
+
+  const editor = new OlPDFEmbed(container, {
+    host: 'https://olpdf.xyz',
+    documentId,
+    token,
+  });
+
+  editor.on('READY', () => {
+    console.log('OLPDF editor ready');
+  });
+
+  editor.on('MODEL_UPDATE', ({ documentModel }) => {
+    // Send back to your server or store locally
+    fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentId, documentModel }),
+    });
+  });
+</script>`}</pre>
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "define:vars passes server-side variables into the client script safely.",
+                  "For View Transitions (Astro 3+), re-init the editor on astro:page-load and destroy on astro:before-swap.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Analog (Angular) ── */}
+            <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/angular/DD0031" alt="Analog" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Analog (Angular)</h3>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                Analog is the meta-framework built on Angular. Use <code className="font-mono text-amber-500 text-xs">@ViewChild</code> to obtain the native DOM element
+                and <code className="font-mono text-amber-500 text-xs">ngAfterViewInit</code> to instantiate the editor — this lifecycle hook guarantees the view is fully rendered.
+                Implement <code className="font-mono text-amber-500 text-xs">OnDestroy</code> to clean up.
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`// pdf-editor.component.ts
+import {
+  Component, Input, Output, EventEmitter,
+  AfterViewInit, OnDestroy,
+  ViewChild, ElementRef
+} from '@angular/core';
+import { OlPDFEmbed } from '@olpdf/embed';
+
+@Component({
+  selector: 'app-pdf-editor',
+  standalone: true,
+  template: \`
+    <div #container class="w-full h-screen overflow-hidden"></div>
+  \`,
+})
+export class PDFEditorComponent implements AfterViewInit, OnDestroy {
+  @Input() documentId!: string;
+  @Input() token!: string;
+  @Output() modelUpdate = new EventEmitter<object>();
+
+  @ViewChild('container') containerRef!: ElementRef<HTMLDivElement>;
+
+  private editor?: OlPDFEmbed;
+
+  ngAfterViewInit(): void {
+    this.editor = new OlPDFEmbed(this.containerRef.nativeElement, {
+      host: 'https://olpdf.xyz',
+      documentId: this.documentId,
+      token: this.token,
+    });
+
+    this.editor.on('READY', () => {
+      console.log('OLPDF ready');
+    });
+
+    this.editor.on('MODEL_UPDATE', ({ documentModel }) => {
+      this.modelUpdate.emit(documentModel);
+    });
+
+    this.editor.on('EXPORT_COMPLETE', ({ url }) => {
+      window.open(url, '_blank');
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.editor?.destroy();
+  }
+}`}</pre>
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "Mark the component standalone: true to use it without NgModule declarations.",
+                  "If documentId changes at runtime, call destroy() and re-init in ngOnChanges().",
+                  "Use Angular's HttpClient in the MODEL_UPDATE callback instead of raw fetch for interceptor support.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Wix ── */}
+            <div className="mb-12 pb-12 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/wix/FAAD4F" alt="Wix" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Wix (Velo)</h3>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                In Wix Velo, all custom code runs in the <strong className="text-[var(--text-primary)]">Page Code panel</strong> (not a file you upload).
+                Add an HTML Component element to your page, give it an ID (e.g. <code className="font-mono text-amber-500 text-xs">#editorBox</code>),
+                then call <code className="font-mono text-amber-500 text-xs">$w(&apos;#editorBox&apos;).getEl()</code> inside <code className="font-mono text-amber-500 text-xs">$w.onReady</code> to get the underlying DOM element.
+                Use the Wix NPM Packages panel to install <code className="font-mono text-amber-500 text-xs">@olpdf/embed</code>.
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`// Page Code panel (Wix Velo)
+import wixData from 'wix-data';
+import wixUsers from 'wix-users';
+import { OlPDFEmbed } from '@olpdf/embed';
+
+$w.onReady(async () => {
+  // Get the current user's session token for the embed
+  const token = await wixUsers.currentUser.getToken();
+
+  // #editorBox is an HTML Component element on your Wix page
+  const containerEl = $w('#editorBox').getEl();
+
+  const editor = new OlPDFEmbed(containerEl, {
+    host: 'https://olpdf.xyz',
+    documentId: $w('#documentIdInput').value,  // e.g. from a text input
+    token,
+  });
+
+  editor.on('READY', () => {
+    $w('#statusText').text = 'Editor loaded';
+  });
+
+  editor.on('MODEL_UPDATE', async ({ documentModel }) => {
+    // Save the updated document model to Wix Data
+    await wixData.save('Documents', {
+      _id: $w('#documentIdInput').value,
+      model: JSON.stringify(documentModel),
+    });
+    $w('#statusText').text = 'Saved ✓';
+  });
+
+  editor.on('EXPORT_COMPLETE', ({ url }) => {
+    $w('#downloadButton').link = url;
+    $w('#downloadButton').show();
+  });
+});`}</pre>
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "Install @olpdf/embed via Wix Editor → Packages & Apps → npm Packages.",
+                  "The HTML Component must have Allow Scrolling enabled in its settings panel.",
+                  "wixUsers.currentUser.getToken() returns a Wix session token — pass this to your backend to exchange for an OLPDF embed token.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── WordPress ── */}
+            <div className="mb-10">
+              <div className="flex items-center gap-3 mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://cdn.simpleicons.org/wordpress/21759B" alt="WordPress" width={22} height={22} />
+                <h3 className="text-lg font-black text-[var(--text-primary)]">WordPress</h3>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                WordPress has no npm build pipeline by default, so load the SDK from a CDN via <code className="font-mono text-amber-500 text-xs">wp_enqueue_script</code>
+                and wire up the editor with <code className="font-mono text-amber-500 text-xs">wp_add_inline_script</code>. For block-based themes, create a
+                custom block or use a Classic Widget with the HTML widget.
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<?php
+// functions.php — enqueue the SDK and initialise the editor
+
+add_action('wp_enqueue_scripts', function () {
+    // Only load on the document editor page template
+    if (!is_page_template('page-pdf-editor.php')) return;
+
+    wp_enqueue_script(
+        'olpdf-embed',
+        'https://cdn.jsdelivr.net/npm/@olpdf/embed/dist/index.js',
+        [],      // no dependencies
+        '1.0',
+        true     // load in footer, after DOM is ready
+    );
+
+    // Pass server-side data to the script safely
+    $document_id = get_query_var('document_id');
+    $embed_token = olpdf_generate_embed_token($document_id); // your helper
+
+    wp_add_inline_script('olpdf-embed', sprintf('
+        (function() {
+            var container = document.getElementById("olpdf-editor");
+            if (!container) return;
+
+            var editor = new OlPDFEmbed(container, {
+                host:       "https://olpdf.xyz",
+                documentId: %s,
+                token:      %s,
+            });
+
+            editor.on("READY", function () {
+                console.log("OLPDF ready");
+            });
+
+            editor.on("MODEL_UPDATE", function (payload) {
+                fetch(ajaxurl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({
+                        action:      "olpdf_save",
+                        document_id: %s,
+                        model:       JSON.stringify(payload.documentModel),
+                        nonce:       "%s",
+                    }),
+                });
+            });
+        })();
+    ',
+        wp_json_encode($document_id),
+        wp_json_encode($embed_token),
+        wp_json_encode($document_id),
+        wp_create_nonce('olpdf_save')
+    ));
+});
+
+// Add the AJAX handler for saving
+add_action('wp_ajax_olpdf_save', function () {
+    check_ajax_referer('olpdf_save', 'nonce');
+    $document_id = sanitize_text_field($_POST['document_id']);
+    $model       = wp_unslash($_POST['model']);
+    update_post_meta($document_id, '_olpdf_model', $model);
+    wp_send_json_success();
+});`}</pre>
+              <p className="text-sm text-[var(--text-secondary)] mt-4 mb-3">
+                Add the container div to your page template (<code className="font-mono text-amber-500 text-xs">page-pdf-editor.php</code>):
+              </p>
+              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-4 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<!-- page-pdf-editor.php -->
+<?php get_header(); ?>
+<main>
+  <div id="olpdf-editor" style="width:100%; height:90vh; overflow:hidden;"></div>
+</main>
+<?php get_footer(); ?>`}</pre>
+              <div className="mt-4 flex flex-col gap-2">
+                {[
+                  "Always use wp_json_encode() to pass PHP values to JavaScript — never echo raw strings.",
+                  "wp_create_nonce() + check_ajax_referer() protect the save endpoint from CSRF.",
+                  "For Gutenberg blocks, use @wordpress/scripts and import the SDK normally via npm in your block's edit.js.",
+                ].map((note) => (
+                  <div key={note} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="text-orange-500 mt-0.5 shrink-0">→</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
 
           <div className="py-12 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
