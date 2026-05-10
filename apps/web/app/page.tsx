@@ -494,6 +494,140 @@ export default function LandingPage() {
       {/* EASY INTEGRATION / API */}
       <ApiSection />
 
+      {/* EMBED SECTION */}
+      <section className="relative py-28 px-6 overflow-hidden" style={{ background: "linear-gradient(180deg,#0d0d0f 0%,#0a0a0c 100%)" }}>
+        {/* Ambient glow */}
+        <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-20" style={{ background: "radial-gradient(ellipse at center, #f97316 0%, transparent 70%)", filter: "blur(60px)" }} />
+
+        <div className="relative z-10 mx-auto max-w-5xl">
+          {/* Badge */}
+          <div className="flex justify-center mb-6">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400 text-[10px] font-mono font-bold uppercase tracking-widest">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" />
+              SDK
+            </span>
+          </div>
+
+          {/* Headline */}
+          <div className="text-center mb-4">
+            <h2 className="font-sans font-black text-4xl md:text-5xl tracking-tight text-white leading-tight">
+              Embed <span className="text-orange-500">OLPDF</span> anywhere.
+            </h2>
+            <p className="mt-4 text-[var(--text-secondary)] text-lg font-medium max-w-xl mx-auto leading-relaxed">
+              Drop a full PDF editor into any web app in three lines. No iframes to wrangle — just a postMessage bridge that speaks AST.
+            </p>
+          </div>
+
+          {/* Code card */}
+          <div className="mt-12 rounded-2xl border border-[#2a2a2e] overflow-hidden shadow-2xl" style={{ background: "#111113" }}>
+            {/* Editor chrome */}
+            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#1e1e21] bg-[#0e0e10]">
+              <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+              <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+              <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+              <span className="ml-3 text-[11px] font-mono text-[#4b5563]">embed.ts</span>
+            </div>
+
+            {/* Code body */}
+            <div className="px-6 py-6 font-mono text-[13.5px] leading-relaxed overflow-x-auto">
+              {/* Line 1 */}
+              <div className="flex gap-4 mb-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0">$</span>
+                <span><span className="text-[#9ca3af]">npm install </span><span className="text-orange-400">@olpdf/embed</span></span>
+              </div>
+
+              <div className="border-t border-[#1e1e21] mb-4" />
+
+              {/* Import */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">1</span>
+                <span><span className="text-[#60a5fa]">import</span> <span className="text-white">{'{ OlPDFEmbed }'}</span> <span className="text-[#60a5fa]">from</span> <span className="text-orange-400">&apos;@olpdf/embed&apos;</span><span className="text-[#6b7280]">;</span></span>
+              </div>
+
+              {/* Blank */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">2</span>
+                <span>&nbsp;</span>
+              </div>
+
+              {/* new OlPDFEmbed */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">3</span>
+                <span><span className="text-[#c084fc]">const</span> <span className="text-white">editor</span> <span className="text-[#6b7280]">=</span> <span className="text-[#60a5fa]">new</span> <span className="text-[#34d399]">OlPDFEmbed</span><span className="text-[#6b7280]">(</span><span className="text-white">container</span><span className="text-[#6b7280]">, {'{'}</span></span>
+              </div>
+
+              {/* host */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">4</span>
+                <span className="pl-6"><span className="text-white">host</span><span className="text-[#6b7280]">: </span><span className="text-orange-400">&apos;https://olpdf.xyz&apos;</span><span className="text-[#6b7280]">,</span></span>
+              </div>
+
+              {/* documentId */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">5</span>
+                <span className="pl-6"><span className="text-white">documentId</span><span className="text-[#6b7280]">: </span><span className="text-orange-400">&apos;doc_abc123&apos;</span><span className="text-[#6b7280]">,</span></span>
+              </div>
+
+              {/* token */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">6</span>
+                <span className="pl-6"><span className="text-white">token</span><span className="text-[#6b7280]">: </span><span className="text-white">userToken</span><span className="text-[#6b7280]">,</span></span>
+              </div>
+
+              {/* closing */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">7</span>
+                <span><span className="text-[#6b7280]">{'}'});</span></span>
+              </div>
+
+              {/* blank */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">8</span>
+                <span>&nbsp;</span>
+              </div>
+
+              {/* on MODEL_UPDATE */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">9</span>
+                <span><span className="text-white">editor</span><span className="text-[#6b7280]">.</span><span className="text-[#34d399]">on</span><span className="text-[#6b7280]">(</span><span className="text-orange-400">&apos;MODEL_UPDATE&apos;</span><span className="text-[#6b7280]">, ({'{'} </span><span className="text-white">documentModel</span><span className="text-[#6b7280]"> {'}'}) =&gt; {'{'}</span></span>
+              </div>
+
+              {/* myDB.save */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">10</span>
+                <span className="pl-6"><span className="text-white">myDB</span><span className="text-[#6b7280]">.</span><span className="text-[#34d399]">save</span><span className="text-[#6b7280]">(</span><span className="text-white">documentModel</span><span className="text-[#6b7280]">);</span></span>
+              </div>
+
+              {/* closing brace */}
+              <div className="flex gap-4">
+                <span className="select-none text-[#3f3f46] w-4 shrink-0 text-right">11</span>
+                <span><span className="text-[#6b7280]">{'}'});</span></span>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature pills */}
+          <div className="flex flex-wrap justify-center gap-3 mt-8">
+            {["Zero dependencies", "postMessage bridge", "Full AST events"].map((pill) => (
+              <span key={pill} className="px-4 py-1.5 rounded-full border border-[#2a2a2e] bg-[#111113] text-[11px] font-mono font-bold text-[#9ca3af] uppercase tracking-wider">
+                {pill}
+              </span>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div className="flex justify-center mt-10">
+            <Link
+              href="/docs"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-orange-500 hover:bg-orange-400 transition-colors text-white font-sans font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-500/20"
+            >
+              View Embed Docs
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FREE COMMITMENT SECTION */}
       <section className="py-24 px-6 bg-[var(--bg-surface)] animate-reveal opacity-0 relative border-b border-[var(--border-subtle)]" style={{ animationDelay: '320ms' }}>
         <div className="max-w-5xl mx-auto">
