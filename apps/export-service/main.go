@@ -4,14 +4,20 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
+	"image/jpeg"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/go-pdf/fpdf"
@@ -345,7 +351,7 @@ func exportFlow(model DocumentModel, mode string) ([]byte, error) {
 	pdf.SetTitle(model.Meta.Title, false)
 	pdf.SetAuthor(model.Meta.Author, false)
 	pdf.SetCreator("OLPDF Export Service", false)
-	pdf.SetSubject("OLPDF " + strings.ToUpper(mode) + " Export")
+	pdf.SetSubject("OLPDF "+strings.ToUpper(mode)+" Export", false)
 
 	if mode == "pdfa" {
 		// Embed XMP metadata stub for PDF/A-1b conformance marker
@@ -425,6 +431,161 @@ func exportFlow(model DocumentModel, mode string) ([]byte, error) {
 		return nil, fmt.Errorf("flow output: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// ── Image export (per-page JPEG → ZIP) ───────────────────────────────────────
+
+// blockColor returns a fill colour keyed by block type for rasterised pages.
+func blockColor(blockType string) color.RGBA {
+	switch blockType {
+	case "heading":
+		return color.RGBA{30, 41, 59, 255}    // dark slate
+	case "table":
+		return color.RGBA{226, 232, 240, 255} // light blue-gray
+	case "image":
+		return color.RGBA{199, 210, 254, 255} // indigo tint
+	case "form_field":
+		return color.RGBA{167, 243, 208, 255} // mint
+	default:
+		return color.RGBA{51, 51, 51, 255}    // near-black for body text
+	}
+}
+
+func exportImages(model DocumentModel, dpi int) ([]byte, error) {
+	if dpi <= 0 {
+		dpi = 96
+	}
+	scale := float64(dpi) / 72.0 // PDF points → pixels
+
+	dims := map[int]PageDimension{}
+	for _, d := range model.PageDimensions {
+		dims[d.PageIndex] = d
+	}
+
+	// Collect unique page indices present in the model.
+	pageSet := map[int]bool{0: true}
+	for _, b := range model.Blocks {
+		pageSet[b.PageIndex] = true
+	}
+	pageIndices := make([]int, 0, len(pageSet))
+	for pi := range pageSet {
+		pageIndices = append(pageIndices, pi)
+	}
+	sort.Ints(pageIndices)
+
+	var zipBuf bytes.Buffer
+	zw := zip.NewWriter(&zipBuf)
+
+	for _, pi := range pageIndices {
+		sz := pageSize(dims, pi)
+		imgW := int(sz.Wd * scale)
+		imgH := int(sz.Ht * scale)
+		if imgW <= 0 {
+			imgW = int(595.28 * scale)
+		}
+		if imgH <= 0 {
+			imgH = int(841.89 * scale)
+		}
+
+		img := image.NewRGBA(image.Rect(0, 0, imgW, imgH))
+		draw.Draw(img, img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
+
+		// Sort blocks by z_index so stacking order is correct.
+		pageBlocks := make([]Block, 0)
+		for _, b := range model.Blocks {
+			if b.PageIndex == pi {
+				pageBlocks = append(pageBlocks, b)
+			}
+		}
+		sort.Slice(pageBlocks, func(a, b int) bool {
+			return pageBlocks[a].ZIndex < pageBlocks[b].ZIndex
+		})
+
+		for _, block := range pageBlocks {
+			if len(block.BoundingBox) < 4 {
+				continue
+			}
+			x0 := int(block.BoundingBox[0] * scale)
+			y0 := int(block.BoundingBox[1] * scale)
+			x1 := int(block.BoundingBox[2] * scale)
+			y1 := int(block.BoundingBox[3] * scale)
+			if x1 <= x0 || y1 <= y0 {
+				continue
+			}
+
+			fc := blockColor(block.Type)
+			blockRect := image.Rect(x0, y0, x1, y1)
+
+			if block.Type == "table" || block.Type == "image" || block.Type == "form_field" {
+				// Solid fill for non-text blocks.
+				draw.Draw(img, blockRect, &image.Uniform{fc}, image.Point{}, draw.Src)
+			} else if strings.TrimSpace(block.Content) != "" {
+				// Simulate text lines as filled rectangles.
+				lineH := int(fontSize(block.FontMeta) * scale * 1.25)
+				if lineH < 3 {
+					lineH = 3
+				}
+				barH := max(1, lineH/4)
+				barW := int(float64(x1-x0) * 0.85)
+				y := y0 + lineH/4
+				for y+barH < y1 {
+					lineRect := image.Rect(x0, y, x0+barW, y+barH)
+					draw.Draw(img, lineRect, &image.Uniform{fc}, image.Point{}, draw.Src)
+					y += lineH
+				}
+			}
+		}
+
+		fname := fmt.Sprintf("page_%03d.jpg", pi+1)
+		f, err := zw.Create(fname)
+		if err != nil {
+			return nil, fmt.Errorf("zip create %s: %w", fname, err)
+		}
+		if err := jpeg.Encode(f, img, &jpeg.Options{Quality: 90}); err != nil {
+			return nil, fmt.Errorf("jpeg encode page %d: %w", pi, err)
+		}
+	}
+
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("zip close: %w", err)
+	}
+	return zipBuf.Bytes(), nil
+}
+
+func handleImages(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "POST required")
+		return
+	}
+	if !authorized(r) {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	model, _, err := parseRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	dpi := 96
+	if s := r.URL.Query().Get("dpi"); s != "" {
+		if v, e := strconv.Atoi(s); e == nil && v > 0 && v <= 600 {
+			dpi = v
+		}
+	}
+
+	zipBytes, err := exportImages(model, dpi)
+	if err != nil {
+		log.Printf("[export-service] images export error: %v", err)
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", `attachment; filename="export-images.zip"`)
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(zipBytes)))
+	w.WriteHeader(http.StatusOK)
+	w.Write(zipBytes)
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -525,6 +686,7 @@ func main() {
 	mux.HandleFunc("/export/pdf",      makePDFHandler("pdf"))
 	mux.HandleFunc("/export/pdfa",     makePDFHandler("pdfa"))
 	mux.HandleFunc("/export/tagged",   makePDFHandler("tagged"))
+	mux.HandleFunc("/export/images",   handleImages)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"status":"ok"}`)
