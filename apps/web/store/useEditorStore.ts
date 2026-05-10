@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { DocumentModel } from "@olpdf/document-model";
+import type { DocumentModel, DocumentBlock } from "@olpdf/document-model";
 
 type AiLog = {
   id: string;
@@ -7,7 +7,7 @@ type AiLog = {
   status: "pending_review" | "accepted" | "rejected";
   created_at: string;
   tool_calls: Array<{ name: string; args: Record<string, unknown> }>;
-  diff_snapshot?: { before: unknown[]; after: unknown[] };
+  diff_snapshot?: { before: DocumentBlock[]; after: DocumentBlock[] };
 };
 
 interface EditorState {

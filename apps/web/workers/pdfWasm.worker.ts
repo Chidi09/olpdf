@@ -1,6 +1,9 @@
 // Web Worker: loads the Rust/Wasm PDF parser off the main thread.
 // The binary and JS bindings are served from /wasm/ (apps/web/public/wasm/).
 // Build: cd apps/pdf-wasm && ./build.sh
+// `export {}` makes this a module so `declare const self` is a local override,
+// not a redeclaration of the global WorkerGlobalScope.self.
+export {};
 declare const self: DedicatedWorkerGlobalScope;
 
 type ParseFn = (data: Uint8Array) => unknown;

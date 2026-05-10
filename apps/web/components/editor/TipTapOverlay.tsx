@@ -26,7 +26,7 @@ export function TipTapOverlay({
 }: TipTapOverlayProps) {
   const bbox = block.bounding_box ?? [0, 0, 0, 0];
   const [x0, y0, x1, y1] = bbox;
-  const fm = block.font_meta ?? {};
+  const fm = block.font_meta ?? {} as NonNullable<DocumentBlock["font_meta"]>;
 
   const committedRef = useRef(false);
 

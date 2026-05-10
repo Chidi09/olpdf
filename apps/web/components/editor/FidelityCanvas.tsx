@@ -96,8 +96,9 @@ function createTableBlock(block: DocumentBlock, scale: number): Group {
   const tableW = Math.max((bbox[2] - bbox[0]) * scale, 80);
   const tableH = Math.max((bbox[3] - bbox[1]) * scale, 40);
 
-  const allRows: string[][] = tableData.headers?.length > 0
-    ? [tableData.headers, ...(tableData.rows ?? [])]
+  const headers = tableData.headers ?? [];
+  const allRows: string[][] = headers.length > 0
+    ? [headers, ...(tableData.rows ?? [])]
     : (tableData.rows ?? []);
 
   const numCols = Math.max(...allRows.map((r: string[]) => r.length), 1);
@@ -111,7 +112,7 @@ function createTableBlock(block: DocumentBlock, scale: number): Group {
   objects.push(new Rect({ left: 0, top: 0, width: tableW, height: tableH, fill: "#f8fafc", stroke: "#64748b", strokeWidth: 1.5 }));
 
   allRows.forEach((row: string[], rowIdx: number) => {
-    const isHeader = rowIdx === 0 && tableData.headers?.length > 0;
+    const isHeader = rowIdx === 0 && headers.length > 0;
     row.forEach((cell: string, colIdx: number) => {
       const cx = colIdx * cellW;
       const cy = rowIdx * cellH;
@@ -722,8 +723,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       void aiRewrite(blockId, action.toLowerCase());
     });
     let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-    fcanvas.on("touch:gesture", (e) => {
-      const gesture = (e as unknown as FabricGestureEvent).self;
+    // "touch:gesture" is a valid Fabric event but absent from the v6 CanvasEvents typemap.
+    (fcanvas as unknown as { on(ev: string, fn: (e: unknown) => void): void }).on("touch:gesture", (e) => {
+      const gesture = (e as FabricGestureEvent).self;
       if (!gesture || gesture.touches !== 2) return;
       const currentWidth = containerWidthRef.current;
       const currentScale = Math.max(0.4, Math.min(2, currentWidth / primaryPage.width));
