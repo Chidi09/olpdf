@@ -73,6 +73,11 @@ def apply_tool_call(document: Dict[str, Any], tool_call: Any) -> Dict[str, Any]:
                     blocks.insert(i + 1, new_block)
                     break
             else:
+                # after_block_id not found — append at tail and wire up the previous last block
+                if blocks:
+                    tail = blocks[-1]
+                    tail["next_block_id"] = new_id
+                    new_block["prev_block_id"] = tail["id"]
                 blocks.append(new_block)
 
     elif name == "DeleteBlock":
