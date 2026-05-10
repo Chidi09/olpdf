@@ -4,9 +4,11 @@ Gemini Vision-based OCR.
 Replaces the Modal/Surya/PaddleOCR external worker.
 Renders each non-native page to a PNG and sends it to Gemini 2.5 Flash,
 which returns a structured block list — same schema as native extraction.
+All pages are processed concurrently via asyncio.gather + asyncio.to_thread.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -80,66 +82,73 @@ def _raw_blocks_to_document_blocks(
     return blocks
 
 
+def _ocr_single_page_sync(
+    pdf_bytes: bytes,
+    page_idx: int,
+    model: genai.GenerativeModel,
+) -> List[Dict[str, Any]]:
+    """Synchronous per-page OCR — run inside asyncio.to_thread."""
+    try:
+        png_bytes = _render_page_png(pdf_bytes, page_idx)
+        response = model.generate_content(
+            [_SYSTEM_PROMPT, {"mime_type": "image/png", "data": png_bytes}],
+            generation_config={
+                "response_mime_type": "application/json",
+                "temperature": 0.1,
+            },
+        )
+        raw = json.loads(response.text)
+        if not isinstance(raw, list):
+            raw = [raw]
+        blocks = _raw_blocks_to_document_blocks(raw, page_idx)
+        logger.info("Gemini OCR page %d → %d blocks", page_idx, len(blocks))
+        return blocks
+    except Exception as e:
+        logger.error("Gemini OCR failed for page %d: %s", page_idx, e, exc_info=True)
+        return [{
+            "id": f"blk_ocr_{page_idx}_err",
+            "type": "paragraph",
+            "content": f"[OCR failed for page {page_idx + 1}]",
+            "rich_spans": [],
+            "page_index": page_idx,
+            "bounding_box": None,
+            "confidence_score": 0.0,
+            "needs_review": True,
+            "style_overrides": {},
+            "float": "none",
+            "column_index": 0,
+        }]
+
+
 async def ocr_pages_with_gemini(
     pdf_bytes: bytes,
     page_indices: List[int],
     model_name: str = "gemini-2.5-flash",
+    max_concurrency: int = 8,
 ) -> List[Dict[str, Any]]:
     """
-    OCR a list of page indices from a PDF using Gemini Vision.
-    Returns a flat list of DocumentBlock dicts in page order.
+    OCR all given page indices concurrently via Gemini Vision.
+
+    google-generativeai is a sync SDK so each call runs in a thread pool.
+    A semaphore caps concurrency at max_concurrency to respect API rate limits.
+    Results are re-sorted by page_index so order is always preserved.
     """
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if not api_key:
-        logger.warning("GEMINI_API_KEY not set — skipping Gemini OCR, pages will be empty")
+        logger.warning("GEMINI_API_KEY not set — skipping Gemini OCR")
         return []
 
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel(model_name)
+    sem = asyncio.Semaphore(max_concurrency)
 
-    all_blocks: List[Dict[str, Any]] = []
+    async def _bounded(page_idx: int) -> List[Dict[str, Any]]:
+        async with sem:
+            return await asyncio.to_thread(_ocr_single_page_sync, pdf_bytes, page_idx, model)
 
-    for page_idx in page_indices:
-        try:
-            png_bytes = _render_page_png(pdf_bytes, page_idx)
+    results = await asyncio.gather(*[_bounded(idx) for idx in page_indices])
 
-            response = model.generate_content(
-                [
-                    _SYSTEM_PROMPT,
-                    {"mime_type": "image/png", "data": png_bytes},
-                ],
-                generation_config={
-                    "response_mime_type": "application/json",
-                    "temperature": 0.1,  # low temp for factual extraction
-                },
-            )
-
-            raw = json.loads(response.text)
-            if not isinstance(raw, list):
-                raw = [raw]
-
-            page_blocks = _raw_blocks_to_document_blocks(raw, page_idx)
-            all_blocks.extend(page_blocks)
-            logger.info(
-                "Gemini OCR page %d → %d blocks (model=%s)",
-                page_idx, len(page_blocks), model_name,
-            )
-
-        except Exception as e:
-            logger.error("Gemini OCR failed for page %d: %s", page_idx, e, exc_info=True)
-            # Insert a placeholder block so the page isn't silently lost
-            all_blocks.append({
-                "id": f"blk_ocr_{page_idx}_err",
-                "type": "paragraph",
-                "content": f"[OCR failed for page {page_idx + 1}]",
-                "rich_spans": [],
-                "page_index": page_idx,
-                "bounding_box": None,
-                "confidence_score": 0.0,
-                "needs_review": True,
-                "style_overrides": {},
-                "float": "none",
-                "column_index": 0,
-            })
-
+    # Flatten and sort by page_index so merge order is deterministic
+    all_blocks = [block for page_blocks in results for block in page_blocks]
+    all_blocks.sort(key=lambda b: (b.get("page_index", 0), b.get("id", "")))
     return all_blocks
