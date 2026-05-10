@@ -176,16 +176,6 @@ export default function SignupPage() {
           className="absolute inset-0 w-full h-full object-contain object-center p-8"
         />
 
-        {/* Bottom tagline */}
-        <div className="relative z-10 mt-auto p-10">
-          <div className="w-8 h-0.5 bg-orange-500 rounded mb-3" />
-          <p className="text-xl font-sans font-black tracking-tight text-[#1a1a1a] leading-tight max-w-xs">
-            Your documents, finally under your control.
-          </p>
-          <p className="text-sm text-[#6b6b6b] mt-2 max-w-xs leading-relaxed">
-            No paywalls. No uploads to third parties. Open source and free forever.
-          </p>
-        </div>
       </div>
 
     </div>

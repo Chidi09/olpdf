@@ -25,6 +25,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { id: "overview",       label: "Overview",           icon: Globe },
   { id: "quickstart",     label: "Quick Start",        icon: Zap },
+  { id: "code-examples",  label: "Code Examples",      icon: Terminal },
   { id: "authentication", label: "Authentication",     icon: Lock },
   { id: "rate-limits",    label: "Rate Limits",        icon: Clock },
   { type: "header",       label: "API Reference" },
@@ -78,6 +79,82 @@ function highlight(raw: string): string {
   return s;
 }
 
+// ─── Highlighted pre (no copy button — used for framework guides) ─────────────
+
+function HCode({ code, py = "py-5" }: { code: string; py?: string }) {
+  return (
+    <pre
+      className={`bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 ${py} text-[12.5px] font-mono leading-relaxed overflow-x-auto`}
+      dangerouslySetInnerHTML={{ __html: highlight(code) }}
+    />
+  );
+}
+
+// ─── Code Examples tab block (curl/Python/Node/Java/Go/Rust) ────────────────
+
+const EXAMPLE_LANGS = [
+  { id: "curl",   label: "curl",    slug: "gnubash",   color: "4EAA25", file: "extract.sh"   },
+  { id: "python", label: "Python",  slug: "python",    color: null,     file: "extract.py"   },
+  { id: "node",   label: "Node.js", slug: "nodedotjs", color: null,     file: "extract.mjs"  },
+  { id: "java",   label: "Java",    slug: "openjdk",   color: "ED8B00", file: "Extract.java" },
+  { id: "go",     label: "Go",      slug: "go",        color: null,     file: "main.go"      },
+  { id: "rust",   label: "Rust",    slug: "rust",      color: "CE422B", file: "main.rs"      },
+] as const;
+
+const EXAMPLE_CODES: Record<string, string> = {
+  curl: `curl -X POST https://api.olpdf.xyz/v1/extract \\\n  -H "Authorization: Bearer <your_key>" \\\n  -H "Content-Type: application/json" \\\n  -d '{"url":"https://example.com/invoice.pdf","mode":"semantic"}'`,
+  python: `import requests\n\nresp = requests.post(\n    "https://api.olpdf.xyz/v1/extract",\n    headers={"Authorization": "Bearer <your_key>"},\n    json={"url": "https://example.com/invoice.pdf", "mode": "semantic"},\n)\nprint(resp.json()["blocks"])`,
+  node: `const res = await fetch("https://api.olpdf.xyz/v1/extract", {\n  method: "POST",\n  headers: { "Authorization": "Bearer <your_key>", "Content-Type": "application/json" },\n  body: JSON.stringify({ url: "https://example.com/invoice.pdf", mode: "semantic" }),\n});\nconst { blocks } = await res.json();`,
+  java: `import java.net.http.*;\nimport java.net.URI;\n\nvar client = HttpClient.newHttpClient();\nvar body = "{\\"url\\":\\"https://example.com/invoice.pdf\\",\\"mode\\":\\"semantic\\"}";\nvar req = HttpRequest.newBuilder()\n    .uri(URI.create("https://api.olpdf.xyz/v1/extract"))\n    .header("Authorization", "Bearer <your_key>")\n    .header("Content-Type", "application/json")\n    .POST(HttpRequest.BodyPublishers.ofString(body))\n    .build();\nSystem.out.println(client.send(req, HttpResponse.BodyHandlers.ofString()).body());`,
+  go: `package main\n\nimport (\n    "bytes"; "encoding/json"; "fmt"; "net/http"\n)\n\nfunc main() {\n    payload, _ := json.Marshal(map[string]string{\n        "url": "https://example.com/invoice.pdf", "mode": "semantic",\n    })\n    req, _ := http.NewRequest("POST", "https://api.olpdf.xyz/v1/extract", bytes.NewBuffer(payload))\n    req.Header.Set("Authorization", "Bearer <your_key>")\n    req.Header.Set("Content-Type", "application/json")\n    resp, _ := http.DefaultClient.Do(req)\n    defer resp.Body.Close()\n    fmt.Println(resp.Status)\n}`,
+  rust: `use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};\nuse serde_json::json;\n\n#[tokio::main]\nasync fn main() -> Result<(), reqwest::Error> {\n    let res = reqwest::Client::new()\n        .post("https://api.olpdf.xyz/v1/extract")\n        .header(AUTHORIZATION, "Bearer <your_key>")\n        .header(CONTENT_TYPE, "application/json")\n        .json(&json!({"url":"https://example.com/invoice.pdf","mode":"semantic"}))\n        .send().await?;\n    println!("{}", res.text().await?);\n    Ok(())\n}`,
+};
+
+function CodeExamplesBlock() {
+  const [active, setActive] = useState("curl");
+  const [copied, setCopied] = useState(false);
+  const lang = EXAMPLE_LANGS.find((l) => l.id === active)!;
+  const copy = useCallback(async () => {
+    await navigator.clipboard.writeText(EXAMPLE_CODES[active]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [active]);
+  const iconSrc = (l: typeof EXAMPLE_LANGS[number]) =>
+    l.color ? `https://cdn.simpleicons.org/${l.slug}/${l.color}` : `https://cdn.simpleicons.org/${l.slug}`;
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {EXAMPLE_LANGS.map((l) => (
+          <button key={l.id} onClick={() => setActive(l.id)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-bold font-mono transition-all ${
+              active === l.id
+                ? "border-orange-500/60 bg-orange-500/10 text-white"
+                : "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={iconSrc(l)} alt={l.label} width={14} height={14} className="shrink-0" />
+            {l.label}
+          </button>
+        ))}
+      </div>
+      <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c]">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#0f0f11] border-b border-[#1e1e21]">
+          <div className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={iconSrc(lang)} alt={lang.label} width={12} height={12} />
+            <span className="text-sm font-mono text-gray-500">{lang.file}</span>
+          </div>
+          <button onClick={copy} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-200 transition-colors font-bold">
+            {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        <pre className="p-5 overflow-x-auto leading-relaxed text-sm font-mono text-gray-300 min-h-[180px]"
+          dangerouslySetInnerHTML={{ __html: highlight(EXAMPLE_CODES[active]) }} />
+      </div>
+    </div>
+  );
+}
 // ─── Code Block ──────────────────────────────────────────────────────────────
 
 function CodeBlock({ code, lang = "json", filename }: { code: string; lang?: string; filename?: string }) {
@@ -401,7 +478,13 @@ open("result.pdf", "wb").write(pdf.content)`} />
             </div>
           </section>
 
-          {/* ─── AUTHENTICATION ────────────────────────────────────── */}
+          
+          {/* ─── CODE EXAMPLES ─────────────────────────────────────────── */}
+          <section id="code-examples" className="scroll-mt-24">
+            <SectionHead icon={Terminal} title="Code Examples" subtitle="Extract and edit a PDF in curl, Python, Node, Java, Go, and Rust" color="text-orange-400" />
+            <CodeExamplesBlock />
+          </section>
+{/* ─── AUTHENTICATION ────────────────────────────────────── */}
           <section id="authentication" className="scroll-mt-24">
             <SectionHead icon={Lock} title="Authentication" subtitle="Bearer JWT tokens and persistent API keys" color="text-purple-400" />
 
@@ -1178,7 +1261,7 @@ primary_region = 'ams'
                 instantiate the editor after the component mounts. Return <code className="font-mono text-amber-500 text-sm">editor.destroy()</code> from the effect cleanup
                 so React Hot Reload and strict-mode double-invocation don&apos;t leak iframes.
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`'use client';
+              <HCode code={`'use client';
 import { useEffect, useRef } from 'react';
 import { OlPDFEmbed } from '@olpdf/embed';
 
@@ -1225,7 +1308,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
       style={{ overflow: 'hidden' }}
     />
   );
-}`}</pre>
+}`} />
               <div className="mt-4 flex flex-col gap-2">
                 {[
                   "documentId and token are effect dependencies — a new editor mounts automatically if they change.",
@@ -1252,7 +1335,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
                 instantiate inside <code className="font-mono text-amber-500 text-sm">onMount</code>. Svelte guarantees the element exists by the time <code className="font-mono text-amber-500 text-sm">onMount</code> fires.
                 Destroy in <code className="font-mono text-amber-500 text-sm">onDestroy</code>.
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<script lang="ts">
+              <HCode code={`<script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { OlPDFEmbed } from '@olpdf/embed';
 
@@ -1287,7 +1370,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
   });
 </script>
 
-<div bind:this={container} class="w-full h-screen overflow-hidden" />`}</pre>
+<div bind:this={container} class="w-full h-screen overflow-hidden" />`} />
               <div className="mt-4 flex flex-col gap-2">
                 {[
                   "Use $: reactive statements to re-initialise if documentId or token change at runtime.",
@@ -1312,7 +1395,7 @@ export default function PDFEditor({ documentId, token, onSave }: PDFEditorProps)
                 Use the Composition API with <code className="font-mono text-amber-500 text-sm">ref()</code> for the container element and <code className="font-mono text-amber-500 text-sm">onMounted</code> for instantiation.
                 In Nuxt, wrap in <code className="font-mono text-amber-500 text-sm">&lt;ClientOnly&gt;</code> or add <code className="font-mono text-amber-500 text-sm">process.client</code> guard to avoid SSR errors since the SDK requires a browser DOM.
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<!-- components/PDFEditor.vue -->
+              <HCode code={`<!-- components/PDFEditor.vue -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { OlPDFEmbed } from '@olpdf/embed';
@@ -1354,7 +1437,7 @@ onUnmounted(() => editor?.destroy());
 
 <template>
   <div ref="container" class="w-full h-screen overflow-hidden" />
-</template>`}</pre>
+</template>`} />
               <div className="mt-4 flex flex-col gap-2">
                 {[
                   "In Nuxt, wrap the component in <ClientOnly> in your page to skip SSR entirely.",
@@ -1380,7 +1463,7 @@ onUnmounted(() => editor?.destroy());
                 (not the frontmatter fence). Astro bundles and defers client-side scripts automatically.
                 No <code className="font-mono text-amber-500 text-sm">client:*</code> directive is needed since this is vanilla JS, not a framework component.
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`---
+              <HCode code={`---
 // src/pages/editor/[id].astro
 import Layout from '../layouts/Layout.astro';
 
@@ -1417,7 +1500,7 @@ const token = await getEmbedToken(id);
       body: JSON.stringify({ documentId, documentModel }),
     });
   });
-</script>`}</pre>
+</script>`} />
               <div className="mt-4 flex flex-col gap-2">
                 {[
                   "define:vars passes server-side variables into the client script safely.",
@@ -1443,7 +1526,7 @@ const token = await getEmbedToken(id);
                 and <code className="font-mono text-amber-500 text-sm">ngAfterViewInit</code> to instantiate the editor — this lifecycle hook guarantees the view is fully rendered.
                 Implement <code className="font-mono text-amber-500 text-sm">OnDestroy</code> to clean up.
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`// pdf-editor.component.ts
+              <HCode code={`// pdf-editor.component.ts
 import {
   Component, Input, Output, EventEmitter,
   AfterViewInit, OnDestroy,
@@ -1490,7 +1573,7 @@ export class PDFEditorComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.editor?.destroy();
   }
-}`}</pre>
+}`} />
               <div className="mt-4 flex flex-col gap-2">
                 {[
                   "Mark the component standalone: true to use it without NgModule declarations.",
@@ -1518,7 +1601,7 @@ export class PDFEditorComponent implements AfterViewInit, OnDestroy {
                 then call <code className="font-mono text-amber-500 text-sm">$w(&apos;#editorBox&apos;).getEl()</code> inside <code className="font-mono text-amber-500 text-sm">$w.onReady</code> to get the underlying DOM element.
                 Use the Wix NPM Packages panel to install <code className="font-mono text-amber-500 text-sm">@olpdf/embed</code>.
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`// Page Code panel (Wix Velo)
+              <HCode code={`// Page Code panel (Wix Velo)
 import wixData from 'wix-data';
 import wixUsers from 'wix-users';
 import { OlPDFEmbed } from '@olpdf/embed';
@@ -1553,7 +1636,7 @@ $w.onReady(async () => {
     $w('#downloadButton').link = url;
     $w('#downloadButton').show();
   });
-});`}</pre>
+});`} />
               <div className="mt-4 flex flex-col gap-2">
                 {[
                   "Install @olpdf/embed via Wix Editor → Packages & Apps → npm Packages.",
@@ -1580,7 +1663,7 @@ $w.onReady(async () => {
                 and wire up the editor with <code className="font-mono text-amber-500 text-sm">wp_add_inline_script</code>. For block-based themes, create a
                 custom block or use a Classic Widget with the HTML widget.
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-5 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<?php
+              <HCode code={`<?php
 // functions.php — enqueue the SDK and initialise the editor
 
 add_action('wp_enqueue_scripts', function () {
@@ -1642,16 +1725,16 @@ add_action('wp_ajax_olpdf_save', function () {
     $model       = wp_unslash($_POST['model']);
     update_post_meta($document_id, '_olpdf_model', $model);
     wp_send_json_success();
-});`}</pre>
+});`} />
               <p className="text-base text-[var(--text-secondary)] mt-4 mb-3">
                 Add the container div to your page template (<code className="font-mono text-amber-500 text-sm">page-pdf-editor.php</code>):
               </p>
-              <pre className="bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 py-4 text-[12.5px] font-mono leading-relaxed text-[#e5e7eb] overflow-x-auto whitespace-pre">{`<!-- page-pdf-editor.php -->
+              <HCode py="py-4" code={`<!-- page-pdf-editor.php -->
 <?php get_header(); ?>
 <main>
   <div id="olpdf-editor" style="width:100%; height:90vh; overflow:hidden;"></div>
 </main>
-<?php get_footer(); ?>`}</pre>
+<?php get_footer(); ?>`} />
               <div className="mt-4 flex flex-col gap-2">
                 {[
                   "Always use wp_json_encode() to pass PHP values to JavaScript — never echo raw strings.",

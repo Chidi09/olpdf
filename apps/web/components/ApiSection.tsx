@@ -10,7 +10,7 @@ const LANGUAGES = [
   { id: "curl",   label: "curl",     slug: "gnubash",   colorOverride: "4EAA25", file: "extract.sh"   },
   { id: "python", label: "Python",   slug: "python",    colorOverride: null,     file: "extract.py"   },
   { id: "node",   label: "Node.js",  slug: "nodedotjs", colorOverride: null,     file: "extract.mjs"  },
-  { id: "java",   label: "Java",     slug: "openjdk",   colorOverride: null,     file: "Extract.java" },
+  { id: "java",   label: "Java",     slug: "openjdk",   colorOverride: "ED8B00", file: "Extract.java" },
   { id: "go",     label: "Go",       slug: "go",        colorOverride: null,     file: "main.go"      },
   { id: "rust",   label: "Rust",     slug: "rust",      colorOverride: "CE422B", file: "main.rs"      },
 ] as const;
