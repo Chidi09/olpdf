@@ -27,7 +27,7 @@ export default function LoginPage() {
     setError(null);
     const { error: err } = await authClient.signIn.email({ email, password, callbackURL: redirectTo });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(err.message ?? "Something went wrong"); return; }
     router.replace(redirectTo);
   };
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
     setError(null);
     const { error: err } = await authClient.signIn.magicLink({ email: magicEmail, callbackURL: redirectTo });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(err.message ?? "Something went wrong"); return; }
     setMagicSent(true);
   };
 

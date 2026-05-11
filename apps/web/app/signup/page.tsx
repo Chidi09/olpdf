@@ -30,7 +30,7 @@ export default function SignupPage() {
       callbackURL: "/onboarding",
     });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(err.message ?? "Something went wrong"); return; }
     setVerifyPending(true);
   };
 
