@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@olpdf/ui";
+import { PageShell } from "@/components/layout/PageShell";
 import UploadProgressModal from "@/components/UploadProgressModal";
 
 type Project = {

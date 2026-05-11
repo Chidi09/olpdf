@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import BackLink from "@/components/BackLink";
 import { useAuth } from "@/hooks/useAuth";
+import { PageShell } from "@/components/layout/PageShell";
 
 // ── Provider icon via Simple Icons CDN ───────────────────────────────────────
 // cdn.simpleicons.org/{slug}/{hex-color} returns a coloured SVG at runtime.
