@@ -111,7 +111,7 @@ if [ "$STATUS_ONLY" = true ]; then
   echo "Inactive: $INACTIVE (port: $(stack_port "$INACTIVE"))"
   echo ""
   echo "=== $ACTIVE containers ==="
-  docker compose -f "$APP_DIR/docker-compose.$ACTIVE.yml" ps 2>/dev/null || echo "(not running)"
+  docker compose -p "olpdf-$ACTIVE" -f "$APP_DIR/docker-compose.$ACTIVE.yml" ps 2>/dev/null || echo "(not running)"
   exit 0
 fi
 
@@ -121,7 +121,7 @@ if [ "$ROLLBACK" = true ]; then
   PREVIOUS=$(inactive_stack)
   echo "==> Rolling back: $CURRENT → $PREVIOUS"
 
-  docker compose -f "$APP_DIR/docker-compose.$PREVIOUS.yml" up -d --remove-orphans
+  docker compose -p "olpdf-$PREVIOUS" -f "$APP_DIR/docker-compose.$PREVIOUS.yml" up -d --remove-orphans
 
   if ! health_check "$(stack_port "$PREVIOUS")"; then
     echo "ERROR: Previous stack ($PREVIOUS) is not healthy. Manual intervention required."
@@ -132,7 +132,7 @@ if [ "$ROLLBACK" = true ]; then
   echo "$PREVIOUS" > "$STATE_FILE"
   echo "==> Rolled back to $PREVIOUS"
   echo "    Stopping broken stack ($CURRENT)..."
-  docker compose -f "$APP_DIR/docker-compose.$CURRENT.yml" stop || true
+  docker compose -p "olpdf-$CURRENT" -f "$APP_DIR/docker-compose.$CURRENT.yml" stop || true
   exit 0
 fi
 
@@ -201,7 +201,7 @@ docker build \
 
 echo ""
 echo "==> Starting $INACTIVE stack"
-docker compose -f "$APP_DIR/docker-compose.$INACTIVE.yml" up -d --remove-orphans
+docker compose -p "olpdf-$INACTIVE" -f "$APP_DIR/docker-compose.$INACTIVE.yml" up -d --remove-orphans
 
 echo ""
 echo "==> Health checking new stack"
@@ -209,8 +209,8 @@ if ! health_check "$INACTIVE_PORT"; then
   echo ""
   echo "ERROR: API failed health check. Aborting."
   echo "Logs:"
-  docker compose -f "$APP_DIR/docker-compose.$INACTIVE.yml" logs --tail=80 api 2>/dev/null || true
-  docker compose -f "$APP_DIR/docker-compose.$INACTIVE.yml" down
+  docker compose -p "olpdf-$INACTIVE" -f "$APP_DIR/docker-compose.$INACTIVE.yml" logs --tail=80 api 2>/dev/null || true
+  docker compose -p "olpdf-$INACTIVE" -f "$APP_DIR/docker-compose.$INACTIVE.yml" down
   exit 1
 fi
 
@@ -240,5 +240,5 @@ docker compose -f "$APP_DIR/docker-compose.$INACTIVE.yml" ps
 if [ "$TAIL_LOGS" = true ]; then
   echo ""
   echo "==> Tailing logs (Ctrl+C to stop)"
-  docker compose -f "$APP_DIR/docker-compose.$INACTIVE.yml" logs -f
+  docker compose -p "olpdf-$INACTIVE" -f "$APP_DIR/docker-compose.$INACTIVE.yml" logs -f
 fi
