@@ -3,6 +3,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pg"],
   turbopack: {
     root: path.resolve(__dirname, "..", ".."),
   },
