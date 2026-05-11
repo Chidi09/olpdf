@@ -56,3 +56,5 @@ AGENTS.md
 
 # Internal scripts (deployment, migration helpers — not for public repo)
 /scripts/
+
+.vercel
