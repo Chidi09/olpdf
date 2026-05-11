@@ -20,22 +20,7 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/brand/screenshots/editor-wide.png",
-      "sizes": "1280x800",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "OLPDF Fidelity Editor"
-    },
-    {
-      "src": "/brand/screenshots/editor-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "OLPDF on mobile"
-    }
-  ],
+  "screenshots": [],
   "orientation": "any",
   "categories": ["productivity", "utilities"],
   "lang": "en-US"

@@ -23,7 +23,7 @@ const BASE = process.env.BETTER_AUTH_URL || "https://olpdf.xyz";
 export const auth = betterAuth({
   baseURL: BASE,
   secret: process.env.BETTER_AUTH_SECRET!,
-  database: { db: pool, type: "postgres" },
+  database: pool,
 
   emailAndPassword: {
     enabled: true,
