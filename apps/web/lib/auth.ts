@@ -9,7 +9,13 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResend = () => {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    throw new Error("RESEND_API_KEY is required to send auth emails");
+  }
+  return new Resend(key);
+};
 
 const FROM = "OLPDF <no-reply@olpdf.xyz>";
 const BASE = process.env.BETTER_AUTH_URL || "https://olpdf.xyz";
@@ -23,7 +29,7 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM,
         to: user.email,
         subject: "Reset your OLPDF password",
@@ -40,7 +46,7 @@ export const auth = betterAuth({
 
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM,
         to: user.email,
         subject: "Verify your OLPDF email",
@@ -69,7 +75,7 @@ export const auth = betterAuth({
   plugins: [
     magicLink({
       sendMagicLink: async ({ email, url }) => {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: FROM,
           to: email,
           subject: "Your OLPDF sign-in link",
