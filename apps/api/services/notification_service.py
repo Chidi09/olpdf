@@ -19,33 +19,39 @@ def get_user_email(user_id: str) -> Optional[str]:
 
 
 def send_import_complete_notification(user_id: str, doc_title: str, doc_id: str) -> None:
-    from ..email.email_service import send_import_complete
+    from ..email.email_service import send_document_complete
     to = get_user_email(user_id)
     if to:
-        send_import_complete(to, doc_title, doc_id)
+        doc_url = f"{_app_url()}/editor/{doc_id}"
+        send_document_complete(to, "", doc_title, doc_url)
 
 
 def send_export_ready_notification(user_id: str, doc_title: str, export_url: str, format_type: str) -> None:
     from ..email.email_service import send_export_ready
     to = get_user_email(user_id)
     if to:
-        send_export_ready(to, doc_title, export_url, format_type)
+        send_export_ready(to, "", doc_title, export_url, format_type)
 
 
 def send_ocr_partial_notification(user_id: str, doc_title: str, doc_id: str, pages_ocr: int) -> None:
     from ..email.email_service import send_ocr_partial
     to = get_user_email(user_id)
     if to:
-        send_ocr_partial(to, doc_title, doc_id, pages_ocr)
+        send_ocr_partial(to, "", doc_title, doc_id, pages_ocr)
 
 
 def send_signature_request_notification(signer_email: str, doc_title: str, sign_url: str) -> None:
     from ..email.email_service import send_signature_request
-    send_signature_request(signer_email, doc_title, sign_url)
+    send_signature_request(signer_email, "", doc_title, sign_url)
 
 
 def send_signature_complete_notification(user_id: str, doc_title: str, certified_url: str) -> None:
     from ..email.email_service import send_signature_complete
     to = get_user_email(user_id)
     if to:
-        send_signature_complete(to, doc_title, certified_url)
+        send_signature_complete(to, "", doc_title, certified_url)
+
+
+def _app_url() -> str:
+    import os
+    return os.environ.get("APP_URL", "https://olpdf.xyz")
