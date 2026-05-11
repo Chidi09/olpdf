@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, EmailStr
 from jose import jwt, JWTError
 
-from ..core.supabase_client import supabase
+from ..core.supabase_client import supabase, supabase_admin
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -88,7 +88,31 @@ def _upsert_profile(user: Dict[str, Any]) -> None:
         "full_name": user.get("name") or "",
         "avatar_url": user.get("image"),
     }
-    supabase.table("profiles").upsert(payload).execute()
+    try:
+        supabase.table("profiles").upsert(payload).execute()
+    except Exception:
+        # profiles.id may reference auth.users in some environments.
+        # Do not fail auth flow if profile sync cannot be completed.
+        return
+
+
+def _ensure_auth_user_id(email: str, name: str) -> str:
+    try:
+        created = supabase_admin.auth.admin.create_user(
+            {
+                "email": email,
+                "email_confirm": True,
+                "user_metadata": {"full_name": name},
+                "password": secrets.token_urlsafe(24),
+            }
+        )
+        user = getattr(created, "user", None) or (created.get("user") if isinstance(created, dict) else None)
+        user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
+        if user_id:
+            return str(user_id)
+    except Exception:
+        pass
+    return str(uuid.uuid4())
 
 
 def _get_password_hash(email: str) -> Optional[str]:
@@ -191,7 +215,7 @@ async def signup(payload: SignupInput):
     if _get_user_by_email(email):
         raise HTTPException(status_code=409, detail="Email already exists")
 
-    user_id = str(uuid.uuid4())
+    user_id = _ensure_auth_user_id(email, payload.name.strip())
     user_row = {
         "id": user_id,
         "name": payload.name.strip(),
@@ -262,7 +286,7 @@ async def magic_link_verify(payload: MagicVerifyInput):
     user = _get_user_by_email(email)
     if not user:
         user = {
-            "id": str(uuid.uuid4()),
+            "id": _ensure_auth_user_id(email, email.split("@")[0]),
             "name": email.split("@")[0],
             "email": email,
             "emailVerified": True,
@@ -398,7 +422,7 @@ async def oauth_callback(provider: str, code: str = Query(...), state: str = Que
     user = _get_user_by_email(email)
     if not user:
         user = {
-            "id": str(uuid.uuid4()),
+            "id": _ensure_auth_user_id(email, name),
             "name": name,
             "email": email,
             "emailVerified": True,
