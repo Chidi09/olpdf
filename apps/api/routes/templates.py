@@ -10,11 +10,19 @@ router = APIRouter(prefix="/templates", tags=["templates"])
 @router.get("/", response_model=List[TemplateResponse])
 async def list_templates(category: str = None):
     supabase = get_supabase()
-    query = supabase.table("templates").select("*").eq("is_public", True)
-    if category:
-        query = query.eq("category", category)
-    response = query.execute()
-    return response.data
+    # Backward compatible with older schemas that do not have `is_public`.
+    try:
+        query = supabase.table("templates").select("*").eq("is_public", True)
+        if category:
+            query = query.eq("category", category)
+        response = query.execute()
+        return response.data
+    except Exception:
+        query = supabase.table("templates").select("*")
+        if category:
+            query = query.eq("category", category)
+        response = query.execute()
+        return response.data
 
 @router.post("/publish")
 async def publish_template(

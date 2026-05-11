@@ -8,6 +8,7 @@ from ..factories import ExportEngineFactory
 from ..export_utils import run_preflight
 from ..storage_client import r2_storage
 from ..worker_utils import route_pdf_import
+from ..core.supabase_client import supabase
 
 # Import limiter from limiter module
 from ..limiter import limiter
@@ -56,6 +57,15 @@ from ..repositories import DocumentRepository, AuditLogRepository
 async def create_document(request: Request, doc: DocumentModel, user: dict = Depends(require_auth)) -> dict:
     payload = sanitize_document_model(doc.model_dump())
     title = payload.get("meta", {}).get("title", "Untitled Document")
+
+    # Ensure profile row exists for schemas that enforce documents.user_id -> profiles.id
+    profile_id = user["sub"]
+    supabase.table("profiles").upsert({
+        "id": profile_id,
+        "email": user.get("email") or "",
+        "full_name": user.get("name") or "",
+    }).execute()
+
     new_doc = DocumentRepository.create(title, payload, user_id=user["sub"])
 
     AuditLogRepository.create(
