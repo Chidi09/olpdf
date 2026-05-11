@@ -63,11 +63,6 @@ export default function AppSidebar() {
         <div className="relative h-8 w-8 shrink-0">
           <Image src={DEFAULT_BRAND.icon192} alt="OLPDF Logo" fill className="object-contain" priority />
         </div>
-        {expanded && (
-          <span className="font-sans font-black tracking-tight text-lg text-[var(--text-primary)] truncate">
-            OL<span className="text-orange-500">PDF</span>
-          </span>
-        )}
       </Link>
 
       {/* Nav items */}

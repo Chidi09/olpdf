@@ -33,11 +33,7 @@ export default function AnalyticsPage() {
       
       {/* Sidebar */}
       <aside className="hidden lg:flex w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] flex-col fixed h-screen z-20">
-        <div className="p-6 border-b border-[var(--border-subtle)]">
-          <Link href="/" className="text-xl font-extrabold tracking-tighter text-[var(--text-primary)]">
-            OLPDF
-          </Link>
-        </div>
+        <div className="h-16 border-b border-[var(--border-subtle)]" />
         
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
            <Link href="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === '/dashboard' ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-bold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}`}>
