@@ -9,6 +9,7 @@ from ..worker_utils import index_chapter_embeddings
 from ..ai_utils import check_book_consistency as ai_check_consistency
 from ..supabase_client import supabase
 from ..storage_client import r2_storage
+from ..core.supabase_client import supabase
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 
@@ -20,6 +21,12 @@ async def list_books(user: dict = Depends(require_auth)) -> List[dict]:
 async def create_book(book: BookModel, user: dict = Depends(require_auth)) -> dict:
     title = sanitize_string(book.title)
     meta = sanitize_dict(book.meta)
+    # Ensure profile exists for schemas enforcing book/document user FK to profiles.
+    supabase.table("profiles").upsert({
+        "id": user["sub"],
+        "email": user.get("email") or "",
+        "full_name": user.get("name") or "",
+    }).execute()
     res = BookRepository.create(title, meta, user_id=user["sub"])
     return {"id": res["id"], "status": "created"}
 
@@ -47,7 +54,25 @@ async def add_chapter(book_id: str, chapter: BookChapter, user: dict = Depends(r
     check_ownership(book_id, user, resource_type="book")
     
     title = sanitize_string(chapter.title)
-    new_doc = DocumentRepository.create(title, {"blocks": [], "meta": {"user_id": user["sub"]}}, "ready")
+    new_doc = DocumentRepository.create(
+        title,
+        {
+            "id": chapter.document_id or "",
+            "meta": {
+                "title": title,
+                "author": "",
+                "page_size": "A4",
+                "margins": {"top": 72, "bottom": 72, "left": 72, "right": 72},
+                "export_standard": "pdf_a",
+                "layout_mode": "editable",
+            },
+            "styles": {},
+            "blocks": [],
+            "page_dimensions": [],
+        },
+        status="ready",
+        user_id=user["sub"],
+    )
     new_ch = BookRepository.create_chapter(book_id, new_doc["id"], title, chapter.chapter_number)
     return {"id": new_ch["id"], "document_id": new_doc["id"]}
 

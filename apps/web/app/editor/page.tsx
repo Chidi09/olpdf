@@ -1,26 +1,41 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileEdit, Search, Filter, Upload, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import UploadProgressModal from "@/components/UploadProgressModal";
 
 export default function EditorDocsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const onImportClick = () => fileInputRef.current?.click();
 
   const onFileSelected = async (file: File | null) => {
     if (!file) return;
+    setUploadOpen(true);
+    setUploadError(null);
+    setUploadStatus("creating document");
+    setUploadProgress(10);
     const createRes = await fetch("/api/bff/documents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: file.name.replace(/\.pdf$/i, "") || "Imported PDF" }),
     });
     const created = await createRes.json().catch(() => ({}));
-    if (!createRes.ok || !created?.id) return;
+    if (!createRes.ok || !created?.id) {
+      setUploadStatus("failed");
+      setUploadError("Failed to create document");
+      return;
+    }
+    setUploadStatus("reading file");
+    setUploadProgress(30);
 
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -38,10 +53,33 @@ export default function EditorDocsPage() {
       body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
     });
     if (!importRes.ok) {
-      router.push(`/editor/${created.id}`);
+      setUploadStatus("failed");
+      setUploadError("Import request failed");
       return;
     }
-    router.push(`/editor/${created.id}`);
+    setUploadStatus("processing");
+    setUploadProgress(45);
+    const poll = async () => {
+      for (let i = 0; i < 45; i += 1) {
+        const res = await fetch(`/api/bff/import/${created.id}/status`).catch(() => null);
+        const body = await res?.json().catch(() => ({} as Record<string, unknown>));
+        const p = typeof body?.import_progress === "number" ? body.import_progress : null;
+        const s = typeof body?.status === "string" ? body.status : "processing";
+        setUploadStatus(s);
+        if (p !== null) setUploadProgress(Math.max(45, Math.min(98, p)));
+        if (s === "ready" || s === "completed" || s === "success") {
+          setUploadProgress(100);
+          break;
+        }
+        if (s === "failed" || s === "error") {
+          setUploadError(String(body?.error || "Import failed"));
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+      router.push(`/editor/${created.id}`);
+    };
+    void poll();
   };
 
   return (
@@ -114,6 +152,13 @@ export default function EditorDocsPage() {
           </div>
         </div>
       </main>
+      <UploadProgressModal
+        open={uploadOpen}
+        status={uploadStatus}
+        progress={uploadProgress}
+        error={uploadError}
+        onClose={() => setUploadOpen(false)}
+      />
     </div>
   );
 }
