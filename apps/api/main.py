@@ -118,8 +118,18 @@ def create_app() -> FastAPI:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        # Content-Security-Policy for API should be very restrictive
-        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+        # Swagger UI needs CDN assets — relax CSP only for /docs and /redoc
+        if request.url.path.startswith(("/docs", "/redoc", "/openapi.json")):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; "
+                "script-src 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' https://fastapi.tiangolo.com data:; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         return response
 
     @app.middleware("http")
