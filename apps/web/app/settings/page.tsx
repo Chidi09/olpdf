@@ -173,21 +173,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] pb-24 transition-colors duration-300">
-      {/* Header */}
-      <div className="bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] pt-16 pb-12 px-6">
-        <div className="mx-auto max-w-4xl">
-          <BackLink href="/dashboard" label="Back to workspace" className="mb-8" />
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 flex items-center gap-4">
-            <Settings className="h-10 w-10 text-[var(--accent)]" /> Settings
-          </h1>
-          <p className="max-w-2xl text-[var(--text-secondary)] text-lg leading-relaxed font-medium">
-            Configure your document operating system, AI provider, and security defaults.
-          </p>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-4xl px-6 py-16 space-y-16">
+    <PageShell title="Settings">
+      <div className="space-y-16">
 
         {/* Account Section */}
         <section className="grid md:grid-cols-3 gap-8">
@@ -419,6 +406,6 @@ export default function SettingsPage() {
         </section>
 
       </div>
-    </main>
+    </PageShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { PageShell } from "@/components/layout/PageShell";
 
 export default function NewBookPage() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function NewBookPage() {
       });
       const book = await bookRes.json().catch(() => ({}));
       if (!bookRes.ok || !book?.id) {
-        router.replace("/books");
+        router.replace("/dashboard");
         return;
       }
 
@@ -41,8 +42,11 @@ export default function NewBookPage() {
   }, [router]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[var(--bg-base)] text-[var(--text-primary)]">
-      <p className="text-sm font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Creating book workspace...</p>
-    </main>
+    <PageShell className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-8 w-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+        <p className="text-sm font-bold uppercase tracking-widest text-text-tertiary">Creating book workspace...</p>
+      </div>
+    </PageShell>
   );
 }
