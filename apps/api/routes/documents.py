@@ -55,9 +55,8 @@ from ..repositories import DocumentRepository, AuditLogRepository
 @limiter.limit("10/minute")
 async def create_document(request: Request, doc: DocumentModel, user: dict = Depends(require_auth)) -> dict:
     payload = sanitize_document_model(doc.model_dump())
-    payload["user_id"] = user["sub"]
     title = payload.get("meta", {}).get("title", "Untitled Document")
-    new_doc = DocumentRepository.create(title, payload)
+    new_doc = DocumentRepository.create(title, payload, user_id=user["sub"])
 
     AuditLogRepository.create(
         user_id=user["sub"],
