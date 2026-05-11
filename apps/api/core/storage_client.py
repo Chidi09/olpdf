@@ -18,12 +18,7 @@ class R2StorageClient:
                 endpoint_url=self.endpoint_url,
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
-                config=Config(
-                    signature_version="s3v4",
-                    # R2 does not support CRC32 checksum trailers added by newer boto3
-                    request_checksum_calculation="when_required",
-                    response_checksum_validation="when_required",
-                ),
+                config=Config(signature_version="s3v4"),
                 region_name="auto",
             )
         else:

@@ -10,7 +10,7 @@ anthropic
 openai
 cryptography
 pymupdf
-boto3
+boto3==1.34.162
 pdfplumber
 qstash
 bleach
