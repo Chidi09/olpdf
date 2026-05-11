@@ -1,4 +1,8 @@
-import { auth } from "@/lib/auth";
-import { toNextJsHandler } from "better-auth/next-js";
+import { NextResponse } from "next/server";
 
-export const { GET, POST } = toNextJsHandler(auth);
+function gone() {
+  return NextResponse.json({ error: "deprecated", message: "Use /api/auth/* BFF endpoints" }, { status: 410 });
+}
+
+export const GET = gone;
+export const POST = gone;

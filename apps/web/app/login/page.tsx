@@ -1,10 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { authClient } from "@/lib/auth-client";
 import { ArrowRight } from "lucide-react";
 import { DEFAULT_BRAND } from "@/lib/branding";
 
@@ -12,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const magicToken = searchParams.get("magicToken");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,13 +21,38 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(searchParams.get("error"));
   const [magicSent, setMagicSent] = useState(false);
 
+  useEffect(() => {
+    if (!magicToken) return;
+    const run = async () => {
+      setLoading(true);
+      const res = await fetch("/api/auth/magic-link/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: magicToken }),
+      });
+      setLoading(false);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.detail || "Magic link is invalid or expired");
+        return;
+      }
+      router.replace(redirectTo);
+    };
+    run();
+  }, [magicToken, redirectTo, router]);
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error: err } = await authClient.signIn.email({ email, password, callbackURL: redirectTo });
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => ({}));
     setLoading(false);
-    if (err) { setError(err.message ?? "Something went wrong"); return; }
+    if (!res.ok) { setError(data?.detail || "Something went wrong"); return; }
     router.replace(redirectTo);
   };
 
@@ -35,18 +60,23 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error: err } = await authClient.signIn.magicLink({ email: magicEmail, callbackURL: redirectTo });
+    const res = await fetch("/api/auth/magic-link/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: magicEmail, callbackURL: `/login?redirect=${encodeURIComponent(redirectTo)}` }),
+    });
+    const data = await res.json().catch(() => ({}));
     setLoading(false);
-    if (err) { setError(err.message ?? "Something went wrong"); return; }
+    if (!res.ok) { setError(data?.detail || "Something went wrong"); return; }
     setMagicSent(true);
   };
 
   const signInWithGoogle = async () => {
-    await authClient.signIn.social({ provider: "google", callbackURL: redirectTo });
+    window.location.href = `/api/auth/oauth/google/start?callbackURL=${encodeURIComponent(redirectTo)}`;
   };
 
   const signInWithGitHub = async () => {
-    await authClient.signIn.social({ provider: "github", callbackURL: redirectTo });
+    window.location.href = `/api/auth/oauth/github/start?callbackURL=${encodeURIComponent(redirectTo)}`;
   };
 
   return (

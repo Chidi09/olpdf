@@ -1,26 +1,38 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { SignJWT } from "jose";
-import { auth } from "@/lib/auth";
+import { jwtVerify } from "jose";
 
 export const API_BASE_URL = process.env.OLPDF_API_BASE_URL || "http://localhost:8000";
 
 async function getServerAccessToken(): Promise<string | null> {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return null;
+    const hdr = await headers();
+    const cookie = hdr.get("cookie") || "";
+    const token = cookie
+      .split(";")
+      .map((v) => v.trim())
+      .find((v) => v.startsWith("olpdf_session="))
+      ?.slice("olpdf_session=".length)
+      ?.trim();
+    if (!token) return null;
+
+    const secret = new TextEncoder().encode((process.env.API_JWT_SECRET || "").trim());
+    if (!secret.length) return null;
+    const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] });
+    if (!payload?.sub) return null;
 
     // Mint a short-lived JWT for the FastAPI to verify
-    const secret = new TextEncoder().encode(process.env.API_JWT_SECRET!);
+    const upstreamSecret = new TextEncoder().encode((process.env.API_JWT_SECRET || "").trim());
     return await new SignJWT({
-      sub: session.user.id,
-      email: session.user.email,
+      sub: String(payload.sub),
+      email: payload.email,
       role: "authenticated",
     })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("1h")
-      .sign(secret);
+      .sign(upstreamSecret);
   } catch {
     return null;
   }

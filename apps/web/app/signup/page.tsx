@@ -4,7 +4,6 @@ import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { authClient } from "@/lib/auth-client";
 import { ArrowRight, Check } from "lucide-react";
 import { DEFAULT_BRAND } from "@/lib/branding";
 
@@ -17,29 +16,32 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [verifyPending, setVerifyPending] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error: err } = await authClient.signUp.email({
-      email,
-      password,
-      name,
-      callbackURL: "/onboarding",
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+      }),
     });
+    const data = await res.json().catch(() => ({}));
     setLoading(false);
-    if (err) { setError(err.message ?? "Something went wrong"); return; }
-    setVerifyPending(true);
+    if (!res.ok) { setError(data?.detail || "Something went wrong"); return; }
+    router.replace(redirectTo);
   };
 
   const signInWithGoogle = async () => {
-    await authClient.signIn.social({ provider: "google", callbackURL: "/onboarding" });
+    window.location.href = "/api/auth/oauth/google/start?callbackURL=%2Fonboarding";
   };
 
   const signInWithGitHub = async () => {
-    await authClient.signIn.social({ provider: "github", callbackURL: "/onboarding" });
+    window.location.href = "/api/auth/oauth/github/start?callbackURL=%2Fonboarding";
   };
 
   return (

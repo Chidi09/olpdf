@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { createServerClient } from "@supabase/ssr";
+import { jwtVerify } from "jose";
 
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -9,6 +9,7 @@ const hasRedisConfig = Boolean(redisUrl && redisToken);
 
 const redis = hasRedisConfig ? new Redis({ url: redisUrl!, token: redisToken! }) : null;
 const protectedRoutes = ["/dashboard", "/editor", "/books", "/templates", "/toolkit", "/settings", "/api/bff"];
+const AUTH_COOKIE = "olpdf_session";
 
 const limits = redis
   ? {
@@ -25,28 +26,18 @@ export async function proxy(req: NextRequest) {
   if (process.env.NODE_ENV !== "development") {
     const isProtected = protectedRoutes.some((prefix) => path.startsWith(prefix));
     if (isProtected) {
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return req.cookies.getAll();
-            },
-            setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
-              for (const cookie of cookiesToSet) {
-                response.cookies.set(cookie.name, cookie.value, cookie.options);
-              }
-            },
-          },
+      const token = req.cookies.get(AUTH_COOKIE)?.value?.trim();
+      const secret = new TextEncoder().encode((process.env.API_JWT_SECRET || "").trim());
+      let valid = false;
+      if (token && secret.length > 0) {
+        try {
+          await jwtVerify(token, secret, { algorithms: ["HS256"] });
+          valid = true;
+        } catch {
+          valid = false;
         }
-      );
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
+      }
+      if (!valid) {
         const loginUrl = new URL("/login", req.url);
         loginUrl.searchParams.set("redirect", path);
         return NextResponse.redirect(loginUrl);

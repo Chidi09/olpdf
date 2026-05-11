@@ -1,22 +1,44 @@
 "use client";
 
-import { useSession, signOut as _signOut } from "@/lib/auth-client";
+import { useCallback, useEffect, useState } from "react";
 
 export function useAuth() {
-  const { data: session, isPending: loading } = useSession();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{
+    id: string;
+    email: string;
+    user_metadata: { full_name: string; avatar_url: string | null };
+  } | null>(null);
 
-  const user = session?.user
-    ? {
-        id: session.user.id,
-        email: session.user.email,
-        user_metadata: {
-          full_name: session.user.name,
-          avatar_url: session.user.image ?? null,
-        },
-      }
-    : null;
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/auth/session", { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.user) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+    const nextUser = {
+      id: data.user.id,
+      email: data.user.email,
+      user_metadata: {
+        full_name: data.user.name || "",
+        avatar_url: data.user.image ?? null,
+      },
+    };
+    setUser(nextUser);
+    setLoading(false);
+  }, []);
 
-  const signOut = () => _signOut();
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
-  return { user, session, loading, signOut };
+  const signOut = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+  };
+
+  return { user, session: user ? { user } : null, loading, signOut, refresh };
 }
