@@ -3,11 +3,32 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
-  Terminal, Key, Shield, Zap, FileJson, Book, Cpu, Wand2, Database,
-  CheckCircle2, LayoutTemplate, ChevronDown, Copy, Check, AlertTriangle,
-  ArrowRight, Globe, Lock, Clock, Code2, Webhook, FileText, Layers,
-  PenTool, Download, Trash2, RefreshCw
-} from "lucide-react";
+  CommandLineIcon,
+  KeyIcon,
+  ShieldCheckIcon,
+  BoltIcon,
+  DocumentTextIcon,
+  BookOpenIcon,
+  CpuChipIcon,
+  SparklesIcon,
+  CircleStackIcon,
+  CheckCircleIcon,
+  Squares2X2Icon,
+  ChevronDownIcon,
+  DocumentDuplicateIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
+  ArrowRightIcon,
+  GlobeAltIcon,
+  LockClosedIcon,
+  ClockIcon,
+  CodeBracketIcon,
+  LinkIcon,
+  PencilSquareIcon,
+  ArrowDownTrayIcon,
+  TrashIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import BackLink from "@/components/BackLink";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -23,28 +44,28 @@ interface NavItem {
 // ─── Nav ─────────────────────────────────────────────────────────────────────
 
 const NAV: NavItem[] = [
-  { id: "overview",       label: "Overview",           icon: Globe },
-  { id: "quickstart",     label: "Quick Start",        icon: Zap },
-  { id: "code-examples",  label: "Code Examples",      icon: Terminal },
-  { id: "authentication", label: "Authentication",     icon: Lock },
-  { id: "rate-limits",    label: "Rate Limits",        icon: Clock },
+  { id: "overview",       label: "Overview",           icon: GlobeAltIcon },
+  { id: "quickstart",     label: "Quick Start",        icon: BoltIcon },
+  { id: "code-examples",  label: "Code Examples",      icon: CommandLineIcon },
+  { id: "authentication", label: "Authentication",     icon: LockClosedIcon },
+  { id: "rate-limits",    label: "Rate Limits",        icon: ClockIcon },
   { type: "header",       label: "API Reference" },
-  { id: "api-documents",  label: "Documents",          icon: FileJson },
-  { id: "api-ai",         label: "AI Operations",      icon: Wand2 },
-  { id: "api-pdf",        label: "PDF Toolkit",        icon: Cpu },
-  { id: "api-books",      label: "Books",              icon: Book },
-  { id: "api-templates",  label: "Templates",          icon: LayoutTemplate },
-  { id: "api-annotations",label: "Annotations",        icon: PenTool },
-  { id: "api-webhooks",   label: "Webhooks",           icon: Webhook },
-  { id: "api-keys",       label: "API Keys",           icon: Key },
+  { id: "api-documents",  label: "Documents",          icon: DocumentTextIcon },
+  { id: "api-ai",         label: "AI Operations",      icon: SparklesIcon },
+  { id: "api-pdf",        label: "PDF Toolkit",        icon: CpuChipIcon },
+  { id: "api-books",      label: "Books",              icon: BookOpenIcon },
+  { id: "api-templates",  label: "Templates",          icon: Squares2X2Icon },
+  { id: "api-annotations",label: "Annotations",        icon: PencilSquareIcon },
+  { id: "api-webhooks",   label: "Webhooks",           icon: LinkIcon },
+  { id: "api-keys",       label: "API Keys",           icon: KeyIcon },
   { type: "header",       label: "Guides" },
-  { id: "errors",         label: "Error Reference",    icon: AlertTriangle },
-  { id: "self-hosting",   label: "Self-Hosting",       icon: Database },
+  { id: "errors",         label: "Error Reference",    icon: ExclamationTriangleIcon },
+  { id: "self-hosting",   label: "Self-Hosting",       icon: CircleStackIcon },
   { type: "header",       label: "Embed SDK" },
-  { id: "embed-overview", label: "Overview",           icon: Code2 },
-  { id: "embed-install",  label: "Installation",       icon: Download },
-  { id: "embed-events",   label: "Events",             icon: Zap },
-  { id: "embed-frameworks", label: "Framework Guides", icon: Layers },
+  { id: "embed-overview", label: "Overview",           icon: CodeBracketIcon },
+  { id: "embed-install",  label: "Installation",       icon: ArrowDownTrayIcon },
+  { id: "embed-events",   label: "Events",             icon: BoltIcon },
+  { id: "embed-frameworks", label: "Framework Guides", icon: Squares2X2Icon },
 ];
 
 // ─── Syntax highlighter ──────────────────────────────────────────────────────
@@ -84,7 +105,7 @@ function highlight(raw: string): string {
 function HCode({ code, py = "py-5" }: { code: string; py?: string }) {
   return (
     <pre
-      className={`bg-[#111113] border border-[#2a2a2e] rounded-xl px-5 ${py} text-[12.5px] font-mono leading-relaxed overflow-x-auto`}
+      className={`border border-[#222] bg-black rounded-md px-4 ${py} text-[12.5px] font-mono leading-relaxed overflow-x-auto`}
       dangerouslySetInnerHTML={{ __html: highlight(code) }}
     />
   );
@@ -123,33 +144,35 @@ function CodeExamplesBlock() {
     l.color ? `https://cdn.simpleicons.org/${l.slug}/${l.color}` : `https://cdn.simpleicons.org/${l.slug}`;
   return (
     <div>
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="mb-3 flex items-center justify-between border-b border-[#222] px-1">
+        <div className="flex items-center gap-1">
         {EXAMPLE_LANGS.map((l) => (
           <button key={l.id} onClick={() => setActive(l.id)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-bold font-mono transition-all ${
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-medium transition-all ${
               active === l.id
-                ? "border-orange-500/60 bg-orange-500/10 text-white"
-                : "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                ? "border-white text-white"
+                : "border-transparent text-[#888] hover:text-[#ededed]"
             }`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={iconSrc(l)} alt={l.label} width={14} height={14} className="shrink-0" />
             {l.label}
           </button>
         ))}
+        </div>
+        <button onClick={copy} className="flex items-center gap-1.5 px-2 text-xs text-[#888] hover:text-white transition-colors font-medium">
+          {copied ? <CheckIcon className="h-3.5 w-3.5 text-emerald-400" /> : <DocumentDuplicateIcon className="h-3.5 w-3.5" />}
+          {copied ? "Copied" : "Copy"}
+        </button>
       </div>
-      <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c]">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#0f0f11] border-b border-[#1e1e21]">
+      <div className="rounded-md overflow-hidden border border-[#222] bg-black">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#0A0A0A] border-b border-[#222]">
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={iconSrc(lang)} alt={lang.label} width={12} height={12} />
-            <span className="text-sm font-mono text-gray-500">{lang.file}</span>
+            <span className="text-xs font-mono text-[#666]">{lang.file}</span>
           </div>
-          <button onClick={copy} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-200 transition-colors font-bold">
-            {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
         </div>
-        <pre className="p-5 overflow-x-auto leading-relaxed text-sm font-mono text-gray-300 min-h-[180px]"
+        <pre className="p-4 overflow-x-auto leading-relaxed text-[13px] font-mono text-[#ededed] min-h-[180px]"
           dangerouslySetInnerHTML={{ __html: highlight(EXAMPLE_CODES[active]) }} />
       </div>
     </div>
@@ -291,34 +314,36 @@ function ApiKeyExamplesBlock() {
     l.color ? `https://cdn.simpleicons.org/${l.slug}/${l.color}` : `https://cdn.simpleicons.org/${l.slug}`;
   return (
     <div className="mt-6">
-      <p className="text-base font-black text-[var(--text-primary)] mb-3">Usage examples</p>
-      <div className="flex flex-wrap gap-2 mb-3">
+      <p className="text-sm font-semibold text-[var(--text-primary)] mb-3">Usage examples</p>
+      <div className="mb-3 flex items-center justify-between border-b border-[#222] px-1">
+        <div className="flex items-center gap-1">
         {EXAMPLE_LANGS.map((l) => (
           <button key={l.id} onClick={() => setActive(l.id)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-bold font-mono transition-all ${
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-medium transition-all ${
               active === l.id
-                ? "border-orange-500/60 bg-orange-500/10 text-white"
-                : "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                ? "border-white text-white"
+                : "border-transparent text-[#888] hover:text-[#ededed]"
             }`}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={iconSrc(l)} alt={l.label} width={14} height={14} className="shrink-0" />
             {l.label}
           </button>
         ))}
+        </div>
+        <button onClick={copy} className="flex items-center gap-1.5 px-2 text-xs text-[#888] hover:text-white transition-colors font-medium">
+          {copied ? <CheckIcon className="h-3.5 w-3.5 text-emerald-400" /> : <DocumentDuplicateIcon className="h-3.5 w-3.5" />}
+          {copied ? "Copied" : "Copy"}
+        </button>
       </div>
-      <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c]">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#0f0f11] border-b border-[#1e1e21]">
+      <div className="rounded-md overflow-hidden border border-[#222] bg-black">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#0A0A0A] border-b border-[#222]">
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={iconSrc(lang)} alt={lang.label} width={12} height={12} />
-            <span className="text-sm font-mono text-gray-500">{lang.file}</span>
+            <span className="text-xs font-mono text-[#666]">{lang.file}</span>
           </div>
-          <button onClick={copy} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-200 transition-colors font-bold">
-            {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
         </div>
-        <pre className="p-5 overflow-x-auto leading-relaxed text-sm font-mono text-gray-300 min-h-[200px]"
+        <pre className="p-4 overflow-x-auto leading-relaxed text-[13px] font-mono text-[#ededed] min-h-[200px]"
           dangerouslySetInnerHTML={{ __html: highlight(API_KEY_CODES[active]) }} />
       </div>
     </div>
@@ -335,16 +360,16 @@ function CodeBlock({ code, lang = "json", filename }: { code: string; lang?: str
   }, [code]);
 
   return (
-    <div className="rounded-xl overflow-hidden border border-[#232325] bg-[#0a0a0c]">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-[#0f0f11] border-b border-[#1e1e21]">
-        <span className="text-sm font-mono text-gray-500 uppercase tracking-widest">{filename ?? lang}</span>
-        <button onClick={copy} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-200 transition-colors font-bold">
-          {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+    <div className="rounded-md overflow-hidden border border-[#222] bg-black">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#0A0A0A] border-b border-[#222]">
+        <span className="text-xs font-mono text-[#666] uppercase tracking-widest">{filename ?? lang}</span>
+        <button onClick={copy} className="flex items-center gap-1.5 text-xs text-[#888] hover:text-white transition-colors font-medium">
+          {copied ? <CheckIcon className="h-3.5 w-3.5 text-emerald-400" /> : <DocumentDuplicateIcon className="h-3.5 w-3.5" />}
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
       <pre
-        className="p-5 overflow-x-auto leading-relaxed text-sm font-mono text-gray-300"
+        className="p-4 overflow-x-auto leading-relaxed text-[13px] font-mono text-[#ededed]"
         dangerouslySetInnerHTML={{ __html: highlight(code) }}
       />
     </div>
@@ -362,7 +387,7 @@ function MethodBadge({ method }: { method: string }) {
     DELETE: "bg-red-500/15 text-red-400 border-red-500/30",
   };
   return (
-    <span className={`text-sm font-black px-2.5 py-1 rounded border ${colors[method] ?? "bg-gray-500/15 text-gray-400 border-gray-500/30"} shrink-0 w-16 text-center`}>
+    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border font-mono uppercase tracking-wider ${colors[method] ?? "bg-gray-500/15 text-gray-400 border-gray-500/30"} shrink-0`}>
       {method}
     </span>
   );
@@ -372,27 +397,25 @@ function MethodBadge({ method }: { method: string }) {
 
 function ParamTable({ rows }: { rows: { name: string; type: string; required?: boolean; desc: string }[] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm border-collapse">
         <thead>
-          <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-subtle)]">
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Field</th>
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Type</th>
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Required</th>
-            <th className="text-left px-4 py-3 font-black text-[var(--text-secondary)] uppercase tracking-widest text-sm">Description</th>
+          <tr className="border-b border-[#333] text-[#666]">
+            <th className="pb-2 font-medium w-1/3">Parameter</th>
+            <th className="pb-2 font-medium w-2/3">Description</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="text-[#ededed]">
           {rows.map((r, i) => (
-            <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0">
-              <td className="px-4 py-3 font-mono text-amber-500 font-bold">{r.name}</td>
-              <td className="px-4 py-3 font-mono text-blue-400">{r.type}</td>
-              <td className="px-4 py-3">
-                {r.required
-                  ? <span className="text-red-400 font-bold">required</span>
-                  : <span className="text-[var(--text-tertiary)]">optional</span>}
+            <tr key={i} className="border-b border-[#222] last:border-0 align-top">
+              <td className="py-3 pr-4">
+                <div className="flex items-center gap-2">
+                  <code className="font-mono text-[13px] text-orange-400">{r.name}</code>
+                  {r.required && <span className="text-[10px] text-red-500 font-medium">Required</span>}
+                </div>
+                <div className="text-xs font-mono text-[#666] mt-1">{r.type}</div>
               </td>
-              <td className="px-4 py-3 text-[var(--text-secondary)]">{r.desc}</td>
+              <td className="py-3 text-[#888] text-sm leading-relaxed">{r.desc}</td>
             </tr>
           ))}
         </tbody>
@@ -414,43 +437,34 @@ interface EndpointProps {
 }
 
 function Endpoint({ method, path, desc, params, request, response, auth = true }: EndpointProps) {
-  const [open, setOpen] = useState(false);
-  const hasDetail = params || request || response;
+  const hasDetail = !!(params || request || response);
 
   return (
-    <div className="border border-[var(--border-subtle)] rounded-2xl overflow-hidden hover:border-[var(--accent)]/40 transition-colors">
-      <button
-        onClick={() => hasDetail && setOpen(o => !o)}
-        className={`w-full flex items-start sm:items-center gap-4 p-5 text-left bg-[var(--bg-surface)] ${hasDetail ? "cursor-pointer hover:bg-[var(--bg-elevated)]" : "cursor-default"} transition-colors`}
-      >
+    <div className="mb-10 pb-6 border-b border-[#222]">
+      <div className="flex items-start sm:items-center gap-3 font-mono text-sm mb-3">
         <MethodBadge method={method} />
-        <div className="flex-1 min-w-0">
-          <code className="font-mono font-black text-base text-[var(--text-primary)] block truncate">{path}</code>
-          <p className="text-sm text-[var(--text-secondary)] mt-0.5 font-medium">{desc}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {auth && <span className="text-[9px] font-bold text-amber-500 border border-amber-500/30 px-1.5 py-0.5 rounded">AUTH</span>}
-          {hasDetail && <ChevronDown className={`h-4 w-4 text-[var(--text-tertiary)] transition-transform ${open ? "rotate-180" : ""}`} />}
-        </div>
-      </button>
+        <span className="text-white break-all">{path}</span>
+        {auth && <span className="text-[10px] text-[#666] border border-[#333] rounded px-1.5 py-0.5">auth</span>}
+      </div>
+      <p className="text-sm text-[#888] leading-relaxed max-w-2xl">{desc}</p>
 
-      {open && hasDetail && (
-        <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-base)] p-5 space-y-5">
+      {hasDetail && (
+        <div className="space-y-5 mt-5">
           {params && (
             <div>
-              <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Parameters</p>
+              <p className="text-sm font-semibold text-white mb-3">Parameters</p>
               <ParamTable rows={params} />
             </div>
           )}
           {request && (
             <div>
-              <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Request Body</p>
+              <p className="text-sm font-semibold text-white mb-3">Request Body</p>
               <CodeBlock code={request} lang="json" />
             </div>
           )}
           {response && (
             <div>
-              <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Response</p>
+              <p className="text-sm font-semibold text-white mb-3">Response</p>
               <CodeBlock code={response} lang="json" />
             </div>
           )}
@@ -474,8 +488,8 @@ function SectionHead({ icon: Icon, title, subtitle, color = "text-[var(--accent)
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <h2 className="text-3xl font-black tracking-tight text-[var(--text-primary)]">{title}</h2>
-        {subtitle && <p className="text-[var(--text-secondary)] text-base font-medium mt-1">{subtitle}</p>}
+        <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm text-[var(--text-secondary)]">{subtitle}</p>}
       </div>
     </div>
   );
@@ -518,26 +532,28 @@ export default function DocsPage() {
       <div className="max-w-8xl mx-auto flex">
 
         {/* ── Sidebar ── */}
-        <aside className="hidden lg:block w-60 xl:w-64 shrink-0 sticky top-0 h-screen overflow-y-auto py-12 pl-6 pr-4 border-r border-[var(--border-subtle)]">
+        <aside className="hidden lg:block w-60 xl:w-64 shrink-0 sticky top-0 h-screen overflow-y-auto py-10 pl-6 pr-4 border-r border-[#222] bg-black">
           <Link href="/" className="inline-flex items-baseline mb-8 group">
             <span className="font-sans font-black tracking-tighter text-orange-500 text-lg">O</span>
             <span className="font-serif italic font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-lg">L</span>
             <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded font-mono font-bold text-base">PDF</span>
             <span className="text-sm font-mono text-[var(--text-tertiary)] ml-2">Docs</span>
           </Link>
-          <nav>
+          <nav className="space-y-6">
             {NAV.map((item, i) => {
               if (item.type === "header") return (
-                <p key={i} className="text-[9px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mt-6 mb-2 px-3">{item.label}</p>
+                <p key={i} className="text-xs font-semibold text-white mt-6 mb-3 uppercase tracking-wider">{item.label}</p>
               );
               const Icon = item.icon;
               const active = activeSection === item.id;
               return (
                 <Link key={item.id} href={`#${item.id}`}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all mb-0.5 ${
-                    active ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]"
+                  className={`flex items-center gap-2.5 pl-4 py-1.5 text-sm border-l -ml-px transition-colors ${
+                    active
+                      ? "text-white border-white"
+                      : "text-[#888] border-transparent hover:text-[#ededed] hover:border-[#444]"
                   }`}>
-                  {Icon && <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "" : "opacity-60"}`} />}
+                  {Icon && <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "" : "opacity-70"}`} />}
                   {item.label}
                 </Link>
               );
@@ -546,7 +562,7 @@ export default function DocsPage() {
         </aside>
 
         {/* ── Content ── */}
-        <div className="flex-1 min-w-0 py-12 px-6 lg:px-12 xl:px-16 space-y-28 max-w-4xl">
+        <div className="flex-1 min-w-0 py-10 px-6 lg:px-10 xl:px-12 space-y-20 max-w-4xl">
 
           <div className="scroll-mt-24">
             <BackLink href="/" label="Back to home" className="mb-8" />
@@ -554,15 +570,15 @@ export default function DocsPage() {
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest">API v1 · Beta</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-6">OLPDF Documentation</h1>
-            <p className="text-xl text-[var(--text-secondary)] leading-relaxed max-w-2xl font-medium">
+            <h1 className="mb-4 text-4xl md:text-5xl font-semibold tracking-tight">OLPDF Documentation</h1>
+            <p className="max-w-2xl text-base text-[var(--text-secondary)] leading-relaxed">
               The complete reference for the OLPDF REST API, Studio editor, PDF toolkit, and self-hosting infrastructure.
             </p>
           </div>
 
           {/* ─── OVERVIEW ──────────────────────────────────────────── */}
           <section id="overview" className="scroll-mt-24">
-            <SectionHead icon={Globe} title="Overview" subtitle="Base URL, versioning, and content type conventions" color="text-blue-400" />
+            <SectionHead icon={GlobeAltIcon} title="Overview" subtitle="Base URL, versioning, and content type conventions" color="text-blue-400" />
 
             <div className="space-y-6">
               <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
@@ -593,7 +609,7 @@ export default function DocsPage() {
 
           {/* ─── QUICK START ───────────────────────────────────────── */}
           <section id="quickstart" className="scroll-mt-24">
-            <SectionHead icon={Zap} title="Quick Start" subtitle="Extract and edit your first document in under 3 minutes" color="text-amber-400" />
+            <SectionHead icon={BoltIcon} title="Quick Start" subtitle="Extract and edit your first document in under 3 minutes" color="text-amber-400" />
 
             <div className="space-y-6">
               <div className="flex flex-col gap-2">
@@ -650,12 +666,12 @@ open("result.pdf", "wb").write(pdf.content)`} />
           
           {/* ─── CODE EXAMPLES ─────────────────────────────────────────── */}
           <section id="code-examples" className="scroll-mt-24">
-            <SectionHead icon={Terminal} title="Code Examples" subtitle="Extract and edit a PDF in curl, Python, Node, Java, Go, and Rust" color="text-orange-400" />
+            <SectionHead icon={CommandLineIcon} title="Code Examples" subtitle="Extract and edit a PDF in curl, Python, Node, Java, Go, and Rust" color="text-orange-400" />
             <CodeExamplesBlock />
           </section>
 {/* ─── AUTHENTICATION ────────────────────────────────────── */}
           <section id="authentication" className="scroll-mt-24">
-            <SectionHead icon={Lock} title="Authentication" subtitle="Bearer JWT tokens and persistent API keys" color="text-purple-400" />
+            <SectionHead icon={LockClosedIcon} title="Authentication" subtitle="Bearer JWT tokens and persistent API keys" color="text-purple-400" />
 
             <div className="space-y-8">
               <p className="text-[var(--text-secondary)] font-medium leading-relaxed text-base">
@@ -666,7 +682,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] space-y-3">
                   <div className="flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-purple-400" />
+                    <LockClosedIcon className="h-4 w-4 text-purple-400" />
                     <h4 className="font-black text-base">Bearer JWT (User Sessions)</h4>
                   </div>
                   <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -677,7 +693,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
                 </div>
                 <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] space-y-3">
                   <div className="flex items-center gap-2">
-                    <Key className="h-4 w-4 text-amber-400" />
+                    <KeyIcon className="h-4 w-4 text-amber-400" />
                     <h4 className="font-black text-base">API Key (Machine-to-Machine)</h4>
                   </div>
                   <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -710,7 +726,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── RATE LIMITS ───────────────────────────────────────── */}
           <section id="rate-limits" className="scroll-mt-24">
-            <SectionHead icon={Clock} title="Rate Limits" subtitle="Per-IP burst limits enforced via Redis sliding window" color="text-orange-400" />
+            <SectionHead icon={ClockIcon} title="Rate Limits" subtitle="Per-IP burst limits enforced via Redis sliding window" color="text-orange-400" />
 
             <div className="space-y-6">
               <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
@@ -748,7 +764,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── DOCUMENTS ─────────────────────────────────────────── */}
           <section id="api-documents" className="scroll-mt-24">
-            <SectionHead icon={FileJson} title="Documents" subtitle="Create, read, update, export, and version documents" color="text-blue-400" />
+            <SectionHead icon={DocumentTextIcon} title="Documents" subtitle="Create, read, update, export, and version documents" color="text-blue-400" />
 
             <div className="space-y-3">
               <Endpoint method="POST" path="/api/documents/create"
@@ -835,7 +851,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── AI OPERATIONS ─────────────────────────────────────── */}
           <section id="api-ai" className="scroll-mt-24">
-            <SectionHead icon={Wand2} title="AI Operations" subtitle="Gemini-powered structural editing with full audit trail" color="text-[var(--accent)]" />
+            <SectionHead icon={SparklesIcon} title="AI Operations" subtitle="Gemini-powered structural editing with full audit trail" color="text-[var(--accent)]" />
 
             <div className="space-y-6 mb-6">
               <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -902,7 +918,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── PDF TOOLKIT ───────────────────────────────────────── */}
           <section id="api-pdf" className="scroll-mt-24">
-            <SectionHead icon={Cpu} title="PDF Toolkit" subtitle="Low-level binary PDF operations — merge, split, redact, compress" color="text-blue-600" />
+            <SectionHead icon={CpuChipIcon} title="PDF Toolkit" subtitle="Low-level binary PDF operations — merge, split, redact, compress" color="text-blue-600" />
 
             <div className="space-y-3">
               <Endpoint method="POST" path="/api/pdf/merge"
@@ -987,7 +1003,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── BOOKS ─────────────────────────────────────────────── */}
           <section id="api-books" className="scroll-mt-24">
-            <SectionHead icon={Book} title="Books" subtitle="Multi-chapter publication workspace with cross-chapter consistency" color="text-purple-400" />
+            <SectionHead icon={BookOpenIcon} title="Books" subtitle="Multi-chapter publication workspace with cross-chapter consistency" color="text-purple-400" />
 
             <div className="space-y-6 mb-6">
               <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -1031,7 +1047,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── TEMPLATES ─────────────────────────────────────────── */}
           <section id="api-templates" className="scroll-mt-24">
-            <SectionHead icon={LayoutTemplate} title="Templates" subtitle="Reusable structural scaffolds for new documents" color="text-emerald-400" />
+            <SectionHead icon={Squares2X2Icon} title="Templates" subtitle="Reusable structural scaffolds for new documents" color="text-emerald-400" />
 
             <div className="space-y-3">
               <Endpoint method="GET" path="/api/templates"
@@ -1062,7 +1078,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── ANNOTATIONS ───────────────────────────────────────── */}
           <section id="api-annotations" className="scroll-mt-24">
-            <SectionHead icon={PenTool} title="Annotations" subtitle="Comments and notes attached to document blocks" color="text-pink-400" />
+            <SectionHead icon={PencilSquareIcon} title="Annotations" subtitle="Comments and notes attached to document blocks" color="text-pink-400" />
 
             <div className="space-y-3">
               <Endpoint method="GET" path="/api/documents/{doc_id}/annotations"
@@ -1086,7 +1102,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── WEBHOOKS ──────────────────────────────────────────── */}
           <section id="api-webhooks" className="scroll-mt-24">
-            <SectionHead icon={Webhook} title="Webhooks" subtitle="Real-time event push to your own HTTPS endpoints" color="text-cyan-400" />
+            <SectionHead icon={LinkIcon} title="Webhooks" subtitle="Real-time event push to your own HTTPS endpoints" color="text-cyan-400" />
 
             <div className="space-y-6">
               <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -1160,7 +1176,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── API KEYS ──────────────────────────────────────────── */}
           <section id="api-keys" className="scroll-mt-24">
-            <SectionHead icon={Key} title="API Keys" subtitle="Create and manage persistent machine-to-machine credentials" color="text-amber-400" />
+            <SectionHead icon={KeyIcon} title="API Keys" subtitle="Create and manage persistent machine-to-machine credentials" color="text-amber-400" />
 
             <div className="space-y-3">
               <Endpoint method="GET" path="/api/api-keys"
@@ -1188,7 +1204,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── ERRORS ────────────────────────────────────────────── */}
           <section id="errors" className="scroll-mt-24">
-            <SectionHead icon={AlertTriangle} title="Error Reference" subtitle="Standard error envelope and HTTP status codes" color="text-red-400" />
+            <SectionHead icon={ExclamationTriangleIcon} title="Error Reference" subtitle="Standard error envelope and HTTP status codes" color="text-red-400" />
 
             <div className="space-y-6">
               <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -1236,7 +1252,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
 
           {/* ─── SELF HOSTING ──────────────────────────────────────── */}
           <section id="self-hosting" className="scroll-mt-24">
-            <SectionHead icon={Database} title="Self-Hosting" subtitle="Deploy your own OLPDF instance on Fly.io or Docker" color="text-emerald-400" />
+            <SectionHead icon={CircleStackIcon} title="Self-Hosting" subtitle="Deploy your own OLPDF instance on Fly.io or Docker" color="text-emerald-400" />
 
             <div className="space-y-8">
               <p className="text-base text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -1249,7 +1265,7 @@ open("result.pdf", "wb").write(pdf.content)`} />
                 <div className="grid sm:grid-cols-2 gap-3">
                   {["Supabase project (PostgreSQL + Auth + Storage)", "Cloudflare R2 bucket", "Google Gemini API key", "Upstash QStash (job queue)", "Upstash Redis (rate limiting)", "Modal Labs account (OCR worker)"].map(p => (
                     <div key={p} className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                       {p}
                     </div>
                   ))}
@@ -2014,11 +2030,11 @@ public record OlpdfMessage(
             <div className="flex gap-3">
               <Link href="https://github.com/chidi09/olpdf/issues" target="_blank"
                 className="inline-flex items-center gap-2 px-5 h-10 rounded-xl border border-[var(--border-strong)] text-sm font-black uppercase tracking-widest hover:bg-[var(--bg-surface)] transition-colors">
-                Open Issue <ArrowRight className="h-3.5 w-3.5" />
+                Open Issue <ArrowRightIcon className="h-3.5 w-3.5" />
               </Link>
               <Link href="https://github.com/chidi09/olpdf" target="_blank"
                 className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-[var(--text-primary)] text-[var(--bg-base)] text-sm font-black uppercase tracking-widest hover:opacity-90 transition-opacity">
-                GitHub <ArrowRight className="h-3.5 w-3.5" />
+                GitHub <ArrowRightIcon className="h-3.5 w-3.5" />
               </Link>
             </div>
           </div>

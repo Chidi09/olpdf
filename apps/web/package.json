@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1044.0",
+    "@heroicons/react": "^2.2.0",
+    "@heroui/react": "^3.0.4",
     "@olpdf/document-model": "workspace:*",
     "@olpdf/ui": "workspace:*",
     "@supabase/ssr": "^0.5.2",

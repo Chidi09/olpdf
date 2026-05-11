@@ -1,28 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
-  BookOpen,
-  FileEdit,
-  LayoutTemplate,
-  Wrench,
-  Clock,
-  FileText,
   AlertCircle,
-  ArrowRight,
-  Search,
-  Filter,
-  MoreVertical,
+  BookOpen,
+  FileText,
   Upload,
-  BarChart3,
-  Settings,
-  HelpCircle,
-  Folder,
-  Star
+  Search,
+  MoreVertical,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DocumentTextIcon,
+  BookOpenIcon,
+  Squares2X2Icon,
+  WrenchScrewdriverIcon,
+} from "@heroicons/react/24/outline";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@olpdf/ui";
@@ -38,7 +34,6 @@ type Project = {
 };
 
 export default function Dashboard() {
-  const pathname = usePathname();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -163,18 +158,18 @@ export default function Dashboard() {
   return (
     <PageShell 
       title={
-        <div className="flex items-center gap-6">
-          <span>Dashboard</span>
-          <div className="h-6 w-px bg-border-subtle" />
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-semibold tracking-tight">Dashboard</span>
+          <div className="h-5 w-px bg-[var(--border-subtle)]" />
+          <div className="flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1">
             {(["recent", "documents", "books"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-full text-sm font-bold capitalize transition-all ${
+                className={`rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
                   activeTab === tab
-                    ? "bg-accent text-white"
-                    : "text-text-secondary hover:text-text-primary"
+                    ? "bg-[var(--accent)] text-[var(--text-on-accent)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
               >
                 {tab}
@@ -186,67 +181,116 @@ export default function Dashboard() {
       actions={
         <>
           <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-tertiary)]" />
             <input
               type="text"
-              placeholder="Search documents..."
-              className="bg-surface border border-border-subtle rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none focus:border-accent transition-all"
+              placeholder="Search projects"
+              className="h-8 w-64 rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-subtle)]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={() => setActiveTab("documents")} className="rounded-full h-10 w-10 p-0 border-border-strong"><Filter className="h-4 w-4" /></Button>
-          <Button onClick={onImportClick} className="rounded-full bg-accent text-white px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
-            <Upload className="h-4 w-4" /> Import PDF
+          <Button onClick={onImportClick} className="h-8 rounded-md bg-[var(--accent)] px-3 text-xs font-semibold text-[var(--text-on-accent)]">
+            <Upload className="h-3.5 w-3.5" /> Import PDF
           </Button>
+          <Link
+            href="/editor/new"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 text-xs text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-elevated)]"
+          >
+            <Plus className="h-3.5 w-3.5" /> New
+          </Link>
         </>
       }
     >
-      <div className="space-y-12">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <Link href="/editor/new" className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-6 transition-all duration-300 hover:border-blue-500/50 hover:shadow-lg hover:-translate-y-1 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-            <div className="mb-6 h-12 w-12 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center border border-blue-500/20">
-              <FileEdit className="h-6 w-6" />
+      <div className="space-y-8">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/editor/new" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+            <DocumentTextIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+            <div>
+              <h3 className="text-sm font-medium text-[var(--text-primary)]">Blank Document</h3>
+              <p className="text-xs text-[var(--text-secondary)]">Start from scratch</p>
             </div>
-            <h3 className="text-lg font-bold mb-2 group-hover:text-blue-500 transition-colors">Blank Document</h3>
-            <p className="text-sm text-[var(--text-secondary)]">Start from scratch with the structural AI editor.</p>
           </Link>
 
-          <Link href="/books/new" className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-6 transition-all duration-300 hover:border-amber-500/50 hover:shadow-lg hover:-translate-y-1 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-            <div className="mb-6 h-12 w-12 bg-amber-500/10 text-amber-500 rounded-xl flex items-center justify-center border border-amber-500/20">
-              <BookOpen className="h-6 w-6" />
+          <Link href="/books/new" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+            <BookOpenIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+            <div>
+              <h3 className="text-sm font-medium text-[var(--text-primary)]">New Book</h3>
+              <p className="text-xs text-[var(--text-secondary)]">Compile chapters</p>
             </div>
-            <h3 className="text-lg font-bold mb-2 group-hover:text-amber-500 transition-colors">New Book</h3>
-            <p className="text-sm text-[var(--text-secondary)]">Compile multiple chapters with consistency checks.</p>
           </Link>
 
-          <Link href="/templates" className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-6 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-lg hover:-translate-y-1 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-            <div className="mb-6 h-12 w-12 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center border border-emerald-500/20">
-              <LayoutTemplate className="h-6 w-6" />
+          <Link href="/templates" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+            <Squares2X2Icon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+            <div>
+              <h3 className="text-sm font-medium text-[var(--text-primary)]">Use Template</h3>
+              <p className="text-xs text-[var(--text-secondary)]">Structural defaults</p>
             </div>
-            <h3 className="text-lg font-bold mb-2 group-hover:text-emerald-500 transition-colors">From Template</h3>
-            <p className="text-sm text-[var(--text-secondary)]">Browse the library of structural defaults.</p>
           </Link>
 
-          <Link href="/toolkit" className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-6 transition-all duration-300 hover:border-purple-500/50 hover:shadow-lg hover:-translate-y-1 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-            <div className="mb-6 h-12 w-12 bg-purple-500/10 text-purple-500 rounded-xl flex items-center justify-center border border-purple-500/20">
-              <Wrench className="h-6 w-6" />
+          <Link href="/toolkit" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+            <WrenchScrewdriverIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+            <div>
+              <h3 className="text-sm font-medium text-[var(--text-primary)]">PDF Toolkit</h3>
+              <p className="text-xs text-[var(--text-secondary)]">Merge, split, redact</p>
             </div>
-            <h3 className="text-lg font-bold mb-2 group-hover:text-purple-500 transition-colors">PDF Toolkit</h3>
-            <p className="text-sm text-[var(--text-secondary)]">Merge, split, compress, or redact existing PDFs.</p>
           </Link>
         </div>
 
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Clock className="h-6 w-6 text-[var(--text-tertiary)]" />
+          <h2 className="text-base font-semibold tracking-tight text-[var(--text-primary)]">
             {activeTab === "recent" ? "Recent Projects" : activeTab === "documents" ? "All Documents" : "All Books"}
           </h2>
-          {/* ... (Projects Listing) */}
+
+          {isLoading ? (
+            <div className="flex h-28 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+              <Spinner />
+            </div>
+          ) : displayProjects.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] p-6 text-sm text-[var(--text-secondary)]">
+              No projects found.
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+              {displayProjects.map((project, index) => {
+                const href = project.type === "Document" ? `/editor/${project.id}` : `/books/${project.id}`;
+                const Icon = project.type === "Document" ? FileText : BookOpen;
+                const updated = new Date(project.updated_at).toLocaleDateString();
+                return (
+                  <Link
+                    key={project.id}
+                    href={href}
+                    className={`group flex items-center justify-between px-4 py-3 transition-colors hover:bg-[var(--bg-elevated)] ${
+                      index < displayProjects.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded border border-[var(--border-strong)] bg-[var(--bg-elevated)]">
+                        <Icon className="h-4 w-4 text-[var(--text-tertiary)]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)]">{project.title}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{project.type}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
+                      <span>{updated}</span>
+                      <button type="button" className="rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {(documentsQuery.isError || booksQuery.isError) && (
+            <div className="flex items-start gap-2 rounded-md border border-[var(--status-error)]/40 bg-[var(--status-error)]/10 p-3 text-xs text-[var(--text-primary)]">
+              <AlertCircle className="mt-0.5 h-4 w-4 text-[var(--status-error)]" />
+              <span>Could not load all projects. Refresh to try again.</span>
+            </div>
+          )}
         </div>
       </div>
       <input

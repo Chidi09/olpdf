@@ -2,8 +2,19 @@
 
 import type { ComponentType } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Combine, Scissors, Minimize2, RotateCw, Droplets, Lock, Eraser, Images, FileText, Edit3 } from "lucide-react";
-import BackLink from "@/components/BackLink";
+import {
+  DocumentDuplicateIcon,
+  ScissorsIcon,
+  ArrowsPointingInIcon,
+  ArrowPathIcon,
+  SparklesIcon,
+  LockClosedIcon,
+  NoSymbolIcon,
+  PhotoIcon,
+  DocumentMagnifyingGlassIcon,
+  PencilSquareIcon,
+} from "@heroicons/react/24/outline";
+import { PageShell } from "@/components/layout/PageShell";
 import { useToolkitStore } from "@/store/useToolkitStore";
 
 type ToolkitOperation = {
@@ -14,16 +25,16 @@ type ToolkitOperation = {
 };
 
 const operations: ToolkitOperation[] = [
-  { id: "merge", title: "Merge PDFs", description: "Combine multiple files into one.", icon: Combine },
-  { id: "split", title: "Split PDF", description: "Extract pages into separate files.", icon: Scissors },
-  { id: "compress", title: "Compress", description: "Reduce file size for sharing.", icon: Minimize2 },
-  { id: "rotate", title: "Rotate", description: "Rotate pages by 90/180 degrees.", icon: RotateCw },
-  { id: "watermark", title: "Watermark", description: "Apply visible watermark to pages.", icon: Droplets },
-  { id: "protect", title: "Protect", description: "Apply encryption and permissions.", icon: Lock },
-  { id: "redact", title: "Redact (true)", description: "Permanently remove sensitive content.", icon: Eraser },
-  { id: "extract-images", title: "Extract Images", description: "Export all embedded images.", icon: Images },
-  { id: "detect-forms", title: "Detect Forms", description: "Identify fillable fields in PDF.", icon: FileText },
-  { id: "fill-forms", title: "Fill Forms", description: "Programmatically fill PDF forms.", icon: Edit3 },
+  { id: "merge", title: "Merge PDFs", description: "Combine multiple files.", icon: DocumentDuplicateIcon },
+  { id: "split", title: "Split PDF", description: "Extract specific pages.", icon: ScissorsIcon },
+  { id: "compress", title: "Compress", description: "Reduce file size.", icon: ArrowsPointingInIcon },
+  { id: "rotate", title: "Rotate", description: "Rotate pages 90/180 deg.", icon: ArrowPathIcon },
+  { id: "watermark", title: "Watermark", description: "Apply visible marks.", icon: SparklesIcon },
+  { id: "protect", title: "Protect", description: "Apply encryption.", icon: LockClosedIcon },
+  { id: "redact", title: "Redact", description: "Remove sensitive vectors.", icon: NoSymbolIcon },
+  { id: "extract-images", title: "Extract Images", description: "Export embedded media.", icon: PhotoIcon },
+  { id: "detect-forms", title: "Detect Forms", description: "Identify fillable fields.", icon: DocumentMagnifyingGlassIcon },
+  { id: "fill-forms", title: "Fill Forms", description: "Programmatically fill.", icon: PencilSquareIcon },
 ];
 
 export default function ToolkitPage() {
@@ -126,105 +137,119 @@ export default function ToolkitPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
-      <section className="mx-auto max-w-7xl px-6 py-12">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <BackLink href="/dashboard" label="Back to workspace" className="mb-4" />
-            <h1 className="text-3xl font-bold">PDF Toolkit</h1>
-            <p className="mt-2 text-[var(--text-secondary)]">Professional PDF utilities with operation-specific controls.</p>
-          </div>
+    <PageShell title="PDF Toolkit">
+      <div className="max-w-5xl space-y-8">
+        <div className="border-b border-[var(--border-subtle)] pb-5">
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">PDF Toolkit</h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">Professional low-level PDF manipulation utilities.</p>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {operations.map((operation) => (
-            <button
-              key={operation.id}
-              onClick={() => setActiveOperationId(operation.id)}
-              className={`rounded-xl border p-5 text-left transition ${
-                active.id === operation.id
-                  ? "border-[var(--accent)] bg-[var(--accent-subtle)]"
-                  : "border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)]"
-              }`}
-            >
-              <operation.icon className="h-6 w-6 text-[var(--accent)]" />
-              <h2 className="mt-3 text-lg font-semibold">{operation.title}</h2>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">{operation.description}</p>
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-8 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6">
-          <h3 className="text-sm font-bold tracking-widest uppercase text-[var(--text-tertiary)]">{active.title} Panel</h3>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">Provide operation input (file ID, page ranges, notes) and run processing.</p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Document</label>
-              <select
-                value={selectedDocumentId}
-                onChange={(e) => setSelectedDocumentId(e.target.value)}
-                className="mt-2 w-full rounded bg-black/20 border border-white/10 px-3 py-2 text-sm"
-              >
-                <option value="">Select document</option>
-                {documents.map((doc) => (
-                  <option key={doc.id} value={doc.id}>{doc.title || doc.id}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <div className="flex gap-2">
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid h-min grid-cols-1 gap-2 sm:grid-cols-2 lg:col-span-1 lg:grid-cols-1">
+            {operations.map((op) => {
+              const isActive = active.id === op.id;
+              return (
                 <button
-                  onClick={() => setInputValue(suggestedInput)}
-                  className="rounded border border-[var(--border-strong)] px-3 py-2 text-xs font-bold"
+                  key={op.id}
+                  onClick={() => setActiveOperationId(op.id)}
+                  className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-all ${
+                    isActive
+                      ? "border-[var(--accent)] bg-[var(--bg-elevated)]"
+                      : "border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)]"
+                  }`}
                 >
-                  Load Payload Template
+                  <div className={`mt-0.5 shrink-0 ${isActive ? "text-[var(--accent)]" : "text-[var(--text-secondary)]"}`}>
+                    <op.icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-[var(--text-primary)]">{op.title}</h3>
+                    <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">{op.description}</p>
+                  </div>
                 </button>
+              );
+            })}
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+              <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] px-5 py-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded border border-[var(--border-strong)] bg-[var(--bg-elevated)]">
+                  <active.icon className="h-4 w-4 text-[var(--accent)]" />
+                </div>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">{active.title} Configuration</h3>
+              </div>
+
+              <div className="space-y-6 p-5">
+                <div>
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Target Document</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedDocumentId}
+                      onChange={(e) => setSelectedDocumentId(e.target.value)}
+                      className="h-9 flex-1 appearance-none rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--accent)]"
+                    >
+                      <option value="">Select an existing document...</option>
+                      {documents.map((doc) => (
+                        <option key={doc.id} value={doc.id}>{doc.title || doc.id}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-9 rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-4 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-panel)]"
+                    >
+                      Upload PDF
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Operation Payload (JSON)</label>
+                    <button
+                      onClick={() => setInputValue(suggestedInput)}
+                      className="text-[10px] font-medium text-[var(--accent)] hover:opacity-80"
+                    >
+                      Load Template
+                    </button>
+                  </div>
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    className="h-48 w-full resize-y rounded-md border border-[var(--border-subtle)] bg-[var(--bg-panel)] p-3 font-mono text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-subtle)]"
+                    placeholder="Enter JSON payload..."
+                    spellCheck={false}
+                  />
+                </div>
+
+                {result && (
+                  <div className={`break-all rounded-md border p-3 font-mono text-sm ${result.status === "invalid_json" ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"}`}>
+                    {JSON.stringify(result, null, 2)}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-[var(--bg-panel)] px-5 py-3">
+                <span className="text-xs text-[var(--text-tertiary)]">Tool executes against the backend immediately.</span>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="rounded border border-[var(--border-strong)] px-3 py-2 text-xs font-bold"
+                  onClick={runOperation}
+                  disabled={running}
+                  className="h-8 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:opacity-50"
                 >
-                  Upload PDF
+                  {running ? "Processing..." : `Execute ${active.title}`}
                 </button>
               </div>
             </div>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => void importPdf(e.target.files?.[0] || null)}
-          />
-
-          <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="mt-4 w-full min-h-24 rounded bg-black/20 border border-white/10 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
-            placeholder="Input payload for operation..."
-          />
-
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              onClick={runOperation}
-              disabled={running}
-              className="rounded bg-[var(--accent)] px-4 py-2 text-xs font-bold text-[var(--text-on-accent)] disabled:opacity-40"
-            >
-              {running ? "Running..." : `Run ${active.title}`}
-            </button>
-            {result?.status && <span className="text-xs text-[var(--text-secondary)]">Status: {result.status}</span>}
-          </div>
-
-          {result?.output_url && (
-            <div className="mt-4 rounded border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
-              <div>Output: <span className="text-emerald-200">{result.output_url}</span></div>
-              {typeof result.pages_processed === "number" && (
-                <div className="mt-1 text-[var(--text-secondary)]">Pages processed: {result.pages_processed}</div>
-              )}
-            </div>
-          )}
         </div>
-      </section>
-    </main>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => void importPdf(e.target.files?.[0] || null)}
+        />
+      </div>
+    </PageShell>
   );
 }

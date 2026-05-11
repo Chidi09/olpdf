@@ -4,7 +4,13 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
-import { FileEdit, Search, Filter, Upload, FileText, Plus } from "lucide-react";
+import {
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowUpTrayIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import UploadProgressModal from "@/components/UploadProgressModal";
 
@@ -85,45 +91,47 @@ export default function EditorDocsPage() {
 
   return (
     <PageShell 
-      title="My Documents"
+      title="Documents"
       actions={
         <>
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+          <div className="relative hidden md:block group">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-tertiary)] group-focus-within:text-[var(--accent)]" />
             <input 
               type="text"
               placeholder="Search documents..."
-              className="bg-surface border border-border-subtle rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none focus:border-accent transition-all"
+              className="h-8 w-64 rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] pl-9 pr-3 text-xs text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-subtle)]"
             />
           </div>
-          <Button variant="outline" className="rounded-full h-10 w-10 p-0 border-border-strong"><Filter className="h-4 w-4" /></Button>
+          <button
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+          >
+            <FunnelIcon className="h-4 w-4" />
+          </button>
           <Link href="/editor/new">
-            <Button className="rounded-full bg-[var(--accent)] text-white px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
-              <Plus className="h-4 w-4" /> New Document
+            <Button className="h-8 rounded-md bg-[var(--accent)] px-3 text-xs font-semibold text-[var(--text-on-accent)]">
+              <PlusIcon className="h-4 w-4" /> New
             </Button>
           </Link>
         </>
       }
     >
-      <div className="py-20 flex flex-col items-center text-center">
-        <div className="relative mb-8">
-          <div className="absolute inset-0 bg-blue-500/10 blur-3xl rounded-full scale-150" />
-          <div className="h-24 w-24 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20 relative z-10">
-            <FileText className="h-10 w-10" />
-          </div>
+      <div className="mt-8 rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-panel)] px-6 py-14 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)]">
+          <DocumentTextIcon className="h-6 w-6 text-[var(--text-secondary)]" />
         </div>
-        <h3 className="text-xl font-bold mb-2">No documents yet</h3>
-        <p className="text-[var(--text-secondary)] max-w-sm mb-8">
+        <h3 className="mb-1 text-base font-semibold text-[var(--text-primary)]">No documents found</h3>
+        <p className="mx-auto mb-6 max-w-sm text-sm text-[var(--text-secondary)]">
           Create a new blank document or import a PDF to start editing with full fidelity.
         </p>
-        <div className="flex gap-4">
+        <div className="flex items-center justify-center gap-3">
           <Link href="/editor/new">
-            <Button className="rounded-full bg-[var(--accent)] text-white px-6 font-bold shadow-lg h-12 gap-2">
-              <Plus className="h-4 w-4" /> Blank Document
+            <Button variant="outline" className="h-9 rounded-md border-[var(--border-strong)] bg-[var(--bg-surface)] px-4 text-sm text-[var(--text-primary)]">
+              <PlusIcon className="h-4 w-4" /> Blank Document
             </Button>
           </Link>
-          <Button variant="outline" onClick={onImportClick} className="rounded-full px-6 font-bold border-border-strong h-12 gap-2">
-            <Upload className="h-4 w-4" /> Import PDF
+          <Button onClick={onImportClick} className="h-9 rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-[var(--text-on-accent)]">
+            <ArrowUpTrayIcon className="h-4 w-4" /> Import PDF
           </Button>
         </div>
       </div>
@@ -134,20 +142,6 @@ export default function EditorDocsPage() {
         className="hidden"
         onChange={(e) => void onFileSelected(e.target.files?.[0] || null)}
       />
-
-      {/* Skeleton State Example (Hidden normally, shown while loading data) */}
-      <div className="mt-24 border-t border-border-subtle pt-12">
-        <h4 className="text-sm font-bold text-text-tertiary uppercase tracking-widest mb-6">Loading State Preview</h4>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl border border-border-subtle bg-surface p-5 animate-pulse">
-              <div className="h-12 w-12 rounded-xl bg-[var(--bg-elevated)] mb-4" />
-              <div className="h-4 w-3/4 bg-[var(--bg-elevated)] rounded mb-2" />
-              <div className="h-3 w-1/2 bg-[var(--bg-elevated)] rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
 
       <UploadProgressModal
         open={uploadOpen}

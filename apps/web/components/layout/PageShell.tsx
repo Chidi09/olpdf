@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from "@olpdf/ui";
 import { 
-  Folder, 
-  Star, 
-  BarChart3, 
-  Settings, 
-  HelpCircle,
-  TerminalSquare
-} from 'lucide-react';
+  FolderIcon,
+  StarIcon,
+  ChartBarIcon,
+  Cog8ToothIcon,
+  QuestionMarkCircleIcon,
+  CommandLineIcon,
+} from '@heroicons/react/24/outline';
 
 interface PageShellProps {
   children: React.ReactNode;
@@ -29,50 +29,50 @@ export const PageShell: React.FC<PageShellProps> = ({
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen bg-background text-text-primary transition-colors duration-300">
+    <div className="flex min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="hidden lg:flex w-64 border-r border-border-subtle bg-surface flex-col fixed h-screen z-20">
-        <div className="h-16 border-b border-border-subtle flex items-center px-6">
-          <span className="font-serif font-black text-xl tracking-tight text-accent">OLPDF</span>
+      <aside className="fixed z-20 hidden h-screen w-60 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-panel)] lg:flex">
+        <div className="flex h-14 items-center border-b border-[var(--border-subtle)] px-5">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Workspace</span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <Link href="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/dashboard" ? "bg-accent/10 text-accent font-bold" : "text-text-secondary hover:bg-elevated"}`}>
-            <Folder className="h-5 w-5" /> All Projects
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          <Link href="/dashboard" className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-all ${pathname === "/dashboard" ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"}`}>
+            <FolderIcon className="h-4 w-4" /> All Projects
           </Link>
-          <Link href="/favorites" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/favorites" ? "bg-accent/10 text-accent font-bold" : "text-text-secondary hover:bg-elevated"}`}>
-            <Star className="h-5 w-5" /> Favorites
+          <Link href="/favorites" className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-all ${pathname === "/favorites" ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"}`}>
+            <StarIcon className="h-4 w-4" /> Favorites
           </Link>
-          <Link href="/analytics" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/analytics" ? "bg-accent/10 text-accent font-bold" : "text-text-secondary hover:bg-elevated"}`}>
-            <BarChart3 className="h-5 w-5" /> Analytics
+          <Link href="/analytics" className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-all ${pathname === "/analytics" ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"}`}>
+            <ChartBarIcon className="h-4 w-4" /> Analytics
           </Link>
-          <Link href="/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/settings" ? "bg-accent/10 text-accent font-bold" : "text-text-secondary hover:bg-elevated"}`}>
-            <Settings className="h-5 w-5" /> Settings
+          <Link href="/settings" className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-all ${pathname === "/settings" ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"}`}>
+            <Cog8ToothIcon className="h-4 w-4" /> Settings
           </Link>
-          <Link href="/settings/developer" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/settings/developer" ? "bg-accent/10 text-accent font-bold" : "text-text-secondary hover:bg-elevated"}`}>
-            <TerminalSquare className="h-5 w-5" /> Developer
+          <Link href="/settings/developer" className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-all ${pathname === "/settings/developer" ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"}`}>
+            <CommandLineIcon className="h-4 w-4" /> Developer
           </Link>
         </nav>
 
-        <div className="p-4 border-t border-border-subtle space-y-4">
-          <Link href="/docs" className="flex items-center gap-3 px-3 py-2 text-text-tertiary hover:text-text-secondary transition-colors text-xs font-medium cursor-pointer">
-            <HelpCircle className="h-4 w-4" /> Help & Support
+        <div className="space-y-2 border-t border-[var(--border-subtle)] p-3">
+          <Link href="/docs" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]">
+            <QuestionMarkCircleIcon className="h-4 w-4" /> Help & Support
           </Link>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 pb-24">
+      <main className="flex-1 pb-24 lg:ml-60">
         {(title || actions) && (
-          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border-subtle px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              {title && <h1 className="text-xl font-bold">{title}</h1>}
+          <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/90 px-6 py-3 backdrop-blur-md">
+            <div className="flex items-center gap-4">
+              {title && <h1 className="text-sm font-semibold tracking-tight">{title}</h1>}
             </div>
             {actions && <div className="flex items-center gap-3">{actions}</div>}
           </header>
         )}
         
-        <section className={cn("p-8", className)}>
+        <section className={cn("p-6 lg:p-8", className)}>
           {children}
         </section>
       </main>
