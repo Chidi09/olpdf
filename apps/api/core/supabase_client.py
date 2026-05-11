@@ -11,3 +11,7 @@ supabase: Client = create_client(url, key)
 
 # Admin client — same service-role credentials, exposes auth.admin.* for user lookups
 supabase_admin: Client = supabase
+
+
+def get_supabase() -> Client:
+    return supabase
