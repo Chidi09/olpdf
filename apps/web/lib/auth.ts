@@ -3,14 +3,16 @@ import { magicLink } from "better-auth/plugins";
 import { Pool } from "pg";
 import { Resend } from "resend";
 
+const env = (name: string) => process.env[name]?.trim();
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: env("DATABASE_URL"),
   max: 1,
   ssl: { rejectUnauthorized: false },
 });
 
 const getResend = () => {
-  const key = process.env.RESEND_API_KEY;
+  const key = env("RESEND_API_KEY");
   if (!key) {
     throw new Error("RESEND_API_KEY is required to send auth emails");
   }
@@ -18,11 +20,11 @@ const getResend = () => {
 };
 
 const FROM = "OLPDF <no-reply@olpdf.xyz>";
-const BASE = process.env.BETTER_AUTH_URL || "https://olpdf.xyz";
+const BASE = env("BETTER_AUTH_URL") || "https://olpdf.xyz";
 
 export const auth = betterAuth({
   baseURL: BASE,
-  secret: process.env.BETTER_AUTH_SECRET!,
+  secret: env("BETTER_AUTH_SECRET")!,
   database: pool,
 
   emailAndPassword: {
@@ -63,12 +65,12 @@ export const auth = betterAuth({
 
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: env("GOOGLE_CLIENT_ID")!,
+      clientSecret: env("GOOGLE_CLIENT_SECRET")!,
     },
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      clientId: env("GITHUB_CLIENT_ID")!,
+      clientSecret: env("GITHUB_CLIENT_SECRET")!,
     },
   },
 
