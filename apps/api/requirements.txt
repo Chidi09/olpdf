@@ -21,3 +21,4 @@ fonttools>=4.55.0
 brotli
 slowapi
 redis
+gunicorn
