@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useRef } from "react";
 import {
   BookOpen,
   FileEdit,
@@ -37,6 +38,8 @@ type Project = {
 
 export default function Dashboard() {
   const pathname = usePathname();
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
 
   type ApiDoc  = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
@@ -90,6 +93,35 @@ export default function Dashboard() {
   const recentLimit = activeTab === "recent" ? 6 : undefined;
   const displayProjects = recentLimit ? filtered.slice(0, recentLimit) : filtered;
 
+  const onImportClick = () => fileInputRef.current?.click();
+
+  const onFileSelected = async (file: File | null) => {
+    if (!file) return;
+    const createRes = await fetch("/api/bff/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: file.name.replace(/\.pdf$/i, "") || "Imported PDF" }),
+    });
+    const created = await createRes.json().catch(() => ({}));
+    if (!createRes.ok || !created?.id) return;
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("failed_to_read_file"));
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        const encoded = dataUrl.split(",")[1] || "";
+        resolve(encoded);
+      };
+      reader.readAsDataURL(file);
+    });
+    await fetch("/api/bff/import/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
+    }).catch(() => null);
+    router.push(`/editor/${created.id}`);
+  };
+
   return (
     <div className="flex min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
 
@@ -142,12 +174,14 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <Button size="sm" className="w-full mt-4 bg-[var(--accent)] text-[var(--text-on-accent)] text-[10px] font-bold uppercase tracking-widest h-8 rounded-lg">Upgrade to Pro</Button>
+            <Link href="/settings" className="block">
+              <Button size="sm" className="w-full mt-4 bg-[var(--accent)] text-[var(--text-on-accent)] text-[10px] font-bold uppercase tracking-widest h-8 rounded-lg">Manage Plan</Button>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
+          <Link href="/docs" className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
             <HelpCircle className="h-4 w-4" /> Help & Support
-          </div>
+          </Link>
         </div>
       </aside>
 
@@ -184,8 +218,8 @@ export default function Dashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" className="rounded-full h-10 w-10 p-0 border-[var(--border-strong)]"><Filter className="h-4 w-4" /></Button>
-            <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
+            <Button variant="outline" onClick={() => setActiveTab("documents")} className="rounded-full h-10 w-10 p-0 border-[var(--border-strong)]"><Filter className="h-4 w-4" /></Button>
+            <Button onClick={onImportClick} className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
               <Upload className="h-4 w-4" /> Import PDF
             </Button>
           </div>
@@ -300,18 +334,26 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 flex gap-4 items-start shadow-sm">
-            <AlertCircle className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-amber-600 font-bold text-base mb-1">Development Mode Active</h3>
-              <p className="text-sm text-amber-700/80 leading-relaxed font-medium">
-                All data is currently being served from local memory mocks or a test Supabase instance.
-                To enable production BFF mocks and persistent storage, set <code className="bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-800 font-mono">OLPDF_DEV_MODE=true</code> in your environment.
-              </p>
+          {process.env.NEXT_PUBLIC_OLPDF_DEV_MODE === "true" && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 flex gap-4 items-start shadow-sm">
+              <AlertCircle className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-amber-600 font-bold text-base mb-1">Development Mode Active</h3>
+                <p className="text-sm text-amber-700/80 leading-relaxed font-medium">
+                  Mock data mode is enabled for this environment. Disable <code className="bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-800 font-mono">NEXT_PUBLIC_OLPDF_DEV_MODE</code> for production-like data paths.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </section>
       </main>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={(e) => void onFileSelected(e.target.files?.[0] || null)}
+      />
     </div>
   );
 }

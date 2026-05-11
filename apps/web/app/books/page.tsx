@@ -21,10 +21,14 @@ export default function BooksPage() {
               className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none focus:border-[var(--accent)] transition-all"
             />
           </div>
-          <Button variant="outline" className="rounded-full h-10 w-10 p-0 border-[var(--border-strong)]"><Filter className="h-4 w-4" /></Button>
-          <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
-            <Plus className="h-4 w-4" /> New Book
-          </Button>
+          <Link href="/dashboard">
+            <Button variant="outline" className="rounded-full h-10 w-10 p-0 border-[var(--border-strong)]"><Filter className="h-4 w-4" /></Button>
+          </Link>
+          <Link href="/books/new">
+            <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
+              <Plus className="h-4 w-4" /> New Book
+            </Button>
+          </Link>
         </div>
       </header>
 

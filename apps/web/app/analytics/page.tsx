@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
+import {
   BarChart3, 
-  Search, 
-  Upload, 
   Folder, 
   Star, 
   Settings, 
@@ -62,12 +60,14 @@ export default function AnalyticsPage() {
                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">Plan: Free</span>
                  <Shield className="h-3 w-3 text-[var(--accent)]" />
               </div>
-              <Button size="sm" className="w-full mt-4 bg-[var(--accent)] text-[var(--text-on-accent)] text-[10px] font-bold uppercase tracking-widest h-8 rounded-lg">Upgrade to Pro</Button>
+              <Link href="/settings" className="block">
+                <Button size="sm" className="w-full mt-4 bg-[var(--accent)] text-[var(--text-on-accent)] text-[10px] font-bold uppercase tracking-widest h-8 rounded-lg">Manage Plan</Button>
+              </Link>
            </div>
-           
-           <div className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
+            
+           <Link href="/docs" className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
               <HelpCircle className="h-4 w-4" /> Help & Support
-           </div>
+           </Link>
         </div>
       </aside>
 
@@ -79,7 +79,24 @@ export default function AnalyticsPage() {
               <h1 className="text-xl font-bold">Analytics</h1>
            </div>
            <div className="flex items-center gap-3">
-              <Button variant="outline" className="rounded-full px-4 h-10 font-bold border-[var(--border-strong)]">Export Report</Button>
+              <button
+                onClick={() => {
+                  const report = {
+                    generatedAt: new Date().toISOString(),
+                    stats,
+                  };
+                  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `olpdf-analytics-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="rounded-full px-4 h-10 font-bold border border-[var(--border-strong)] hover:bg-[var(--bg-surface)]"
+              >
+                Export Report
+              </button>
            </div>
         </header>
 

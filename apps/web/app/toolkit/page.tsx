@@ -1,7 +1,8 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { Combine, Scissors, Minimize2, RotateCw, Droplets, Lock, Eraser, ScanText, Images, FileText, Edit3 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Combine, Scissors, Minimize2, RotateCw, Droplets, Lock, Eraser, Images, FileText, Edit3 } from "lucide-react";
 import BackLink from "@/components/BackLink";
 import { useToolkitStore } from "@/store/useToolkitStore";
 
@@ -20,7 +21,6 @@ const operations: ToolkitOperation[] = [
   { id: "watermark", title: "Watermark", description: "Apply visible watermark to pages.", icon: Droplets },
   { id: "protect", title: "Protect", description: "Apply encryption and permissions.", icon: Lock },
   { id: "redact", title: "Redact (true)", description: "Permanently remove sensitive content.", icon: Eraser },
-  { id: "ocr", title: "OCR Scan", description: "Convert scanned pages to searchable text.", icon: ScanText },
   { id: "extract-images", title: "Extract Images", description: "Export all embedded images.", icon: Images },
   { id: "detect-forms", title: "Detect Forms", description: "Identify fillable fields in PDF.", icon: FileText },
   { id: "fill-forms", title: "Fill Forms", description: "Programmatically fill PDF forms.", icon: Edit3 },
@@ -28,16 +28,64 @@ const operations: ToolkitOperation[] = [
 
 export default function ToolkitPage() {
   const { activeOperationId, inputValue, running, result, setActiveOperationId, setInputValue, setRunning, setResult } = useToolkitStore();
+  const [documents, setDocuments] = useState<Array<{ id: string; title?: string }>>([]);
+  const [selectedDocumentId, setSelectedDocumentId] = useState("");
 
   const active = operations.find((o) => o.id === activeOperationId) ?? operations[0];
+
+  useEffect(() => {
+    fetch("/api/bff/documents")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: Array<{ id: string; title?: string }>) => {
+        setDocuments(rows || []);
+        if (!selectedDocumentId && rows?.length) setSelectedDocumentId(rows[0].id);
+      })
+      .catch(() => setDocuments([]));
+  }, [selectedDocumentId]);
+
+  const suggestedInput = useMemo(() => {
+    const docId = selectedDocumentId || "<document-id>";
+    switch (active.id) {
+      case "merge":
+        return JSON.stringify({ doc_ids: [docId, "<another-document-id>"] }, null, 2);
+      case "split":
+        return JSON.stringify({ doc_id: docId, page_ranges: [{ start: 0, end: 1 }] }, null, 2);
+      case "rotate":
+        return JSON.stringify({ doc_id: docId, rotation: 90, page_indices: [0] }, null, 2);
+      case "watermark":
+        return JSON.stringify({ doc_id: docId, text: "CONFIDENTIAL", opacity: 0.15 }, null, 2);
+      case "protect":
+        return JSON.stringify({ doc_id: docId, user_password: "user-pass", owner_password: "owner-pass" }, null, 2);
+      case "redact":
+        return JSON.stringify({ doc_id: docId, areas: [{ page_number: 0, bbox: [72, 72, 180, 96] }] }, null, 2);
+      case "detect-forms":
+        return JSON.stringify({ doc_id: docId }, null, 2);
+      case "fill-forms":
+        return JSON.stringify({ doc_id: docId, payload: { full_name: "John Doe" } }, null, 2);
+      default:
+        return JSON.stringify({ doc_id: docId }, null, 2);
+    }
+  }, [active.id, selectedDocumentId]);
 
   const runOperation = async () => {
     setRunning(true);
     try {
+      let parsed: Record<string, unknown> = {};
+      try {
+        parsed = inputValue.trim() ? JSON.parse(inputValue) : JSON.parse(suggestedInput);
+      } catch {
+        setResult({ status: "invalid_json" });
+        return;
+      }
+
+      if (!parsed.doc_id && active.id !== "merge") {
+        parsed.doc_id = selectedDocumentId;
+      }
+
       const response = await fetch(`/api/bff/toolkit/${active.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: inputValue }),
+        body: JSON.stringify(parsed),
       });
       if (!response.ok) throw new Error("Toolkit operation failed");
       setResult(await response.json());
@@ -78,6 +126,30 @@ export default function ToolkitPage() {
         <div className="mt-8 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6">
           <h3 className="text-sm font-bold tracking-widest uppercase text-[var(--text-tertiary)]">{active.title} Panel</h3>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">Provide operation input (file ID, page ranges, notes) and run processing.</p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Document</label>
+              <select
+                value={selectedDocumentId}
+                onChange={(e) => setSelectedDocumentId(e.target.value)}
+                className="mt-2 w-full rounded bg-black/20 border border-white/10 px-3 py-2 text-sm"
+              >
+                <option value="">Select document</option>
+                {documents.map((doc) => (
+                  <option key={doc.id} value={doc.id}>{doc.title || doc.id}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => setInputValue(suggestedInput)}
+                className="rounded border border-[var(--border-strong)] px-3 py-2 text-xs font-bold"
+              >
+                Load Payload Template
+              </button>
+            </div>
+          </div>
 
           <textarea
             value={inputValue}

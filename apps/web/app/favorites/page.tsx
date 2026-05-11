@@ -49,12 +49,14 @@ export default function FavoritesPage() {
                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">Plan: Free</span>
                  <Shield className="h-3 w-3 text-[var(--accent)]" />
               </div>
-              <Button size="sm" className="w-full mt-4 bg-[var(--accent)] text-[var(--text-on-accent)] text-[10px] font-bold uppercase tracking-widest h-8 rounded-lg">Upgrade to Pro</Button>
+              <Link href="/settings" className="block">
+                <Button size="sm" className="w-full mt-4 bg-[var(--accent)] text-[var(--text-on-accent)] text-[10px] font-bold uppercase tracking-widest h-8 rounded-lg">Manage Plan</Button>
+              </Link>
            </div>
-           
-           <div className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
+            
+           <Link href="/docs" className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
               <HelpCircle className="h-4 w-4" /> Help & Support
-           </div>
+           </Link>
         </div>
       </aside>
 
@@ -74,9 +76,11 @@ export default function FavoritesPage() {
                    className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none focus:border-[var(--accent)] transition-all"
                  />
               </div>
-              <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg h-10 gap-2">
-                 <Upload className="h-4 w-4" /> Import PDF
-              </Button>
+              <Link href="/toolkit">
+                <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg h-10 gap-2">
+                   <Upload className="h-4 w-4" /> Import PDF
+                </Button>
+              </Link>
            </div>
         </header>
 

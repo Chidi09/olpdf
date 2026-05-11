@@ -1,10 +1,49 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FileEdit, Search, Filter, Upload, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function EditorDocsPage() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onImportClick = () => fileInputRef.current?.click();
+
+  const onFileSelected = async (file: File | null) => {
+    if (!file) return;
+    const createRes = await fetch("/api/bff/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: file.name.replace(/\.pdf$/i, "") || "Imported PDF" }),
+    });
+    const created = await createRes.json().catch(() => ({}));
+    if (!createRes.ok || !created?.id) return;
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("failed_to_read_file"));
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        const encoded = dataUrl.split(",")[1] || "";
+        resolve(encoded);
+      };
+      reader.readAsDataURL(file);
+    });
+    const importRes = await fetch("/api/bff/import/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
+    });
+    if (!importRes.ok) {
+      router.push(`/editor/${created.id}`);
+      return;
+    }
+    router.push(`/editor/${created.id}`);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
       <header className="sticky top-0 z-10 bg-[var(--bg-base)]/80 backdrop-blur-md border-b border-[var(--border-subtle)] px-8 py-4 flex items-center justify-between">
@@ -22,9 +61,11 @@ export default function EditorDocsPage() {
             />
           </div>
           <Button variant="outline" className="rounded-full h-10 w-10 p-0 border-[var(--border-strong)]"><Filter className="h-4 w-4" /></Button>
-          <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
-            <Plus className="h-4 w-4" /> New Document
-          </Button>
+          <Link href="/editor/new">
+            <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
+              <Plus className="h-4 w-4" /> New Document
+            </Button>
+          </Link>
         </div>
       </header>
 
@@ -46,11 +87,18 @@ export default function EditorDocsPage() {
                 <Plus className="h-4 w-4" /> Blank Document
               </Button>
             </Link>
-            <Button variant="outline" className="rounded-full px-6 font-bold border-[var(--border-strong)] h-12 gap-2">
+            <Button variant="outline" onClick={onImportClick} className="rounded-full px-6 font-bold border-[var(--border-strong)] h-12 gap-2">
               <Upload className="h-4 w-4" /> Import PDF
             </Button>
           </div>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => void onFileSelected(e.target.files?.[0] || null)}
+        />
 
         {/* Skeleton State Example (Hidden normally, shown while loading data) */}
         <div className="mt-24 border-t border-[var(--border-subtle)] pt-12">

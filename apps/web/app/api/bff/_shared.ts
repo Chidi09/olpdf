@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { SignJWT } from "jose";
 import { jwtVerify } from "jose";
 
-export const API_BASE_URL = process.env.OLPDF_API_BASE_URL || "http://localhost:8000";
+export const API_BASE_URL = (process.env.OLPDF_API_BASE_URL || "http://localhost:8000").trim();
 
 async function getServerAccessToken(): Promise<string | null> {
   try {
@@ -38,34 +38,62 @@ async function getServerAccessToken(): Promise<string | null> {
   }
 }
 
+async function forward(path: string, init?: RequestInit): Promise<Response> {
+  const accessToken = await getServerAccessToken();
+  if (!accessToken) {
+    return NextResponse.json(
+      { error: "unauthorized", message: "No active session" },
+      { status: 401 }
+    );
+  }
+
+  const requestId = crypto.randomUUID();
+  return fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      "X-Request-ID": requestId,
+      Authorization: `Bearer ${accessToken}`,
+      ...(init?.headers || {}),
+    },
+    cache: "no-store",
+  });
+}
+
 export async function forwardJson(path: string, init?: RequestInit) {
   try {
-    const accessToken = await getServerAccessToken();
-
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: "unauthorized", message: "No active session" },
-        { status: 401 }
-      );
-    }
-
-    const requestId = crypto.randomUUID();
-
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await forward(path, {
       ...init,
       headers: {
         "Content-Type": "application/json",
-        "X-Request-ID": requestId,
-        Authorization: `Bearer ${accessToken}`,
         ...(init?.headers || {}),
       },
-      cache: "no-store",
     });
 
     const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, {
       status: response.status,
-      headers: { "X-Request-ID": response.headers.get("X-Request-ID") || requestId },
+      headers: { "X-Request-ID": response.headers.get("X-Request-ID") || crypto.randomUUID() },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "upstream_unavailable", message: "API upstream unavailable", detail: String(error) },
+      { status: 502 }
+    );
+  }
+}
+
+export async function forwardRaw(path: string, init?: RequestInit) {
+  try {
+    const response = await forward(path, init);
+    const body = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "application/octet-stream";
+    const disposition = response.headers.get("content-disposition") || undefined;
+    return new NextResponse(body, {
+      status: response.status,
+      headers: {
+        "Content-Type": contentType,
+        ...(disposition ? { "Content-Disposition": disposition } : {}),
+      },
     });
   } catch (error) {
     return NextResponse.json(
