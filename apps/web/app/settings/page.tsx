@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BackLink from "@/components/BackLink";
+import { useAuth } from "@/hooks/useAuth";
 
 // ── Provider icon via Simple Icons CDN ───────────────────────────────────────
 // cdn.simpleicons.org/{slug}/{hex-color} returns a coloured SVG at runtime.
@@ -97,6 +98,7 @@ type ProviderId = typeof PROVIDERS[number]["id"];
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [provider, setProvider] = useState<ProviderId>("gemini_free");
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -111,13 +113,22 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetch("/api/bff/ai-settings")
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Failed to load settings");
+        return r.json();
+      })
       .then((data) => {
         if (data.provider) setProvider(data.provider as ProviderId);
         if (data.model) setModel(data.model);
+        else if (data.provider) {
+          const p = PROVIDERS.find((x) => x.id === data.provider);
+          if (p) setModel(p.models[0]);
+        }
         setKeySet(!!data.key_set);
       })
-      .catch(() => {})
+      .catch(() => {
+        setSaveMsg("Failed to load settings.");
+      })
       .finally(() => setLoadingSettings(false));
   }, []);
 
@@ -190,19 +201,17 @@ export default function SettingsPage() {
           </div>
           <div className="md:col-span-2">
             <div className="bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-subtle)] shadow-sm space-y-4">
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-2 block">Display Name</label>
-                <input type="text" defaultValue="Guest User" className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-[var(--accent)] transition-all" />
-              </div>
-              <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold mb-0.5">Auth Provider</div>
-                  <div className="text-[10px] font-medium text-emerald-500 flex items-center gap-1">
-                    <div className="h-1 w-1 rounded-full bg-emerald-500" /> Local Guest Mode
-                  </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">Email</p>
+                  <p className="mt-1 text-sm font-bold break-all">{user?.email || "Not available"}</p>
                 </div>
-                <Button variant="outline" size="sm" className="rounded-full px-4 text-[10px] font-black uppercase border-[var(--border-strong)]">Link Provider</Button>
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">Auth Mode</p>
+                  <p className="mt-1 text-sm font-bold">Backend Session</p>
+                </div>
               </div>
+              <p className="text-xs text-[var(--text-secondary)]">Identity linking and profile editing will be added in a dedicated account panel.</p>
             </div>
           </div>
         </section>
@@ -219,23 +228,17 @@ export default function SettingsPage() {
           </div>
           <div className="md:col-span-2">
             <div className="bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-2 block">Standard Page Size</label>
-                  <select className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-[var(--accent)] appearance-none transition-all">
-                    <option>ISO A4 (210 × 297 mm)</option>
-                    <option>US Letter (8.5 × 11 in)</option>
-                  </select>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">Default Page Size</p>
+                  <p className="mt-1 text-sm font-bold">A4</p>
                 </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-2 block">Export Standard</label>
-                  <select className="w-full bg-[var(--bg-base)] border border-[var(--border-strong)] rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-[var(--accent)] appearance-none transition-all">
-                    <option>PDF/A-2b Archival</option>
-                    <option>Tagged PDF (UA)</option>
-                    <option>EPUB 3.0</option>
-                  </select>
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">Default Export</p>
+                  <p className="mt-1 text-sm font-bold">PDF/A</p>
                 </div>
               </div>
+              <p className="text-xs text-[var(--text-secondary)] mt-4">Document defaults are currently set globally by the platform and will become user-configurable soon.</p>
             </div>
           </div>
         </section>
