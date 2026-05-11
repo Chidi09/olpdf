@@ -14,6 +14,9 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
+  // Never intercept cross-origin requests — let the browser handle them directly.
+  if (url.origin !== self.location.origin) return;
+
   if (request.method === "GET" && (request.destination === "document" || request.destination === "script" || request.destination === "style")) {
     event.respondWith(
       caches.open(APP_SHELL_CACHE).then(async (cache) => {
