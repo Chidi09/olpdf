@@ -292,8 +292,10 @@ export default function Dashboard() {
                 <h3 className="text-xl font-bold mb-2">No projects found</h3>
                 <p className="text-[var(--text-secondary)] max-w-xs mb-8">Start by creating a new blank document or import an existing PDF file.</p>
                 <div className="flex gap-4">
-                  <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-6 font-bold shadow-lg h-12">New Document</Button>
-                  <Button variant="outline" className="rounded-full px-6 font-bold border-[var(--border-strong)] h-12">Import PDF</Button>
+                  <Link href="/editor/new">
+                    <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-6 font-bold shadow-lg h-12">New Document</Button>
+                  </Link>
+                  <Button onClick={onImportClick} variant="outline" className="rounded-full px-6 font-bold border-[var(--border-strong)] h-12">Import PDF</Button>
                 </div>
               </div>
             )}

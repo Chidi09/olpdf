@@ -14,6 +14,8 @@ const AUTH_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password"]
 // Logged-in app shell — gets sidebar, no top navbar
 const APP_ROUTES = [
   "/dashboard",
+  "/favorites",
+  "/analytics",
   "/editor",
   "/books",
   "/templates",
