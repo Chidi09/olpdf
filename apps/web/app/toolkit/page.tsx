@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Combine, Scissors, Minimize2, RotateCw, Droplets, Lock, Eraser, Images, FileText, Edit3 } from "lucide-react";
 import BackLink from "@/components/BackLink";
 import { useToolkitStore } from "@/store/useToolkitStore";
@@ -30,6 +30,7 @@ export default function ToolkitPage() {
   const { activeOperationId, inputValue, running, result, setActiveOperationId, setInputValue, setRunning, setResult } = useToolkitStore();
   const [documents, setDocuments] = useState<Array<{ id: string; title?: string }>>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const active = operations.find((o) => o.id === activeOperationId) ?? operations[0];
 
@@ -94,6 +95,36 @@ export default function ToolkitPage() {
     }
   };
 
+  const importPdf = async (file: File | null) => {
+    if (!file) return;
+    const createRes = await fetch("/api/bff/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: file.name.replace(/\.pdf$/i, "") || "Imported PDF" }),
+    });
+    const created = await createRes.json().catch(() => ({}));
+    if (!createRes.ok || !created?.id) return;
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("failed_to_read_file"));
+      reader.onload = () => {
+        const dataUrl = String(reader.result || "");
+        resolve(dataUrl.split(",")[1] || "");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    await fetch("/api/bff/import/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
+    }).catch(() => null);
+
+    setDocuments((prev) => [{ id: created.id, title: file.name }, ...prev]);
+    setSelectedDocumentId(created.id);
+  };
+
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       <section className="mx-auto max-w-7xl px-6 py-12">
@@ -142,14 +173,29 @@ export default function ToolkitPage() {
               </select>
             </div>
             <div className="flex items-end">
-              <button
-                onClick={() => setInputValue(suggestedInput)}
-                className="rounded border border-[var(--border-strong)] px-3 py-2 text-xs font-bold"
-              >
-                Load Payload Template
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setInputValue(suggestedInput)}
+                  className="rounded border border-[var(--border-strong)] px-3 py-2 text-xs font-bold"
+                >
+                  Load Payload Template
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded border border-[var(--border-strong)] px-3 py-2 text-xs font-bold"
+                >
+                  Upload PDF
+                </button>
+              </div>
             </div>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => void importPdf(e.target.files?.[0] || null)}
+          />
 
           <textarea
             value={inputValue}

@@ -1,5 +1,5 @@
 import { forwardJson } from "../_shared";
 
 export async function GET() {
-  return forwardJson("/api/templates", { method: "GET" });
+  return forwardJson("/templates", { method: "GET" });
 }

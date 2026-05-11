@@ -17,7 +17,6 @@ import {
   MoreVertical,
   Upload,
   BarChart3,
-  Shield,
   Settings,
   HelpCircle,
   Folder,
@@ -145,36 +144,6 @@ export default function Dashboard() {
         </nav>
 
         <div className="p-4 border-t border-[var(--border-subtle)] space-y-4">
-          <div className="bg-[var(--bg-elevated)] rounded-xl p-4 border border-[var(--border-subtle)]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">Plan: Free</span>
-              <Shield className="h-3 w-3 text-[var(--accent)]" />
-            </div>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-[10px] mb-1">
-                  <span className="text-[var(--text-secondary)]">AI Actions</span>
-                  <span className="text-[var(--text-primary)] font-bold">4 / 10</span>
-                </div>
-                <div className="h-1.5 w-full bg-[var(--bg-base)] rounded-full overflow-hidden">
-                  <div className="h-full bg-[var(--accent)] w-[40%]" />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-[10px] mb-1">
-                  <span className="text-[var(--text-secondary)]">OCR Imports</span>
-                  <span className="text-[var(--text-primary)] font-bold">2 / 5</span>
-                </div>
-                <div className="h-1.5 w-full bg-[var(--bg-base)] rounded-full overflow-hidden">
-                  <div className="h-full bg-[var(--status-review)] w-[40%]" />
-                </div>
-              </div>
-            </div>
-            <Link href="/settings" className="block">
-              <Button size="sm" className="w-full mt-4 bg-[var(--accent)] text-[var(--text-on-accent)] text-[10px] font-bold uppercase tracking-widest h-8 rounded-lg">Manage Plan</Button>
-            </Link>
-          </div>
-
           <Link href="/docs" className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
             <HelpCircle className="h-4 w-4" /> Help & Support
           </Link>
