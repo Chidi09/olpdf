@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const AUTH_COOKIE = "olpdf_session";
 
 export const API_BASE_URL =
-  process.env.OLPDF_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  (process.env.OLPDF_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").trim();
 
 export function secureCookie(): boolean {
   return process.env.NODE_ENV !== "development";
