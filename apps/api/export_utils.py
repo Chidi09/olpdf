@@ -13,9 +13,9 @@ from .engine.exporter import (  # noqa: F401
     extract_images_from_pdf,
     detect_form_fields,
     fill_form_fields,
-    apply_true_redaction,
     run_preflight,
 )
+from .engine.redaction import apply_true_redaction  # noqa: F401
 
 # backward-compat aliases used by old routes
 rotate_pdf = rotate_pages
