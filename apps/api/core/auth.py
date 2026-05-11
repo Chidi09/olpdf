@@ -15,7 +15,7 @@ def verify_jwt_token(token: str) -> dict:
     if not token:
         raise HTTPException(status_code=401, detail="Missing token")
 
-    jwt_secret = os.environ.get("SUPABASE_JWT_SECRET")
+    jwt_secret = os.environ.get("API_JWT_SECRET") or os.environ.get("SUPABASE_JWT_SECRET")
     if not jwt_secret:
         if os.environ.get("OLPDF_DEV_MODE") == "true":
             return {"sub": "dev-user", "email": "dev@olpdf.io"}

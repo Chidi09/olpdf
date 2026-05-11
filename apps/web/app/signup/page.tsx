@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
+import { authClient } from "@/lib/auth-client";
 import { ArrowRight, Check } from "lucide-react";
 import { DEFAULT_BRAND } from "@/lib/branding";
 
@@ -12,33 +12,34 @@ export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
-  const supabase = createSupabaseBrowserClient();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifyPending, setVerifyPending] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { error: err } = await authClient.signUp.email({
       email,
       password,
-      options: { data: { full_name: name } },
+      name,
+      callbackURL: "/onboarding",
     });
     setLoading(false);
-    if (signUpError) { setError(signUpError.message); return; }
-    router.replace("/onboarding");
+    if (err) { setError(err.message); return; }
+    setVerifyPending(true);
   };
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${redirectTo}` },
-    });
+    await authClient.signIn.social({ provider: "google", callbackURL: "/onboarding" });
+  };
+
+  const signInWithGitHub = async () => {
+    await authClient.signIn.social({ provider: "github", callbackURL: "/onboarding" });
   };
 
   return (
