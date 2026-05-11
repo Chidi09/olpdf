@@ -1,5 +1,5 @@
 """All inbound Pydantic request bodies."""
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Base64Bytes, Field, ConfigDict
 from typing import Any, Dict, List, Literal, Optional, Annotated
 
 from .document import DocumentModel
@@ -14,14 +14,14 @@ class ExportRequest(BaseModel):
 class ImportStartPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
     document_id: str = Field(min_length=1, max_length=100)
-    file_bytes: bytes
+    file_bytes: Base64Bytes
     layout_mode: Literal["editable", "fidelity"] = "editable"
 
 
 class WorkerImportPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
     document_id: str = Field(min_length=1, max_length=100)
-    file_bytes: bytes
+    file_bytes: Base64Bytes
     source: Literal["qstash", "direct"] = "qstash"
 
 
