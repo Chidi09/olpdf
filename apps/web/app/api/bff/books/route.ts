@@ -12,8 +12,6 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       title,
       meta: {},
-      front_matter: [],
-      back_matter: [],
       chapters: [],
     }),
   });

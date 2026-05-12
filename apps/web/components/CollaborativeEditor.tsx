@@ -78,6 +78,24 @@ interface CollaborativeEditorProps {
   onModelChange?: (model: DocumentModel) => void;
 }
 
+function normalizeDocumentModel(model: DocumentModel | undefined, documentId: string): DocumentModel {
+  const fallback = createEmptyDocumentModel(documentId);
+  if (!model) return fallback;
+  return {
+    ...fallback,
+    ...model,
+    id: model.id || documentId,
+    meta: {
+      ...fallback.meta,
+      ...(model.meta || {}),
+      title: model.meta?.title || fallback.meta.title,
+    },
+    styles: model.styles || {},
+    blocks: Array.isArray(model.blocks) ? model.blocks : [],
+    page_dimensions: Array.isArray(model.page_dimensions) ? model.page_dimensions : [],
+  };
+}
+
 export default function CollaborativeEditor({
   documentId, userName, userColor, initialModel, onModelChange
 }: CollaborativeEditorProps) {
@@ -124,7 +142,7 @@ export default function CollaborativeEditor({
   });
 
   const saveMutation = useSaveDocumentMutation(documentId);
-  const hydratedModel = initialModel || documentQuery.data?.document_model || model;
+  const hydratedModel = normalizeDocumentModel(initialModel || documentQuery.data?.document_model || model, documentId);
   const hydratedModelRef = useRef(hydratedModel);
 
   useEffect(() => {
@@ -349,7 +367,7 @@ export default function CollaborativeEditor({
         <main className="min-w-0 flex-1 flex flex-col relative overflow-hidden bg-[var(--bg-base)]">
             <header className="h-12 shrink-0 border-b border-[var(--border-subtle)] bg-[var(--bg-glass)] backdrop-blur-md flex items-center justify-between px-4 z-10">
                 <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium">{model.meta.title}</span>
+                    <span className="text-sm font-medium">{hydratedModel.meta.title}</span>
                     <div className="flex items-center gap-2">
                         {saveMutation.isPending ? (
                           <span className="text-[10px] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-0.5 rounded-full font-mono animate-pulse">SAVING...</span>

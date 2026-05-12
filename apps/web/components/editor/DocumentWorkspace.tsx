@@ -226,10 +226,10 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   }, [layoutMode, outlineItems]);
 
   const setLayoutMode = async (mode: "editable" | "fidelity") => {
-    if (!currentModel || currentModel.meta.layout_mode === mode) return;
+    if (!currentModel || layoutMode === mode) return;
     const nextModel: DocumentModel = {
       ...currentModel,
-      meta: { ...currentModel.meta, layout_mode: mode },
+      meta: { ...currentModel.meta, title: currentModel.meta?.title || "Untitled Document", layout_mode: mode },
     };
     setCurrentModel(nextModel);
     await saveMutation.mutateAsync(nextModel);
