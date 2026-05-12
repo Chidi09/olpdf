@@ -529,12 +529,12 @@ export default function DocsPage() {
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-[var(--text-primary)] transition-colors duration-300">
+    <main className="relative min-h-screen overflow-x-hidden bg-black text-[var(--text-primary)] transition-colors duration-300">
       <AmbientBackground />
       <div className="relative z-10 max-w-8xl mx-auto flex">
 
         {/* ── Sidebar ── */}
-        <aside className="hidden lg:block w-60 xl:w-64 shrink-0 sticky top-0 h-screen overflow-y-auto py-10 pl-6 pr-4 border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl">
+        <aside className="hidden lg:block w-60 xl:w-64 shrink-0 self-start sticky top-0 max-h-screen overflow-y-auto py-10 pl-6 pr-4 border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl">
           <Link href="/" className="inline-flex items-baseline mb-8 group">
             <span className="font-sans font-black tracking-tighter text-orange-500 text-lg">O</span>
             <span className="font-serif italic font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-lg">L</span>

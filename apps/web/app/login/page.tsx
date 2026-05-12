@@ -3,8 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { InlineSpinner } from "@/components/ui/MicroUI";
+import { DEFAULT_BRAND } from "@/lib/branding";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -89,8 +91,8 @@ export default function LoginPage() {
       <div className="relative flex min-h-screen w-full flex-col border-r border-[#222] px-8 py-10 lg:w-[40%]">
         <div className="mb-16">
           <Link href="/" className="flex items-center gap-2 text-sm font-bold tracking-wide">
-            <div className="flex h-6 w-6 items-center justify-center rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-700 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)]">
-              <span className="text-xs font-black text-white">O</span>
+            <div className="relative h-6 w-6 shrink-0">
+              <Image src={DEFAULT_BRAND.icon192} alt="OLPDF Logo" fill className="object-contain" priority />
             </div>
             OLPDF
           </Link>
@@ -209,6 +211,13 @@ export default function LoginPage() {
 
       <div className="relative hidden min-h-screen flex-1 flex-col overflow-hidden bg-[#050505] lg:flex">
         <div className="pointer-events-none absolute left-1/2 top-0 h-[600px] w-full -translate-x-1/2 rounded-full bg-orange-600/10 blur-[120px]" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/auth-illustration.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 z-10 h-full w-full object-contain object-center p-8"
+        />
       </div>
     </div>
   );
