@@ -60,6 +60,15 @@ class R2StorageClient:
         except ClientError:
             return False
 
+    def object_exists(self, object_name: str) -> bool:
+        if not self.s3:
+            return os.getenv("OLPDF_DEV_MODE") == "true"
+        try:
+            self.s3.head_object(Bucket=self.bucket_name, Key=object_name)
+            return True
+        except ClientError:
+            return False
+
     def generate_presigned_url(self, object_name: str, expiration: int = 3600) -> Optional[str]:
         if not self.s3:
             if os.getenv("OLPDF_DEV_MODE") == "true":

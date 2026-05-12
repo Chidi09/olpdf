@@ -99,6 +99,8 @@ async def get_document(doc_id: str, user: dict = Depends(require_auth)) -> dict:
 async def get_document_preview(doc_id: str, user: dict = Depends(require_auth)) -> dict:
     check_ownership(doc_id, user)
     object_name = f"documents/{doc_id}.pdf"
+    if not r2_storage.object_exists(object_name):
+        raise HTTPException(status_code=404, detail="PDF preview is not available yet")
     url = r2_storage.generate_presigned_url(object_name)
     if not url:
         raise HTTPException(status_code=500, detail="Failed to generate preview URL")

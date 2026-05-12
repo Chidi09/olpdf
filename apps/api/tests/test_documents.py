@@ -66,6 +66,7 @@ def test_document_preview(mock_r2, mock_get):
         "user_id": "test-user",
         "document_model": {"blocks": []},
     }
+    mock_r2.object_exists.return_value = True
     mock_r2.generate_presigned_url.return_value = "https://example.com/preview.pdf"
 
     response = client.get(
@@ -74,3 +75,23 @@ def test_document_preview(mock_r2, mock_get):
     )
     assert response.status_code == 200
     assert response.json()["preview_url"] == "https://example.com/preview.pdf"
+
+
+@patch("apps.api.repositories.document_repo.DocumentRepository.get_by_id")
+@patch("apps.api.routes.documents.r2_storage")
+def test_document_preview_missing_object_returns_404(mock_r2, mock_get):
+    mock_get.return_value = {
+        "id": "doc-123",
+        "user_id": "test-user",
+        "document_model": {"blocks": []},
+    }
+    mock_r2.object_exists.return_value = False
+
+    response = client.get(
+        "/api/documents/doc-123/preview",
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["message"] == "PDF preview is not available yet"
+    mock_r2.generate_presigned_url.assert_not_called()
