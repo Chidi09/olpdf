@@ -261,7 +261,7 @@ export default function CollaborativeEditor({
   if (!editor) return null;
 
   return (
-    <div className="flex h-screen bg-[var(--bg-base)] text-[var(--text-primary)] font-[var(--font-ui)] overflow-hidden">
+    <div className="flex h-full min-h-0 bg-[var(--bg-base)] text-[var(--text-primary)] font-[var(--font-ui)] overflow-hidden">
         <FloatingToolbar />
         <PageMinimap pageCount={Math.max(model?.page_dimensions?.length || 0, 1)} />
         <VirtualizedPageRail pageCount={Math.max(model?.page_dimensions?.length || 1, 1)} />
@@ -305,7 +305,7 @@ export default function CollaborativeEditor({
           </div>
         )}
 
-        <aside className="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-y-auto">
+        <aside className="hidden w-56 shrink-0 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-y-auto 2xl:block">
             <div className="p-4 border-b border-[var(--border-subtle)] flex gap-2">
                 <button
                     onClick={() => setActiveLeftPanel('library')}
@@ -340,8 +340,8 @@ export default function CollaborativeEditor({
             )}
         </aside>
 
-        <main className="flex-1 flex flex-col relative overflow-hidden bg-[var(--bg-base)]">
-            <header className="h-14 border-b border-[var(--border-subtle)] bg-[var(--bg-glass)] backdrop-blur-md flex items-center justify-between px-6 z-10">
+        <main className="min-w-0 flex-1 flex flex-col relative overflow-hidden bg-[var(--bg-base)]">
+            <header className="h-12 shrink-0 border-b border-[var(--border-subtle)] bg-[var(--bg-glass)] backdrop-blur-md flex items-center justify-between px-4 z-10">
                 <div className="flex items-center gap-4">
                     <span className="text-sm font-medium">{model.meta.title}</span>
                     <div className="flex items-center gap-2">
@@ -384,8 +384,8 @@ export default function CollaborativeEditor({
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-12 editor-canvas-container scrollbar-hide">
-                <div className="max-w-[850px] mx-auto paper-sheet min-h-[1100px] rounded-sm relative group transition-all duration-500">
+            <div className="min-h-0 flex-1 overflow-auto p-4 editor-canvas-container scrollbar-hide md:p-8 xl:p-10">
+                <div className="mx-auto min-w-[760px] max-w-[850px] paper-sheet min-h-[1100px] rounded-sm relative group transition-all duration-500">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <EditorContent 
                         editor={editor} 
@@ -394,13 +394,13 @@ export default function CollaborativeEditor({
                 </div>
             </div>
 
-            <div className="h-72 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] relative group">
+            <div className="h-44 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] relative group xl:h-56">
                 <div className="absolute top-0 left-0 w-full h-1 bg-[var(--border-subtle)] group-hover:bg-[var(--accent)] transition-colors" />
                 <PdfPreview documentId={documentId} />
             </div>
         </main>
 
-        <aside className="w-72 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-y-auto">
+        <aside className="hidden w-64 shrink-0 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-y-auto 2xl:block">
             <div className="p-4 border-b border-[var(--border-subtle)]">
                 <h2 className="text-sm font-semibold tracking-wider uppercase text-[var(--text-secondary)]">Inspector</h2>
             </div>

@@ -847,10 +847,10 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div ref={rootRef} className="h-full overflow-y-auto bg-[var(--bg-surface)] p-8">
+    <div ref={rootRef} className="h-full overflow-auto bg-[var(--bg-surface)] p-4 md:p-6 xl:p-8">
 
       {/* Toolbar */}
-      <div className="mx-auto mb-4 flex w-full max-w-[1200px] items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2 shadow-sm sticky top-4 z-40">
+      <div className="sticky top-4 z-40 mx-auto mb-4 flex w-full min-w-[760px] max-w-[1200px] items-center gap-2 overflow-x-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2 shadow-sm">
         {(["select", "rect", "roundedRect", "ellipse", "line", "arrow", "text", "sticky", "draw"] as ShapeTool[]).map((tool) => (
           <button
             key={tool}
@@ -990,7 +990,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
       {/* Pages */}
       {/* eslint-disable-next-line react-hooks/refs -- pageDimensions is state derived, not a ref */}
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8">
+      <div className="mx-auto flex w-full min-w-[760px] max-w-[1200px] flex-col gap-8">
         {pageDimensions.map((dim) => (
           <PageErrorBoundary key={dim.page_index} pageIndex={dim.page_index}>
             <VirtualizedPage

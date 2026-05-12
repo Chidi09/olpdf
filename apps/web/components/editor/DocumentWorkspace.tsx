@@ -20,6 +20,7 @@ import {
   ShareIcon,
   ArrowDownTrayIcon,
   CheckCircleIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
@@ -134,6 +135,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
   const layoutMode = currentModel?.meta?.layout_mode ?? "editable";
   const [leftTab, setLeftTab] = useState<"outline" | "blocks">("outline");
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const editorContentRef = useRef<HTMLDivElement>(null);
 
@@ -234,8 +236,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-black text-[#ededed]">
-      <aside className="z-20 flex w-[260px] shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl">
+    <div className="flex h-screen w-full overflow-x-auto overflow-y-hidden bg-black text-[#ededed]">
+      <aside className="z-20 hidden w-[240px] shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl lg:flex 2xl:w-[260px]">
         <div className="flex h-14 items-center border-b border-white/[0.08] px-3">
           <Link href="/dashboard" className="mr-2 rounded-md p-1.5 text-[#888] transition-colors hover:bg-white/[0.05] hover:text-white">
             <ChevronLeftIcon className="h-4 w-4" />
@@ -302,7 +304,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         </div>
       </aside>
 
-      <main className="relative flex min-w-0 flex-1 flex-col">
+      <main className="relative flex min-w-[720px] flex-1 flex-col xl:min-w-[860px]">
         <div
           className="pointer-events-none absolute inset-0 opacity-20"
           style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
@@ -325,6 +327,18 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           </div>
 
           <div className="flex items-center gap-2">
+            <GlassTooltip label={isAssistantOpen ? "Hide assistant" : "Show assistant"}>
+              <button
+                onClick={() => setIsAssistantOpen((open) => !open)}
+                className={`flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                  isAssistantOpen
+                    ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                    : "border-[#333] bg-[#0A0A0A] text-[#888] hover:bg-[#111] hover:text-white"
+                }`}
+              >
+                <SparklesIcon className="h-3.5 w-3.5" /> AI
+              </button>
+            </GlassTooltip>
             <GlassTooltip label="Share" shortcut="⌘S">
               <button className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
                 <ShareIcon className="h-4 w-4" />
@@ -343,7 +357,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           </div>
         </header>
 
-        <div ref={editorContentRef} className="relative z-20 flex-1 overflow-hidden">
+        <div ref={editorContentRef} className="relative z-20 min-h-0 flex-1 overflow-hidden">
           {layoutMode === "fidelity" && currentModel ? (
             <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} />
           ) : (
@@ -358,10 +372,33 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         </div>
       </main>
 
-      <aside className="z-20 flex w-[320px] shrink-0 flex-col border-l border-white/[0.08] bg-black/40 backdrop-blur-2xl">
+      <aside
+        className={`z-20 flex shrink-0 flex-col border-l border-white/[0.08] bg-black/40 backdrop-blur-2xl transition-[width] duration-300 ${
+          isAssistantOpen ? "w-[320px]" : "w-12"
+        }`}
+      >
+        {!isAssistantOpen ? (
+          <button
+            onClick={() => setIsAssistantOpen(true)}
+            className="flex h-full w-full flex-col items-center justify-start gap-3 px-2 py-4 text-[#777] transition-colors hover:bg-white/[0.04] hover:text-white"
+            aria-label="Open Gemini assistant"
+          >
+            <ChevronRightIcon className="h-4 w-4 rotate-180" />
+            <SparklesIcon className="h-4 w-4 text-orange-500" />
+            <span className="mt-2 [writing-mode:vertical-rl] rotate-180 text-[10px] font-semibold uppercase tracking-[0.2em]">Assistant</span>
+          </button>
+        ) : (
+          <>
         <div className="flex h-14 items-center border-b border-white/[0.08] px-4">
           <SparklesIcon className="mr-2 h-4 w-4 text-orange-500" />
           <span className="text-xs font-semibold tracking-wide text-white">Gemini Assistant</span>
+          <button
+            onClick={() => setIsAssistantOpen(false)}
+            className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.06] hover:text-white"
+            aria-label="Collapse Gemini assistant"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -410,6 +447,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             {currentModel && <ExportButton model={currentModel} documentId={documentId} />}
           </div>
         </div>
+          </>
+        )}
       </aside>
 
       {installedPlugins?.map((p: { id: string; bundle_url: string; [k: string]: unknown }) => (
