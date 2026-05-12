@@ -19,6 +19,7 @@ import { Spinner, EmptyState } from "@olpdf/ui";
 import { useTemplatesStore } from "@/store/useTemplatesStore";
 import { PageShell } from "@/components/layout/PageShell";
 import { InlineSpinner } from "@/components/ui/MicroUI";
+import { GlassCard } from "@/components/ui/Glass";
 
 type Template = {
   id: string;
@@ -192,15 +193,15 @@ export default function TemplatesPage() {
             {filtered.map((template) => {
               const CategoryIcon = categoryMap.find((c) => c.name === template.category)?.icon || Squares2X2Icon;
               return (
-                <article
+                <GlassCard
                   key={template.id}
-                  className="group flex flex-col rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/40 hover:bg-[#0c0c0e]"
+                  className="p-4"
                 >
                   <div className="mb-4 flex items-center justify-between">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)]">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.05] bg-white/[0.05]">
                       <CategoryIcon className="h-4 w-4 text-[var(--text-secondary)] group-hover:text-[var(--accent)]" />
                     </div>
-                    <span className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--text-tertiary)]">
+                    <span className="rounded border border-white/[0.05] bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--text-tertiary)] backdrop-blur-md">
                       {template.category}
                     </span>
                   </div>
@@ -212,7 +213,7 @@ export default function TemplatesPage() {
                     </p>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
+                  <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
                     <div>
                       <p className="text-[10px] text-[var(--text-tertiary)]">Author</p>
                       <p className="max-w-[120px] truncate text-xs font-medium text-[var(--text-primary)]">{template.author}</p>
@@ -220,7 +221,7 @@ export default function TemplatesPage() {
                     <button
                       onClick={() => applyTemplate(template.id)}
                       disabled={applyingId === template.id}
-                      className="flex items-center gap-1 rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/12 px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/20 disabled:opacity-50"
+                      className="flex items-center gap-1 rounded-md border border-orange-500/20 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-400 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all hover:bg-orange-500/20 active:scale-[0.98] disabled:opacity-50"
                     >
                       {applyingId === template.id ? (
                         <>
@@ -233,7 +234,7 @@ export default function TemplatesPage() {
                       )}
                     </button>
                   </div>
-                </article>
+                </GlassCard>
               );
             })}
           </div>

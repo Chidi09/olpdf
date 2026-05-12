@@ -10,6 +10,7 @@ import {
   ArrowTopRightOnSquareIcon,
   ChatBubbleOvalLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
+import { GlassCard, GlassPanel } from "@/components/ui/Glass";
 
 export default function HelpPage() {
   return (
@@ -32,7 +33,8 @@ export default function HelpPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Link href="/docs" className="group flex flex-col rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-all hover:border-orange-500/40 hover:bg-[#111]">
+          <GlassCard className="p-5">
+          <Link href="/docs" className="group flex h-full flex-col">
             <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#111]">
               <DocumentTextIcon className="h-4 w-4 text-[#888] transition-colors group-hover:text-orange-500" />
             </div>
@@ -44,8 +46,9 @@ export default function HelpPage() {
               Read docs <ArrowTopRightOnSquareIcon className="h-3 w-3" />
             </span>
           </Link>
+          </GlassCard>
 
-          <div className="group flex cursor-pointer flex-col rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-all hover:border-[#444] hover:bg-[#111]">
+          <GlassCard className="cursor-pointer p-5">
             <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#111]">
               <LifebuoyIcon className="h-4 w-4 text-[#888] transition-colors group-hover:text-[#ededed]" />
             </div>
@@ -56,9 +59,9 @@ export default function HelpPage() {
             <span className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-[#ededed]">
               View FAQ <ArrowTopRightOnSquareIcon className="h-3 w-3" />
             </span>
-          </div>
+          </GlassCard>
 
-          <div className="group flex cursor-pointer flex-col rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-all hover:border-[#444] hover:bg-[#111]">
+          <GlassCard className="cursor-pointer p-5">
             <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#111]">
               <EnvelopeIcon className="h-4 w-4 text-[#888] transition-colors group-hover:text-[#ededed]" />
             </div>
@@ -69,10 +72,10 @@ export default function HelpPage() {
             <span className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-[#ededed]">
               Email us <ArrowTopRightOnSquareIcon className="h-3 w-3" />
             </span>
-          </div>
+          </GlassCard>
         </div>
 
-        <section className="mt-8 overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+        <GlassPanel className="mt-8">
           <div className="border-b border-[#222] bg-[#050505] px-5 py-4">
             <h2 className="text-sm font-semibold text-white">Popular Articles</h2>
           </div>
@@ -108,7 +111,7 @@ export default function HelpPage() {
               </div>
             </div>
           </div>
-        </section>
+        </GlassPanel>
       </div>
     </PageShell>
   );

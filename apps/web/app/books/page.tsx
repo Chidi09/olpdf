@@ -8,6 +8,7 @@ import {
   FunnelIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
+import { GlassPanel } from "@/components/ui/Glass";
 
 export default function BooksPage() {
   return (
@@ -37,7 +38,8 @@ export default function BooksPage() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center rounded-lg border border-dashed border-[#222] bg-[#050505] p-12 text-center">
+        <GlassPanel className="mt-8 border-dashed p-12 text-center">
+          <div className="flex flex-col items-center">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-[#333] bg-[#111]">
             <BookOpenIcon className="h-6 w-6 text-[#888]" />
           </div>
@@ -50,7 +52,8 @@ export default function BooksPage() {
               <PlusIcon className="h-4 w-4" /> Create Book
             </Link>
           </div>
-        </div>
+          </div>
+        </GlassPanel>
       </div>
     </PageShell>
   );

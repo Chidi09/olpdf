@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/layout/PageShell";
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { Button } from "@heroui/react";
+import { GlassPanel } from "@/components/ui/Glass";
 
 function ProviderIcon({ slug, color, size = 18 }: { slug: string; color: string; size?: number }) {
   const src = slug === "openai"
@@ -172,7 +173,7 @@ export default function SettingsPage() {
             <p className="pr-4 text-xs leading-relaxed text-[var(--text-secondary)]">Your profile identity and authentication provider details.</p>
           </div>
           <div className="md:col-span-2">
-            <div className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <GlassPanel className="flex flex-col">
               <div className="grid flex-1 gap-4 p-5 sm:grid-cols-1">
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Email Address</label>
@@ -184,7 +185,7 @@ export default function SettingsPage() {
               <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-panel)] px-5 py-3 text-xs text-[var(--text-tertiary)]">
                 Identity linking will be available in a future update.
               </div>
-            </div>
+            </GlassPanel>
           </div>
         </section>
 
@@ -194,7 +195,7 @@ export default function SettingsPage() {
             <p className="pr-4 text-xs leading-relaxed text-[var(--text-secondary)]">Choose your AI provider. Bring your own key for any supported model, or use our free tier.</p>
           </div>
           <div className="md:col-span-2">
-            <div className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <GlassPanel className="flex flex-col">
               <div className="space-y-6 p-5">
                 <div>
                   <label className="mb-2.5 block text-xs font-medium text-[var(--text-primary)]">Select Provider</label>
@@ -293,7 +294,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </GlassPanel>
           </div>
         </section>
 

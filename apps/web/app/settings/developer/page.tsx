@@ -13,6 +13,7 @@ import {
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@heroui/react";
+import { GlassPanel } from "@/components/ui/Glass";
 
 type ApiKey = { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null };
 type WebhookModel = { id: string; url: string; events: string[]; is_active: boolean; created_at: string };
@@ -122,7 +123,7 @@ export default function DeveloperSettingsPage() {
           </div>
 
           <div className="md:col-span-2">
-            <div className="flex flex-col overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+            <GlassPanel className="flex flex-col">
               <div className="border-b border-[#222] bg-[#050505] p-5">
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[#666]">Generate New Key</label>
                 <div className="flex gap-3">
@@ -192,7 +193,7 @@ export default function DeveloperSettingsPage() {
                   ))
                 )}
               </div>
-            </div>
+            </GlassPanel>
           </div>
         </section>
 
@@ -207,7 +208,7 @@ export default function DeveloperSettingsPage() {
           </div>
 
           <div className="md:col-span-2">
-            <div className="flex flex-col overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+            <GlassPanel className="flex flex-col">
               <div className="border-b border-[#222] bg-[#050505] p-5">
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[#666]">Add Endpoint</label>
                 <div className="flex gap-3">
@@ -256,7 +257,7 @@ export default function DeveloperSettingsPage() {
                   ))
                 )}
               </div>
-            </div>
+            </GlassPanel>
           </div>
         </section>
 

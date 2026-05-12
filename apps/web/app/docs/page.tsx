@@ -30,6 +30,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import BackLink from "@/components/BackLink";
+import { AmbientBackground } from "@/components/ui/Glass";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -528,11 +529,12 @@ export default function DocsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
-      <div className="max-w-8xl mx-auto flex">
+    <main className="relative min-h-screen overflow-hidden bg-black text-[var(--text-primary)] transition-colors duration-300">
+      <AmbientBackground />
+      <div className="relative z-10 max-w-8xl mx-auto flex">
 
         {/* ── Sidebar ── */}
-        <aside className="hidden lg:block w-60 xl:w-64 shrink-0 sticky top-0 h-screen overflow-y-auto py-10 pl-6 pr-4 border-r border-[#222] bg-black">
+        <aside className="hidden lg:block w-60 xl:w-64 shrink-0 sticky top-0 h-screen overflow-y-auto py-10 pl-6 pr-4 border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl">
           <Link href="/" className="inline-flex items-baseline mb-8 group">
             <span className="font-sans font-black tracking-tighter text-orange-500 text-lg">O</span>
             <span className="font-serif italic font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-lg">L</span>

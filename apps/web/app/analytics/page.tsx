@@ -10,6 +10,7 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import { SkeletonRow } from "@/components/ui/MicroUI";
+import { GlassCard, GlassPanel } from "@/components/ui/Glass";
 
 type ApiDoc = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
 type ApiBook = { id: string; title?: string; updated_at?: string; created_at?: string; chapters?: unknown[] };
@@ -87,7 +88,7 @@ export default function AnalyticsPage() {
           />
         </div>
 
-        <div className="mt-8 flex flex-col overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+        <GlassPanel className="mt-8 flex flex-col">
           <div className="border-b border-[#222] bg-[#050505] px-5 py-4">
             <h2 className="text-sm font-semibold text-white">Recent Activity</h2>
           </div>
@@ -129,7 +130,7 @@ export default function AnalyticsPage() {
               ))}
             </div>
           )}
-        </div>
+        </GlassPanel>
       </div>
     </PageShell>
   );
@@ -137,12 +138,12 @@ export default function AnalyticsPage() {
 
 function StatCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className="flex flex-col justify-between rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-colors hover:border-[#333]">
+    <GlassCard className="justify-between p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-xs font-semibold text-[#888]">{label}</h3>
         {icon}
       </div>
       <div className="text-2xl font-semibold tracking-tight text-[#ededed]">{value}</div>
-    </div>
+    </GlassCard>
   );
 }

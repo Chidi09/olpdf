@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
   ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
+import { GlassPanel } from "@/components/ui/Glass";
 
 export default function FavoritesPage() {
   return (
@@ -33,7 +34,8 @@ export default function FavoritesPage() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center rounded-lg border border-dashed border-[#222] bg-[#050505] p-12 text-center">
+        <GlassPanel className="mt-8 border-dashed p-12 text-center">
+          <div className="flex flex-col items-center">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-[#333] bg-[#111]">
             <StarIcon className="h-6 w-6 text-[#888]" />
           </div>
@@ -44,7 +46,8 @@ export default function FavoritesPage() {
           <Link href="/dashboard" className="flex h-9 items-center rounded-md border border-[#333] bg-[#111] px-4 text-sm font-medium text-white transition-all hover:border-[#444] hover:bg-[#1A1A1A]">
             Go to Dashboard
           </Link>
-        </div>
+          </div>
+        </GlassPanel>
       </div>
     </PageShell>
   );
