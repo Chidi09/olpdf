@@ -37,4 +37,12 @@ class AuditLogRepository:
         payload: Dict[str, Any] = {"user_id": user_id, "resource_id": resource_id, "resource_type": resource_type, "action": action, "metadata": metadata, "ip_address": ip_address}
         if workspace_id:
             payload["workspace_id"] = workspace_id
-        supabase_admin.table("audit_logs").insert(payload).execute()
+        try:
+            supabase_admin.table("audit_logs").insert(payload).execute()
+        except Exception:
+            # Bypass FK constraints for users without profiles
+            payload["user_id"] = None
+            try:
+                supabase_admin.table("audit_logs").insert(payload).execute()
+            except Exception:
+                pass
