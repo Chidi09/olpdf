@@ -133,9 +133,15 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     return activeAiLog.diff_snapshot;
   }, [activeAiLog]);
 
-  const layoutMode = currentModel?.meta?.layout_mode ?? "editable";
+  const hasAbsolutePdfLayout = Boolean(
+    currentModel?.page_dimensions?.length || currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)),
+  );
+  const layoutMode = currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable");
   const [leftTab, setLeftTab] = useState<"outline" | "blocks">("outline");
+  const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [editorNotice, setEditorNotice] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const editorContentRef = useRef<HTMLDivElement>(null);
 
@@ -235,9 +241,42 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     await saveMutation.mutateAsync(nextModel);
   };
 
+  const showNotice = (message: string) => {
+    setEditorNotice(message);
+    window.setTimeout(() => setEditorNotice(null), 2400);
+  };
+
+  const shareEditor = async () => {
+    await navigator.clipboard?.writeText(window.location.href);
+    showNotice("Editor link copied");
+  };
+
+  const exportPdf = async () => {
+    if (!currentModel || isExporting) return;
+    setIsExporting(true);
+    try {
+      const response = await fetch(`/api/bff/documents/${documentId}/export/fidelity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document_model: currentModel, font_metrics: {} }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.url) throw new Error("export_failed");
+      const a = document.createElement("a");
+      a.href = data.url;
+      a.download = `${currentModel.meta?.title || "document"}.pdf`;
+      a.click();
+      showNotice("PDF export started");
+    } catch {
+      showNotice("Export failed. Try again after saving.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="flex h-screen w-full overflow-x-auto overflow-y-hidden bg-black text-[#ededed]">
-      <aside className="z-20 hidden w-[240px] shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl lg:flex 2xl:w-[260px]">
+      {isOutlineOpen && <aside className="z-20 hidden w-[240px] shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl lg:flex 2xl:w-[260px]">
         <div className="flex h-14 items-center border-b border-white/[0.08] px-3">
           <Link href="/dashboard" className="mr-2 rounded-md p-1.5 text-[#888] transition-colors hover:bg-white/[0.05] hover:text-white">
             <ChevronLeftIcon className="h-4 w-4" />
@@ -248,6 +287,13 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             </div>
             <span className="text-xs font-semibold tracking-wide">Editor</span>
           </div>
+          <button
+            onClick={() => setIsOutlineOpen(false)}
+            className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.06] hover:text-white"
+            aria-label="Hide outline"
+          >
+            <ChevronRightIcon className="h-4 w-4 rotate-180" />
+          </button>
         </div>
 
         <div className="flex gap-1 border-b border-white/[0.08] p-2">
@@ -302,7 +348,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           </div>
           {outlineItems.length === 0 && <p className="px-2 py-2 text-xs text-[var(--text-tertiary)]">No blocks yet.</p>}
         </div>
-      </aside>
+      </aside>}
 
       <main className="relative flex min-w-[720px] flex-1 flex-col xl:min-w-[860px]">
         <div
@@ -312,6 +358,21 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
         <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-white/[0.08] bg-black/40 px-4 backdrop-blur-xl">
           <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="rounded-md p-1.5 text-[#888] transition-colors hover:bg-white/[0.05] hover:text-white" aria-label="Back to dashboard">
+              <ChevronLeftIcon className="h-4 w-4" />
+            </Link>
+            <GlassTooltip label={isOutlineOpen ? "Hide outline" : "Show outline"}>
+              <button
+                onClick={() => setIsOutlineOpen((open) => !open)}
+                className={`flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                  isOutlineOpen
+                    ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                    : "border-[#333] bg-[#0A0A0A] text-[#888] hover:bg-[#111] hover:text-white"
+                }`}
+              >
+                <Bars3BottomLeftIcon className="h-3.5 w-3.5" /> Outline
+              </button>
+            </GlassTooltip>
             <input
               type="text"
               defaultValue={currentModel?.meta?.title || "untitled_document.pdf"}
@@ -327,6 +388,11 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           </div>
 
           <div className="flex items-center gap-2">
+            {editorNotice && (
+              <div className="hidden rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-[#aaa] md:block">
+                {editorNotice}
+              </div>
+            )}
             <GlassTooltip label={isAssistantOpen ? "Hide assistant" : "Show assistant"}>
               <button
                 onClick={() => setIsAssistantOpen((open) => !open)}
@@ -340,17 +406,17 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               </button>
             </GlassTooltip>
             <GlassTooltip label="Share" shortcut="⌘S">
-              <button className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
+              <button onClick={() => void shareEditor()} className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
                 <ShareIcon className="h-4 w-4" />
               </button>
             </GlassTooltip>
             <GlassTooltip label="Export PDF">
-              <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98]">
-                <ArrowDownTrayIcon className="h-3.5 w-3.5" /> Export
+              <button onClick={() => void exportPdf()} disabled={isExporting || !currentModel} className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
+                {isExporting ? <InlineSpinner className="h-3.5 w-3.5" /> : <ArrowDownTrayIcon className="h-3.5 w-3.5" />} {isExporting ? "Exporting" : "Export"}
               </button>
             </GlassTooltip>
             <GlassTooltip label="Publish to web">
-              <button className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
+              <button onClick={() => showNotice("Publish is not enabled yet")} className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
                 <PlayIcon className="h-3.5 w-3.5" /> Publish
               </button>
             </GlassTooltip>
@@ -377,48 +443,46 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       </main>
 
       <aside
-        className={`z-20 flex shrink-0 flex-col border-l border-white/[0.08] bg-black/40 backdrop-blur-2xl transition-[width] duration-300 ${
-          isAssistantOpen ? "w-[320px]" : "w-12"
+        className={`z-20 flex shrink-0 flex-col border-l border-white/[0.08] bg-[#050505]/90 backdrop-blur-xl transition-[width] duration-300 ${
+          isAssistantOpen ? "w-[300px]" : "w-10"
         }`}
       >
         {!isAssistantOpen ? (
           <button
             onClick={() => setIsAssistantOpen(true)}
-            className="flex h-full w-full flex-col items-center justify-start gap-3 px-2 py-4 text-[#777] transition-colors hover:bg-white/[0.04] hover:text-white"
+            className="flex h-full w-full items-start justify-center px-2 pt-4 text-[#777] transition-colors hover:bg-white/[0.03] hover:text-white"
             aria-label="Open Gemini assistant"
           >
-            <ChevronRightIcon className="h-4 w-4 rotate-180" />
-            <SparklesIcon className="h-4 w-4 text-orange-500" />
-            <span className="mt-2 [writing-mode:vertical-rl] rotate-180 text-[10px] font-semibold uppercase tracking-[0.2em]">Assistant</span>
+            <SparklesIcon className="h-4 w-4 text-orange-500/80" />
           </button>
         ) : (
           <>
-        <div className="flex h-14 items-center border-b border-white/[0.08] px-4">
-          <SparklesIcon className="mr-2 h-4 w-4 text-orange-500" />
-          <span className="text-xs font-semibold tracking-wide text-white">Gemini Assistant</span>
+        <div className="flex h-12 items-center border-b border-white/[0.06] px-3">
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+          <span className="ml-2 text-xs font-medium text-white/85">Assistant</span>
           <button
             onClick={() => setIsAssistantOpen(false)}
-            className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.06] hover:text-white"
+            className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.04] hover:text-white"
             aria-label="Collapse Gemini assistant"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-3 rounded-md border border-white/10 bg-white/[0.02] p-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[#888]">AI Session</div>
-              <div className="inline-flex rounded-full border border-white/15 p-0.5">
+              <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#666]">Mode</div>
+              <div className="inline-flex rounded-md border border-white/10 bg-white/[0.02] p-0.5">
                 <button
                   onClick={() => void setLayoutMode("editable")}
-                  className={`px-2 py-1 text-[10px] font-semibold uppercase ${layoutMode === "editable" ? "bg-[var(--accent)] text-[var(--text-on-accent)]" : "text-[var(--text-secondary)]"}`}
+                  className={`rounded px-2 py-1 text-[10px] font-medium uppercase ${layoutMode === "editable" ? "bg-white text-black" : "text-[#777] hover:text-white"}`}
                 >
                   Editable
                 </button>
                 <button
                   onClick={() => void setLayoutMode("fidelity")}
-                  className={`px-2 py-1 text-[10px] font-semibold uppercase ${layoutMode === "fidelity" ? "bg-[var(--accent)] text-[var(--text-on-accent)]" : "text-[var(--text-secondary)]"}`}
+                  className={`rounded px-2 py-1 text-[10px] font-medium uppercase ${layoutMode === "fidelity" ? "bg-white text-black" : "text-[#777] hover:text-white"}`}
                 >
                   Fidelity
                 </button>
@@ -428,27 +492,27 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             <textarea
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
-              placeholder="Ask Gemini to rewrite, summarize, or format..."
-              className="min-h-24 w-full rounded-md border border-white/10 bg-black/25 px-3 py-2 text-sm text-[#ededed] outline-none transition-all focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-subtle)]"
+              placeholder="Rewrite, summarize, format..."
+              className="min-h-28 w-full resize-none rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2.5 text-sm text-[#ededed] outline-none transition-all placeholder:text-[#555] focus:border-orange-500/50 focus:bg-white/[0.04]"
             />
 
             <div className="flex items-center gap-2">
               <button
                 onClick={runAi}
                 disabled={!canRunAi}
-                className="flex-1 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-[var(--text-on-accent)] disabled:opacity-40"
+                className="flex-1 rounded-md bg-white px-3 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isRunningAi ? "Generating..." : "Run"}
               </button>
               <button
                 onClick={() => setShowHistory(true)}
-                className="rounded-md border border-white/15 px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                className="rounded-md border border-white/10 px-3 py-2 text-xs font-medium text-[#777] transition-colors hover:border-white/20 hover:text-white"
               >
                 History
               </button>
             </div>
 
-            {currentModel && <ExportButton model={currentModel} documentId={documentId} />}
+            <p className="text-[11px] leading-relaxed text-[#555]">AI changes open in review before they touch your document.</p>
           </div>
         </div>
           </>

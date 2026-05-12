@@ -56,7 +56,6 @@ import { DocumentModel } from "@olpdf/document-model";
 import debounce from "lodash/debounce";
 import { useQuery } from "@tanstack/react-query";
 import StylePanel from "./editor/StylePanel";
-import PdfPreview from "./editor/PdfPreview";
 import TemplateBrowser from "./editor/TemplateBrowser";
 import VersionHistoryPanel from "./editor/VersionHistoryPanel";
 import VersionDiffViewer from "./editor/VersionDiffViewer";
@@ -113,6 +112,7 @@ export default function CollaborativeEditor({
   const [showDiffViewer, setShowDiffViewer] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [showNavigationTools, setShowNavigationTools] = useState(false);
   const documentQuery = useDocumentQuery(documentId);
 
   const version1Query = useQuery<DocumentModel>({
@@ -287,8 +287,12 @@ export default function CollaborativeEditor({
   return (
     <div className="flex h-full min-h-0 bg-[var(--bg-base)] text-[var(--text-primary)] font-[var(--font-ui)] overflow-hidden">
         <FloatingToolbar />
-        <PageMinimap pageCount={Math.max(model?.page_dimensions?.length || 0, 1)} />
-        <VirtualizedPageRail pageCount={Math.max(model?.page_dimensions?.length || 1, 1)} />
+        {showNavigationTools && (
+          <>
+            <PageMinimap pageCount={Math.max(model?.page_dimensions?.length || 0, 1)} />
+            <VirtualizedPageRail pageCount={Math.max(model?.page_dimensions?.length || 1, 1)} />
+          </>
+        )}
         {/* Command Palette */}
         {showCommandPalette && (
           <div
@@ -390,6 +394,16 @@ export default function CollaborativeEditor({
                     </button>
                 </div>
                 <div className="flex items-center gap-3">
+                   <button
+                     onClick={() => setShowNavigationTools((show) => !show)}
+                     className={`rounded border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                       showNavigationTools
+                         ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                         : "border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                     }`}
+                   >
+                     Pages
+                   </button>
                    {connectedUsers.slice(0, 2).map((user, index) => (
                      <div
                        key={index}
@@ -418,10 +432,6 @@ export default function CollaborativeEditor({
                 </div>
             </div>
 
-            <div className="h-44 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] relative group xl:h-56">
-                <div className="absolute top-0 left-0 w-full h-1 bg-[var(--border-subtle)] group-hover:bg-[var(--accent)] transition-colors" />
-                <PdfPreview documentId={documentId} />
-            </div>
         </main>
 
         <aside className="hidden w-64 shrink-0 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-y-auto 2xl:block">
