@@ -46,9 +46,9 @@ body {
 .ProseMirror > * {
   position: relative;
   transition: all 0.2s ease;
-  padding-left: 24px;
-  margin-left: -24px;
-  border-left: 3px solid transparent;
+  padding-left: 28px;
+  margin-left: -28px;
+  border-left: 2px solid transparent;
 }
 
 .ProseMirror > *:hover {
@@ -61,37 +61,18 @@ body {
   background-color: var(--accent-subtle);
 }
 
-/* Drag Handle */
-.drag-handle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  cursor: grab;
-  color: var(--text-tertiary);
-  opacity: 0;
-  transition: opacity 0.2s ease;
+/* Block type badge — right gutter, revealed on hover */
+.ProseMirror > *::after {
+  content: attr(data-block-type);
   position: absolute;
-  left: -28px;
+  right: -16px;
   top: 4px;
-}
-
-.ProseMirror > *:hover .drag-handle {
-  opacity: 1;
-}
-
-/* Block Type Badge */
-.block-type-badge {
-  position: absolute;
-  right: -12px;
-  top: -8px;
   background: var(--bg-elevated);
-  border: 1px border-[var(--border-subtle)];
+  border: 1px solid var(--border-subtle);
   color: var(--text-tertiary);
   font-size: 9px;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -101,7 +82,50 @@ body {
   z-index: 10;
 }
 
-.ProseMirror > *:hover .block-type-badge {
+.ProseMirror > *:hover::after {
+  opacity: 1;
+}
+
+/* Left gutter — add block indicator */
+.ProseMirror > *::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.ProseMirror > *:hover::before {
+  opacity: 1;
+  background: var(--bg-panel);
+}
+
+/* Drag Handle */
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  cursor: grab;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  position: absolute;
+  left: -24px;
+  top: 3px;
+  z-index: 15;
+}
+
+.ProseMirror > *:hover .drag-handle {
   opacity: 1;
 }
 

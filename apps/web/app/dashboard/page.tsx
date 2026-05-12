@@ -21,9 +21,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageShell } from "@/components/layout/PageShell";
 import { InlineSpinner, SkeletonRow, HelperText } from "@/components/ui/MicroUI";
 import { ImportStatusToast } from "@/components/ui/ImportStatusToast";
+import { InlineEditableText } from "@/components/ui/InlineEditableText";
+import { InlineConfirmButton } from "@/components/ui/InlineConfirmButton";
 
 type Project = {
   id: string;
@@ -35,11 +38,15 @@ type Project = {
 
 export default function Dashboard() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importAbortRef = useRef<AbortController | null>(null);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [titleOverrides, setTitleOverrides] = useState<Record<string, string>>({});
+  const [pendingDelete, setPendingDelete] = useState<{ project: Project; timeoutId: number } | null>(null);
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
 
   type ApiDoc  = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
@@ -68,14 +75,14 @@ export default function Dashboard() {
   const projects: Project[] = [
     ...(documentsQuery.data || []).map(d => ({
       id: d.id,
-      title: d.title ?? "Untitled Document",
+      title: titleOverrides[d.id] ?? d.title ?? "Untitled Document",
       type: "Document" as const,
       updated_at: d.updated_at ?? d.created_at ?? new Date(0).toISOString(),
       pages: d.page_count ?? 0
     })),
     ...(booksQuery.data || []).map(b => ({
       id: b.id,
-      title: b.title ?? "Untitled Book",
+      title: titleOverrides[b.id] ?? b.title ?? "Untitled Book",
       type: "Book" as const,
       updated_at: b.updated_at ?? b.created_at ?? new Date(0).toISOString(),
       pages: b.chapters?.length ?? 0
@@ -83,6 +90,7 @@ export default function Dashboard() {
   ].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
   const filtered = projects.filter(p => {
+    if (pendingDelete?.project.id === p.id) return false;
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
     if (activeTab === "recent") return matchesSearch;
     if (activeTab === "documents") return matchesSearch && p.type === "Document";
@@ -94,6 +102,26 @@ export default function Dashboard() {
   const displayProjects = recentLimit ? filtered.slice(0, recentLimit) : filtered;
 
   const onImportClick = () => fileInputRef.current?.click();
+
+  const queueDelete = (project: Project) => {
+    if (pendingDelete) {
+      window.clearTimeout(pendingDelete.timeoutId);
+    }
+    const timeoutId = window.setTimeout(async () => {
+      if (project.type === "Document") {
+        await fetch(`/api/bff/documents/${project.id}`, { method: "DELETE" }).catch(() => null);
+        queryClient.invalidateQueries({ queryKey: ["documents"] });
+      }
+      setPendingDelete(null);
+    }, 5000);
+    setPendingDelete({ project, timeoutId });
+  };
+
+  const undoDelete = () => {
+    if (!pendingDelete) return;
+    window.clearTimeout(pendingDelete.timeoutId);
+    setPendingDelete(null);
+  };
 
   useEffect(() => {
     if (!searchQuery) {
@@ -133,17 +161,20 @@ export default function Dashboard() {
       };
       reader.readAsDataURL(file);
     });
+    importAbortRef.current = new AbortController();
     await fetch("/api/bff/import/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
+      signal: importAbortRef.current.signal,
     }).catch(() => null);
     setUploadStatus("processing");
     setUploadProgress(45);
 
     const poll = async () => {
       for (let i = 0; i < 45; i += 1) {
-        const res = await fetch(`/api/bff/import/${created.id}/status`).catch(() => null);
+        if (importAbortRef.current?.signal.aborted) return;
+        const res = await fetch(`/api/bff/import/${created.id}/status`, { signal: importAbortRef.current?.signal }).catch(() => null);
         const body = await res?.json().catch(() => ({} as Record<string, unknown>));
         const p = typeof body?.import_progress === "number" ? body.import_progress : null;
         const s = typeof body?.status === "string" ? body.status : "processing";
@@ -159,9 +190,20 @@ export default function Dashboard() {
         }
         await new Promise((r) => setTimeout(r, 1200));
       }
+      if (importAbortRef.current?.signal.aborted) return;
       router.push(`/editor/${created.id}`);
     };
     void poll();
+  };
+
+  const cancelImport = () => {
+    importAbortRef.current?.abort();
+    setUploadStatus("aborted");
+    setTimeout(() => {
+      setUploadStatus("idle");
+      setUploadProgress(0);
+      setUploadError(null);
+    }, 2000);
   };
 
   return (
@@ -260,9 +302,9 @@ export default function Dashboard() {
 
           {isLoading ? (
             <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
+              <SkeletonRow index={0} />
+              <SkeletonRow index={1} />
+              <SkeletonRow index={2} />
             </div>
           ) : displayProjects.length === 0 ? (
             <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] p-6 text-sm text-[var(--text-secondary)]">
@@ -288,15 +330,38 @@ export default function Dashboard() {
                         <Icon className="h-4 w-4 text-[var(--text-tertiary)]" />
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)]">{project.title}</p>
+                        <InlineEditableText
+                          value={project.title}
+                          className="truncate text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)]"
+                          onSave={async (next) => {
+                            if (project.type !== "Document") return;
+                            setTitleOverrides((prev) => ({ ...prev, [project.id]: next }));
+                            const res = await fetch(`/api/bff/documents/${project.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ title: next }),
+                            }).catch(() => null);
+                            if (!res?.ok) {
+                              setTitleOverrides((prev) => {
+                                const nextState = { ...prev };
+                                delete nextState[project.id];
+                                return nextState;
+                              });
+                            }
+                          }}
+                        />
                         <p className="text-xs text-[var(--text-secondary)]">{project.type}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
                       <span>{updated}</span>
-                      <button type="button" className="rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
+                      {project.type === "Document" ? (
+                        <InlineConfirmButton idleLabel="Delete" confirmLabel="Click to confirm" onConfirm={() => queueDelete(project)} />
+                      ) : (
+                        <button type="button" className="rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </Link>
                 );
@@ -324,7 +389,13 @@ export default function Dashboard() {
         progress={uploadProgress}
         error={uploadError}
         filename="Importing PDF..."
+        onCancel={cancelImport}
       />
+      {pendingDelete && (
+        <div className="fixed bottom-6 left-6 z-50 rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2 text-xs text-[var(--text-primary)] shadow-xl">
+          Document deleted. <button onClick={undoDelete} className="font-semibold text-[var(--accent)]">Undo</button>
+        </div>
+      )}
     </PageShell>
   );
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { Extension } from "@tiptap/core";
-import { Hash, Type, List, Table as TableIcon, Minus } from "lucide-react";
+import { Hash, Type, List, Sparkles, Table as TableIcon, Minus } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -23,6 +23,27 @@ const BlockMetadata = Extension.create({
         attributes: {
           id: { default: null },
           type: { default: null },
+        },
+      },
+    ];
+  },
+});
+
+const RenderDataAttributes = Extension.create({
+  name: "renderDataAttributes",
+  addGlobalAttributes() {
+    return [
+      {
+        types: ["paragraph", "heading", "bulletList", "orderedList", "table", "horizontalRule", "listItem"],
+        attributes: {
+          "data-block-type": {
+            default: null,
+            parseHTML: (element) => element.getAttribute("data-block-type"),
+            renderHTML: (attributes) => {
+              if (!attributes["data-block-type"]) return {};
+              return { "data-block-type": attributes["data-block-type"] };
+            },
+          },
         },
       },
     ];
@@ -177,7 +198,7 @@ export default function CollaborativeEditor({
       StarterKit.configure({ history: false }),
       Collaboration.configure({ document: ydoc }),
       DragHandle, TextStyle, Color, Table.configure({ resizable: true }), TableRow, TableCell, TableHeader,
-      BlockMetadata,
+      BlockMetadata, RenderDataAttributes,
     ],
     content: documentModelToTiptap(hydratedModel),
     onUpdate: ({ editor }) => {
@@ -212,14 +233,23 @@ export default function CollaborativeEditor({
   const insertBlock = (type: string) => {
     if (!editor) return;
     editor.chain().focus().deleteRange({ from: editor.state.selection.from - 1, to: editor.state.selection.from }).run();
-    
-    if (type === "Heading 1") editor.chain().focus().setHeading({ level: 1 }).run();
-    if (type === "Heading 2") editor.chain().focus().setHeading({ level: 2 }).run();
-    if (type === "Heading 3") editor.chain().focus().setHeading({ level: 3 }).run();
-    if (type === "Bullet List") editor.chain().focus().toggleBulletList().run();
-    if (type === "Table") editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-    if (type === "Divider") editor.chain().focus().setHorizontalRule().run();
-    
+
+    if (type === "Heading 1") {
+      editor.chain().focus().setHeading({ level: 1 }).updateAttributes("heading", { "data-block-type": "H1" }).run();
+    } else if (type === "Heading 2") {
+      editor.chain().focus().setHeading({ level: 2 }).updateAttributes("heading", { "data-block-type": "H2" }).run();
+    } else if (type === "Heading 3") {
+      editor.chain().focus().setHeading({ level: 3 }).updateAttributes("heading", { "data-block-type": "H3" }).run();
+    } else if (type === "Bullet List") {
+      editor.chain().focus().toggleBulletList().run();
+    } else if (type === "Table") {
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    } else if (type === "Divider") {
+      editor.chain().focus().setHorizontalRule().run();
+    } else {
+      editor.chain().focus().setParagraph().updateAttributes("paragraph", { "data-block-type": "P" }).run();
+    }
+
     setShowCommandPalette(false);
   };
 
@@ -237,30 +267,40 @@ export default function CollaborativeEditor({
         <VirtualizedPageRail pageCount={Math.max(model?.page_dimensions?.length || 1, 1)} />
         {/* Command Palette */}
         {showCommandPalette && (
-          <div 
+          <div
             className="fixed z-50 w-64 shadow-2xl animate-reveal"
             style={{ top: palettePos.top, left: palettePos.left }}
           >
-            <div className="bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-xl overflow-hidden shadow-float">
-               <div className="px-3 py-2 border-b border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Blocks</div>
-               {[
-                 { label: "Text", icon: Type, type: "paragraph" },
-                 { label: "Heading 1", icon: Hash, type: "heading1" },
-                 { label: "Heading 2", icon: Hash, type: "heading2" },
-                 { label: "Heading 3", icon: Hash, type: "heading3" },
-                 { label: "Bullet List", icon: List, type: "list" },
-                 { label: "Table", icon: TableIcon, type: "table" },
-                 { label: "Divider", icon: Minus, type: "divider" },
-               ].map((item) => (
-                 <button 
-                   key={item.label}
-                   onClick={() => insertBlock(item.label)}
-                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[var(--accent)]/10 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors group"
-                 >
-                   <item.icon className="h-4 w-4 opacity-50 group-hover:opacity-100" />
-                   {item.label}
-                 </button>
-               ))}
+            <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl overflow-hidden shadow-float">
+              <div className="px-3 py-2 bg-white/[0.02] border-b border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">Basic Blocks</div>
+              {[
+                { label: "Text", icon: Type, type: "paragraph" },
+                { label: "Heading 1", icon: Hash, type: "heading1" },
+                { label: "Heading 2", icon: Hash, type: "heading2" },
+                { label: "Heading 3", icon: Hash, type: "heading3" },
+                { label: "Bullet List", icon: List, type: "list" },
+                { label: "Table", icon: TableIcon, type: "table" },
+                { label: "Divider", icon: Minus, type: "divider" },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => insertBlock(item.label)}
+                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[var(--accent)]/10 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors group"
+                >
+                  <item.icon className="h-4 w-4 opacity-50 group-hover:opacity-100" />
+                  {item.label}
+                </button>
+              ))}
+              <div className="px-3 py-2 bg-white/[0.02] border-t border-b border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">AI Operations</div>
+              <button
+                onClick={() => {
+                  setShowCommandPalette(false);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-orange-500/10 text-sm text-orange-400 transition-colors group"
+              >
+                <Sparkles className="h-4 w-4 opacity-70 group-hover:opacity-100" />
+                Ask Gemini to write...
+              </button>
             </div>
           </div>
         )}

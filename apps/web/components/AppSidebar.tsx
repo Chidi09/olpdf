@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { DEFAULT_BRAND } from "@/lib/branding";
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
+import { InlineSpinner } from "@/components/ui/MicroUI";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -32,7 +33,7 @@ const navItems = [
   { href: "/help",      label: "Help",      icon: HelpCircle },
 ];
 
-export default function AppSidebar() {
+export default function AppSidebar({ signingOut, onSigningOutChange }: { signingOut: boolean; onSigningOutChange: (v: boolean) => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut, user } = useAuth();
@@ -48,13 +49,18 @@ export default function AppSidebar() {
   }, [expanded]);
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
+    onSigningOutChange(true);
+    try {
+      await signOut();
+      router.push("/login");
+    } finally {
+      onSigningOutChange(false);
+    }
   };
 
   return (
     <aside
-      className={`relative z-20 flex h-screen shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl transition-all duration-200 ${
+      className={`relative z-20 flex h-screen shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl transition-all duration-200 ${signingOut ? "pointer-events-none opacity-70" : ""} ${
         expanded ? "w-56" : "w-[64px]"
       }`}
     >
@@ -101,8 +107,8 @@ export default function AppSidebar() {
           title={!expanded ? "Sign Out" : undefined}
           className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--status-error)]/10 hover:text-[var(--status-error)] transition-all"
         >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {expanded && <span className="truncate">Sign Out</span>}
+          {signingOut ? <InlineSpinner className="h-4 w-4 text-[var(--text-secondary)]" /> : <LogOut className="h-4 w-4 shrink-0" />}
+          {expanded && <span className="truncate">{signingOut ? "Signing out..." : "Sign Out"}</span>}
         </button>
         {expanded && user?.email && (
           <p className="text-[10px] font-mono text-[var(--text-tertiary)] truncate px-3 pb-1">

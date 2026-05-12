@@ -1,12 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  BoldIcon,
+  ItalicIcon,
+  LinkIcon,
+  ChatBubbleLeftIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
+import { GlassPanel } from "@/components/ui/Glass";
 
 type Position = { top: number; left: number };
 
 export default function FloatingToolbar() {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState<Position>({ top: 0, left: 0 });
+
+  const exec = useCallback((command: string, value?: string) => {
+    document.execCommand(command, false, value);
+  }, []);
 
   useEffect(() => {
     const onMouseUp = () => {
@@ -16,23 +28,68 @@ export default function FloatingToolbar() {
         return;
       }
       const rect = selection.getRangeAt(0).getBoundingClientRect();
-      setPosition({ top: rect.top - 44, left: rect.left + rect.width / 2 });
+      setPosition({ top: rect.top - 48, left: rect.left + rect.width / 2 });
       setVisible(true);
     };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setVisible(false);
+    };
+
     document.addEventListener("mouseup", onMouseUp);
-    return () => document.removeEventListener("mouseup", onMouseUp);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, []);
 
   if (!visible) return null;
 
   return (
     <div
-      className="fixed z-50 -translate-x-1/2 rounded-lg border border-white/10 bg-[var(--bg-elevated)] p-1 shadow-xl"
-      style={{ top: position.top, left: position.left }}
+      className="fixed z-50 animate-in fade-in zoom-in-95 duration-200"
+      style={{ top: position.top, left: position.left, transform: "translateX(-50%)" }}
     >
-      <button className="px-2 py-1 text-xs" onClick={() => document.execCommand("bold")}>B</button>
-      <button className="px-2 py-1 text-xs italic" onClick={() => document.execCommand("italic")}>I</button>
-      <button className="px-2 py-1 text-xs underline" onClick={() => document.execCommand("underline")}>U</button>
+      <GlassPanel className="flex items-center gap-1 p-1 shadow-2xl">
+        <button
+          onClick={() => exec("bold")}
+          className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
+        >
+          <BoldIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => exec("italic")}
+          className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
+        >
+          <ItalicIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => {
+            const url = prompt("Enter link URL:");
+            if (url) exec("createLink", url);
+          }}
+          className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
+        >
+          <LinkIcon className="w-4 h-4" />
+        </button>
+        <div className="w-px h-4 bg-white/10 mx-1" />
+        <button
+          onClick={() => exec("bold")}
+          className="p-1.5 text-orange-500 hover:bg-orange-500/10 rounded transition-colors active:scale-[0.95]"
+          title="AI Rewrite"
+        >
+          <SparklesIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => exec("bold")}
+          className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
+          title="Comment"
+        >
+          <ChatBubbleLeftIcon className="w-4 h-4" />
+        </button>
+      </GlassPanel>
+      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[var(--bg-panel)] border-b border-r border-[var(--border-subtle)] rotate-45" />
     </div>
   );
 }

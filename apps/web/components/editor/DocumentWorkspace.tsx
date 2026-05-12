@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useRef, useCallback } from "react";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -22,6 +22,7 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { InlineSpinner } from "@/components/ui/MicroUI";
+import { GlassTooltip } from "@/components/ui/GlassTooltip";
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -133,16 +134,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
   const layoutMode = currentModel?.meta?.layout_mode ?? "editable";
   const [leftTab, setLeftTab] = useState<"outline" | "blocks">("outline");
-
-  const setLayoutMode = async (mode: "editable" | "fidelity") => {
-    if (!currentModel || currentModel.meta.layout_mode === mode) return;
-    const nextModel: DocumentModel = {
-      ...currentModel,
-      meta: { ...currentModel.meta, layout_mode: mode },
-    };
-    setCurrentModel(nextModel);
-    await saveMutation.mutateAsync(nextModel);
-  };
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const editorContentRef = useRef<HTMLDivElement>(null);
 
   const outlineItems = useMemo(() => {
     const blocks = currentModel?.blocks || [];
@@ -153,6 +146,92 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       return { id: b.id, label, type };
     });
   }, [currentModel?.blocks]);
+
+  const ITEM_HEIGHT = 36;
+
+  const calculateTopPosition = useCallback((id: string) => {
+    const idx = outlineItems.findIndex((item) => item.id === id);
+    return idx >= 0 ? idx * ITEM_HEIGHT + 8 : 0;
+  }, [outlineItems]);
+
+  useEffect(() => {
+    if (layoutMode === "fidelity") return;
+
+    const findProseMirror = () => document.querySelector(".ProseMirror");
+    let observer: IntersectionObserver | null = null;
+
+    const setupObserver = () => {
+      const pm = findProseMirror();
+      if (!pm) return;
+
+      const headings = pm.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      if (headings.length === 0) return;
+
+      const idToEl = new Map<string, Element>();
+      headings.forEach((h) => {
+        const text = h.textContent?.trim() || "";
+        const block = outlineItems.find((item) => item.label === text);
+        if (block) idToEl.set(block.id, h);
+      });
+
+      const visible = new Map<string, number>();
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            let matchedId: string | null = null;
+            idToEl.forEach((el, id) => {
+              if (el === entry.target) matchedId = id;
+            });
+            if (!matchedId) return;
+            if (entry.isIntersecting) {
+              visible.set(matchedId, entry.intersectionRatio);
+            } else {
+              visible.delete(matchedId);
+            }
+          });
+
+          let bestId: string | null = null;
+          let bestRatio = 0;
+          visible.forEach((ratio, id) => {
+            if (ratio > bestRatio) {
+              bestRatio = ratio;
+              bestId = id;
+            }
+          });
+
+          if (bestId) setActiveSectionId(bestId);
+        },
+        { threshold: [0, 0.25, 0.5, 0.75, 1] },
+      );
+
+      headings.forEach((h) => observer?.observe(h));
+    };
+
+    const mo = new MutationObserver(() => {
+      observer?.disconnect();
+      setupObserver();
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    const timer = setTimeout(setupObserver, 300);
+
+    return () => {
+      clearTimeout(timer);
+      observer?.disconnect();
+      mo.disconnect();
+    };
+  }, [layoutMode, outlineItems]);
+
+  const setLayoutMode = async (mode: "editable" | "fidelity") => {
+    if (!currentModel || currentModel.meta.layout_mode === mode) return;
+    const nextModel: DocumentModel = {
+      ...currentModel,
+      meta: { ...currentModel.meta, layout_mode: mode },
+    };
+    setCurrentModel(nextModel);
+    await saveMutation.mutateAsync(nextModel);
+  };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-black text-[#ededed]">
@@ -189,17 +268,37 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
-          <div className="space-y-0.5">
-            {outlineItems.map((item) => (
-              <div key={item.id} className="group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[#cfcfcf] transition-colors hover:bg-[#111]">
-                <span className="flex h-3 w-3 items-center justify-center rounded-sm border border-[#444] bg-[#111] text-[8px] text-[#888] group-hover:border-orange-500 group-hover:text-orange-500">
-                  {leftTab === "outline" ? item.type : "B"}
-                </span>
-                <span className="truncate">{item.label}</span>
-              </div>
-            ))}
-            {outlineItems.length === 0 && <p className="px-2 py-2 text-xs text-[#666]">No blocks yet.</p>}
+          <div className="relative pl-3 border-l border-[var(--border-subtle)]">
+            {outlineItems.length > 0 && activeSectionId && (
+              <div
+                className="absolute left-[-1px] w-[2px] bg-[var(--accent)] transition-all duration-300 ease-out rounded-full"
+                style={{ top: calculateTopPosition(activeSectionId), height: 24 }}
+              />
+            )}
+            <div className="space-y-0.5">
+              {outlineItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[var(--bg-elevated)] ${
+                    activeSectionId === item.id
+                      ? "text-[var(--text-primary)] font-medium"
+                      : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                  }`}
+                  style={{ height: ITEM_HEIGHT }}
+                >
+                  <span className={`flex h-3 w-3 items-center justify-center rounded-sm border text-[8px] transition-colors ${
+                    activeSectionId === item.id
+                      ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]"
+                      : "border-[#444] bg-[var(--bg-panel)] text-[var(--text-tertiary)] group-hover:border-orange-500 group-hover:text-orange-500"
+                  }`}>
+                    {leftTab === "outline" ? item.type : "B"}
+                  </span>
+                  <span className="truncate">{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
+          {outlineItems.length === 0 && <p className="px-2 py-2 text-xs text-[var(--text-tertiary)]">No blocks yet.</p>}
         </div>
       </aside>
 
@@ -226,19 +325,25 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
-              <ShareIcon className="h-4 w-4" />
-            </button>
-            <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98]">
-              <ArrowDownTrayIcon className="h-3.5 w-3.5" /> Export
-            </button>
-            <button className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
-              <PlayIcon className="h-3.5 w-3.5" /> Publish
-            </button>
+            <GlassTooltip label="Share" shortcut="⌘S">
+              <button className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
+                <ShareIcon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+            <GlassTooltip label="Export PDF">
+              <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98]">
+                <ArrowDownTrayIcon className="h-3.5 w-3.5" /> Export
+              </button>
+            </GlassTooltip>
+            <GlassTooltip label="Publish to web">
+              <button className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
+                <PlayIcon className="h-3.5 w-3.5" /> Publish
+              </button>
+            </GlassTooltip>
           </div>
         </header>
 
-        <div className="relative z-20 flex-1 overflow-hidden">
+        <div ref={editorContentRef} className="relative z-20 flex-1 overflow-hidden">
           {layoutMode === "fidelity" && currentModel ? (
             <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} />
           ) : (

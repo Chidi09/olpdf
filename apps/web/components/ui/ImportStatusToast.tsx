@@ -6,6 +6,7 @@ interface ImportStatusProps {
   progress: number;
   error: string | null;
   filename?: string;
+  onCancel?: () => void;
 }
 
 function normalizeStatus(status: string): "idle" | "creating" | "reading" | "processing" | "ready" | "failed" {
@@ -17,12 +18,13 @@ function normalizeStatus(status: string): "idle" | "creating" | "reading" | "pro
   return "processing";
 }
 
-export function ImportStatusToast({ status, progress, error, filename = "Document" }: ImportStatusProps) {
+export function ImportStatusToast({ status, progress, error, filename = "Document", onCancel }: ImportStatusProps) {
   const normalized = normalizeStatus(status);
   if (normalized === "idle") return null;
 
   const isComplete = normalized === "ready";
   const isError = normalized === "failed";
+  const isAborted = status === "aborted";
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-80 overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A] shadow-2xl">
@@ -30,10 +32,15 @@ export function ImportStatusToast({ status, progress, error, filename = "Documen
         <span className="mr-2 truncate text-xs font-semibold text-[#ededed]">{filename}</span>
         {isComplete ? (
           <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-        ) : isError ? (
+        ) : isError || isAborted ? (
           <ExclamationCircleIcon className="h-4 w-4 text-red-500" />
         ) : (
-          <InlineSpinner className="h-4 w-4 text-[#888]" />
+          <div className="inline-flex items-center gap-2">
+            {onCancel && (
+              <button onClick={onCancel} className="text-[10px] text-[#888] transition-colors hover:text-red-400">Cancel</button>
+            )}
+            <InlineSpinner className="h-4 w-4 text-[#888]" />
+          </div>
         )}
       </div>
 
@@ -48,12 +55,18 @@ export function ImportStatusToast({ status, progress, error, filename = "Documen
           &gt; Extracting semantic DOM... {progress}
           {progress < 100 && progress >= 45 && <span className="animate-pulse">_</span>}
         </div>
+        {isAborted && <div className="mt-2 text-red-500">&gt; Operation aborted by user.</div>}
         {isError && <div className="mt-2 text-red-500">[Error]: {error}</div>}
       </div>
 
-      {!isComplete && !isError && (
+      {!isComplete && !isError && !isAborted && (
         <div className="h-0.5 w-full bg-[#222]">
           <div className="h-full bg-orange-500 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+      {isAborted && (
+        <div className="h-0.5 w-full bg-[#222]">
+          <div className="h-full bg-red-500" style={{ width: `${Math.min(progress, 95)}%` }} />
         </div>
       )}
     </div>

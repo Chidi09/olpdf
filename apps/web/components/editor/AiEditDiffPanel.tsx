@@ -3,6 +3,8 @@
 import React from "react";
 import { DocumentBlock } from "@olpdf/document-model";
 import { Sparkles } from "lucide-react";
+import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { GlassCard } from "@/components/ui/Glass";
 
 interface AiEditDiffPanelProps {
   instruction: string;
@@ -70,13 +72,13 @@ export default function AiEditDiffPanel({
             </div>
           </div>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={onReject}
               className="px-4 py-1.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all"
             >
               Reject
             </button>
-            <button 
+            <button
               onClick={onAccept}
               className="px-4 py-1.5 rounded bg-[var(--accent)] hover:opacity-90 text-[var(--text-on-accent)] text-xs font-bold transition-all"
             >
@@ -84,34 +86,52 @@ export default function AiEditDiffPanel({
             </button>
           </div>
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--bg-glass)] backdrop-blur-md">
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {changes.map((change, idx) => (
-            <div key={idx} className="text-xs font-mono border-l-2 pl-3 py-1 bg-white/5 rounded-r">
-              {change.type === "added" && (
-                <div className="text-[var(--status-ok)]">
-                  <span className="opacity-50 mr-2">+</span>
+            <div key={idx} className="relative group">
+              {change.type === "removed" && (
+                <div className="text-red-400/50 line-through decoration-red-500/30 text-sm">
                   {change.content}
                 </div>
               )}
-              {change.type === "removed" && (
-                <div className="text-[var(--status-error)] line-through">
-                  <span className="opacity-50 mr-2">-</span>
+              {change.type === "added" && (
+                <div className="text-emerald-400 bg-emerald-500/5 border-l-2 border-emerald-500 pl-3 py-1 text-sm font-medium rounded-r">
                   {change.content}
                 </div>
               )}
               {change.type === "changed" && (
                 <div className="space-y-1">
-                  <div className="text-[var(--status-error)] line-through opacity-60">
-                    <span className="opacity-50 mr-2">-</span>
+                  <div className="text-red-400/50 line-through decoration-red-500/30 text-sm">
                     {change.oldContent}
                   </div>
-                  <div className="text-[var(--status-ok)]">
-                    <span className="opacity-50 mr-2">+</span>
+                  <div className="text-emerald-400 bg-emerald-500/5 border-l-2 border-emerald-500 pl-3 py-1 text-sm font-medium rounded-r">
                     {change.content}
                   </div>
                 </div>
               )}
+              {change.type === "unchanged" && (
+                <div className="text-sm text-[var(--text-secondary)] opacity-60">
+                  {change.content}
+                </div>
+              )}
+
+              <div className="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <GlassCard className="flex flex-row p-1 gap-1">
+                  <button
+                    onClick={onAccept}
+                    className="p-1.5 text-emerald-500 hover:bg-emerald-500/20 rounded-md transition-colors"
+                  >
+                    <CheckIcon className="w-4 h-4" strokeWidth={2.5} />
+                  </button>
+                  <button
+                    onClick={onReject}
+                    className="p-1.5 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/20 rounded-md transition-colors"
+                  >
+                    <XMarkIcon className="w-4 h-4" strokeWidth={2.5} />
+                  </button>
+                </GlassCard>
+              </div>
             </div>
           ))}
         </div>

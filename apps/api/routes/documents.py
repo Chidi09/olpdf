@@ -16,6 +16,16 @@ from ..limiter import limiter
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 
+@router.patch("/{doc_id}/title")
+async def update_document_title(doc_id: str, payload: Dict[str, Any], user: dict = Depends(require_auth)) -> dict:
+    check_ownership(doc_id, user)
+    title = str(payload.get("title") or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Title is required")
+    DocumentRepository.update(doc_id, {"title": title})
+    return {"id": doc_id, "status": "success", "title": title}
+
+
 def ensure_profile_row(user: dict) -> None:
     profile_id = user["sub"]
     email = user.get("email") or ""

@@ -8,12 +8,14 @@ import {
   CodeBracketIcon,
   PlusIcon,
   TrashIcon,
-  DocumentDuplicateIcon,
-  CheckIcon,
+  EyeIcon,
+  EyeSlashIcon,
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@heroui/react";
 import { GlassPanel } from "@/components/ui/Glass";
+import { CopyButton } from "@/components/ui/CopyButton";
+import { InlineConfirmButton } from "@/components/ui/InlineConfirmButton";
 
 type ApiKey = { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null };
 type WebhookModel = { id: string; url: string; events: string[]; is_active: boolean; created_at: string };
@@ -27,7 +29,7 @@ export default function DeveloperSettingsPage() {
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
 
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [revealGenerated, setRevealGenerated] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -85,10 +87,9 @@ export default function DeveloperSettingsPage() {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const maskKey = (value: string) => {
+    if (value.length <= 5) return `${value.slice(0, 3)}...`;
+    return `${value.slice(0, 3)}...${value.slice(-2)}`;
   };
 
   if (loading) {
@@ -151,15 +152,16 @@ export default function DeveloperSettingsPage() {
                       <p className="mb-1 text-sm font-medium text-emerald-500">Key generated successfully</p>
                       <p className="mb-3 text-xs text-emerald-500/80">Copy this key now. You will not be able to see it again.</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded border border-emerald-500/30 bg-black px-3 py-1.5 font-mono text-xs text-emerald-400">
-                          {generatedKey}
+                        <code className={`flex-1 rounded border border-emerald-500/30 bg-black px-3 py-1.5 font-mono text-xs text-emerald-400 transition-all ${revealGenerated ? "blur-0" : "blur-sm"}`}>
+                          {revealGenerated ? generatedKey : maskKey(generatedKey)}
                         </code>
                         <button
-                          onClick={() => copyToClipboard(generatedKey)}
+                          onClick={() => setRevealGenerated((v) => !v)}
                           className="rounded-md border border-emerald-500/30 p-1.5 text-emerald-500 transition-colors hover:bg-emerald-500/20"
                         >
-                          {copied ? <CheckIcon className="h-4 w-4" /> : <DocumentDuplicateIcon className="h-4 w-4" />}
+                          {revealGenerated ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                         </button>
+                        <CopyButton textToCopy={generatedKey} />
                       </div>
                     </div>
                   </div>
@@ -176,19 +178,16 @@ export default function DeveloperSettingsPage() {
                         <div className="mb-1 flex items-center gap-3">
                           <span className="text-sm font-medium text-[#ededed]">{key.name}</span>
                           <code className="rounded border border-[#333] bg-[#1A1A1A] px-1.5 py-0.5 font-mono text-[10px] text-[#888]">
-                            {key.prefix}......
+                            {maskKey(key.prefix)}
                           </code>
                         </div>
                         <div className="text-[11px] text-[#666]">
                           Created {new Date(key.created_at).toLocaleDateString()} • Last used {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : "Never"}
                         </div>
                       </div>
-                      <button
-                        onClick={() => deleteApiKey(key.id)}
-                        className="rounded-md p-1.5 text-[#666] opacity-0 transition-colors group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                      <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                        <InlineConfirmButton idleLabel="Revoke" confirmLabel="Click to confirm" onConfirm={() => deleteApiKey(key.id)} />
+                      </div>
                     </div>
                   ))
                 )}
@@ -247,12 +246,9 @@ export default function DeveloperSettingsPage() {
                           ))}
                         </div>
                       </div>
-                      <button
-                        onClick={() => deleteWebhook(webhook.id)}
-                        className="rounded-md p-1.5 text-[#666] opacity-0 transition-colors group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                      <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                        <InlineConfirmButton idleLabel="Delete" confirmLabel="Click to confirm" onConfirm={() => deleteWebhook(webhook.id)} />
+                      </div>
                     </div>
                   ))
                 )}
@@ -275,12 +271,7 @@ export default function DeveloperSettingsPage() {
             <div className="group relative overflow-hidden rounded-lg border border-[#222] bg-black">
               <div className="flex items-center justify-between border-b border-[#222] bg-[#0A0A0A] px-3 py-2">
                 <span className="text-xs font-medium text-[#888]">cURL Example</span>
-                <button
-                  onClick={() => copyToClipboard('curl -X POST "https://api.olpdf.xyz/api/documents/create" \\\n+  -H "Authorization: Bearer YOUR_API_KEY" \\\n+  -H "Content-Type: application/json" \\\n+  -d \'{"title": "My Document"}\'')}
-                  className="p-1 text-[#666] transition-colors hover:text-white"
-                >
-                  <DocumentDuplicateIcon className="h-4 w-4" />
-                </button>
+                <CopyButton textToCopy={'curl -X POST "https://api.olpdf.xyz/api/documents/create" \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"title": "My Document"}\''} />
               </div>
               <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-relaxed text-[#ededed]">
 <span className="text-purple-400">curl</span> -X POST <span className="text-amber-300">"https://api.olpdf.xyz/api/documents/create"</span> \
