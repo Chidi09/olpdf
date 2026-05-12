@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DEFAULT_BRAND } from "@/lib/branding";
+import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -92,6 +93,9 @@ export default function AppSidebar() {
 
       {/* User + sign-out */}
       <div className="shrink-0 border-t border-white/[0.08] p-2">
+        <div className="px-1 pb-2">
+          {expanded ? <ThemeSwitcher /> : <ThemeSwitcher compact />}
+        </div>
         <button
           onClick={handleSignOut}
           title={!expanded ? "Sign Out" : undefined}

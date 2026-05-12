@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss";
 import typography from "@tailwindcss/typography";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -16,12 +17,25 @@ const config: Config = {
         mono:  ['var(--font-geist-mono)', 'Menlo', 'monospace'],
       },
       colors: {
+        app: "var(--bg-app)",
+        sidebar: "var(--bg-sidebar)",
+        hover: "var(--bg-hover)",
         background: "var(--bg-base)",
         surface: "var(--bg-surface)",
         elevated: "var(--bg-elevated)",
         accent: "var(--accent)",
         "text-primary": "var(--text-primary)",
         "text-secondary": "var(--text-secondary)",
+        "text-tertiary": "var(--text-tertiary)",
+        border: {
+          subtle: "var(--border-subtle)",
+          strong: "var(--border-strong)",
+        },
+        glass: {
+          fill: "var(--glass-fill)",
+          hover: "var(--glass-hover)",
+          border: "var(--glass-border)",
+        },
       },
       borderRadius: {
         lg: "var(--radius-lg)",

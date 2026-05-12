@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useEffect } from "react";
 import { TenantProvider } from "@/components/providers/TenantProvider";
 import { reportError } from "@/lib/errorReporting";
+import { ThemeProvider } from "next-themes";
 
 // Module-level singleton — QueryClient config never changes at runtime
 const queryClient = new QueryClient({
@@ -95,9 +96,11 @@ export default function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TenantProvider>
-        {children}
-      </TenantProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <TenantProvider>
+          {children}
+        </TenantProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
