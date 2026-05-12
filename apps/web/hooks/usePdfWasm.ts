@@ -39,6 +39,13 @@ export function usePdfWasm() {
       error ? p.reject(new Error(error)) : p.resolve(result);
     };
 
+    worker.onerror = (err) => {
+      for (const [id, p] of pending.current) {
+        p.reject(new Error(`Worker error: ${err.message}`));
+      }
+      pending.current.clear();
+    };
+
     return () => {
       worker.terminate();
       workerRef.current = null;
