@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Resolver = {
   resolve: (result: unknown) => void;
@@ -19,6 +19,7 @@ type Resolver = {
 export function usePdfWasm() {
   const workerRef = useRef<Worker | null>(null);
   const pending = useRef<Map<string, Resolver>>(new Map());
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -28,6 +29,7 @@ export function usePdfWasm() {
       { type: "module" }
     );
     workerRef.current = worker;
+    setReady(true);
 
     worker.onmessage = (e: MessageEvent<{ id: string; result?: unknown; error?: string }>) => {
       const { id, result, error } = e.data;
@@ -40,6 +42,7 @@ export function usePdfWasm() {
     return () => {
       worker.terminate();
       workerRef.current = null;
+      setReady(false);
     };
   }, []);
 
@@ -56,5 +59,5 @@ export function usePdfWasm() {
     });
   }, []);
 
-  return { parsePdf, ready: Boolean(workerRef.current) };
+  return { parsePdf, ready };
 }
