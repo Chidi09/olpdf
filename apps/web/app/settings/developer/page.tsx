@@ -12,6 +12,7 @@ import {
   CheckIcon,
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
+import { Button } from "@heroui/react";
 
 type ApiKey = { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null };
 type WebhookModel = { id: string; url: string; events: string[]; is_active: boolean; created_at: string };
@@ -132,13 +133,14 @@ export default function DeveloperSettingsPage() {
                     onChange={(e) => setNewKeyName(e.target.value)}
                     className="h-9 flex-1 rounded-md border border-[#333] bg-[#111] px-3 text-sm text-[#ededed] placeholder-[#666] outline-none transition-all focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
                   />
-                  <button
+                  <Button
                     onClick={createApiKey}
-                    disabled={!newKeyName}
-                    className="flex h-9 items-center gap-1.5 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:opacity-50"
+                    isDisabled={!newKeyName}
+                    size="sm"
+                    className="flex h-9 items-center gap-1.5 bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:opacity-50"
                   >
                     <PlusIcon className="h-3.5 w-3.5" /> Generate
-                  </button>
+                  </Button>
                 </div>
 
                 {generatedKey && (
@@ -216,13 +218,15 @@ export default function DeveloperSettingsPage() {
                     onChange={(e) => setNewWebhookUrl(e.target.value)}
                     className="h-9 flex-1 rounded-md border border-[#333] bg-[#111] px-3 text-sm text-[#ededed] placeholder-[#666] outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
                   />
-                  <button
+                  <Button
                     onClick={createWebhook}
-                    disabled={!newWebhookUrl}
-                    className="flex h-9 items-center gap-1.5 rounded-md border border-[#333] bg-[#111] px-4 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#1A1A1A] disabled:opacity-50"
+                    isDisabled={!newWebhookUrl}
+                    size="sm"
+                    variant="outline"
+                    className="flex h-9 items-center gap-1.5 border-[#333] bg-[#111] px-4 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#1A1A1A] disabled:opacity-50"
                   >
                     <PlusIcon className="h-3.5 w-3.5" /> Add
-                  </button>
+                  </Button>
                 </div>
               </div>
 

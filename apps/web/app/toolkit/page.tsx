@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { PageShell } from "@/components/layout/PageShell";
 import { useToolkitStore } from "@/store/useToolkitStore";
+import { InlineSpinner } from "@/components/ui/MicroUI";
 
 type ToolkitOperation = {
   id: string;
@@ -233,8 +234,9 @@ export default function ToolkitPage() {
                 <button
                   onClick={runOperation}
                   disabled={running}
-                  className="h-8 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:opacity-50"
+                  className="flex h-8 items-center gap-2 rounded-md bg-white px-4 text-xs font-semibold text-black transition-all hover:bg-[#e5e5e5] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                 >
+                  {running && <InlineSpinner className="w-3 h-3 text-black" />}
                   {running ? "Processing..." : `Execute ${active.title}`}
                 </button>
               </div>

@@ -8,6 +8,11 @@ body {
   font-family: 'mr-eaves-sans', 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Logged-in app shell uses Geist */
+.app-shell-font {
+  font-family: var(--font-geist-sans), 'Geist', 'Helvetica Neue', Arial, sans-serif;
+}
+
 /* TipTap Editor Styles */
 .ProseMirror {
   outline: none;

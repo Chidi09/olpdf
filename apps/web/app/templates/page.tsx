@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -18,6 +18,7 @@ import {
 import { Spinner, EmptyState } from "@olpdf/ui";
 import { useTemplatesStore } from "@/store/useTemplatesStore";
 import { PageShell } from "@/components/layout/PageShell";
+import { InlineSpinner } from "@/components/ui/MicroUI";
 
 type Template = {
   id: string;
@@ -41,7 +42,18 @@ const categoryMap = [
 
 export default function TemplatesPage() {
   const router = useRouter();
+  const [isSearching, setIsSearching] = useState(false);
   const { activeCategory, searchQuery, applyingId, setActiveCategory, setSearchQuery, setApplyingId } = useTemplatesStore();
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+    const t = setTimeout(() => setIsSearching(false), 450);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const query = useQuery<Template[]>({
     queryKey: ["templates-library"],
@@ -99,7 +111,13 @@ export default function TemplatesPage() {
       title="Template Library"
       actions={
         <div className="relative w-72 group">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-tertiary)] group-focus-within:text-[var(--accent)]" />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2">
+            {isSearching ? (
+              <InlineSpinner className="w-4 h-4 text-[var(--accent)]" />
+            ) : (
+              <MagnifyingGlassIcon className="h-4 w-4 text-[var(--text-tertiary)] group-focus-within:text-[var(--accent)]" />
+            )}
+          </div>
           <input
             type="text"
             placeholder="Search blueprints..."
@@ -205,7 +223,9 @@ export default function TemplatesPage() {
                       className="flex items-center gap-1 rounded-md border border-[var(--accent)]/30 bg-[var(--accent)]/12 px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/20 disabled:opacity-50"
                     >
                       {applyingId === template.id ? (
-                        "Initializing..."
+                        <>
+                          <InlineSpinner className="w-3 h-3 text-[var(--accent)]" /> Initializing...
+                        </>
                       ) : (
                         <>
                           Deploy <ArrowRightIcon className="h-3.5 w-3.5" />

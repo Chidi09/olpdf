@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,6 +20,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(searchParams.get("error"));
   const [magicSent, setMagicSent] = useState(false);
+  const [glow, setGlow] = useState({ x: 50, y: 50 });
+  const rightPaneRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!magicToken) return;
@@ -77,6 +79,14 @@ export default function LoginPage() {
 
   const signInWithGitHub = async () => {
     window.location.href = `/api/auth/oauth/github/start?callbackURL=${encodeURIComponent(redirectTo)}`;
+  };
+
+  const onPaneMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const rect = rightPaneRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    setGlow({ x, y });
   };
 
   return (
@@ -192,7 +202,20 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right pane — visual ───────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col relative w-[48%] xl:w-[52%] min-h-screen overflow-hidden bg-[#fdf6ef]">
+      <div
+        ref={rightPaneRef}
+        onMouseMove={onPaneMove}
+        className="hidden lg:flex flex-col relative w-[48%] xl:w-[52%] min-h-screen overflow-hidden bg-[#fdf6ef]"
+      >
+
+        <div className="absolute inset-0 pointer-events-none opacity-70" style={{
+          backgroundImage: "radial-gradient(circle at 1px 1px, rgba(19,20,24,0.18) 1px, transparent 0)",
+          backgroundSize: "18px 18px",
+        }} />
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: `radial-gradient(220px circle at ${glow.x}% ${glow.y}%, rgba(249,115,22,0.22), rgba(249,115,22,0) 70%)`,
+          mixBlendMode: "multiply",
+        }} />
 
         {/* Illustration — fills pane */}
         {/* eslint-disable-next-line @next/next/no-img-element */}

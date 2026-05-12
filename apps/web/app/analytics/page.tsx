@@ -9,6 +9,7 @@ import {
   DocumentDuplicateIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { SkeletonRow } from "@/components/ui/MicroUI";
 
 type ApiDoc = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
 type ApiBook = { id: string; title?: string; updated_at?: string; created_at?: string; chapters?: unknown[] };
@@ -92,9 +93,11 @@ export default function AnalyticsPage() {
           </div>
 
           {documentsQuery.isLoading || booksQuery.isLoading ? (
-            <div className="p-6 text-center text-xs font-mono uppercase tracking-widest text-[#666]">
-              Loading activity...
-            </div>
+            <>
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </>
           ) : recent.length === 0 ? (
             <div className="p-6 text-center text-xs text-[#666]">No activity yet.</div>
           ) : (

@@ -8,12 +8,17 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/layout/PageShell";
+import { InlineSpinner } from "@/components/ui/MicroUI";
+import { Button } from "@heroui/react";
 
 function ProviderIcon({ slug, color, size = 18 }: { slug: string; color: string; size?: number }) {
+  const src = slug === "openai"
+    ? "https://cdn.simpleicons.org/openai/white"
+    : `https://cdn.simpleicons.org/${slug}/${color.replace("#", "")}`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`https://cdn.simpleicons.org/${slug}/${color.replace("#", "")}`}
+      src={src}
       alt={slug}
       width={size}
       height={size}
@@ -168,17 +173,11 @@ export default function SettingsPage() {
           </div>
           <div className="md:col-span-2">
             <div className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-              <div className="grid flex-1 gap-4 p-5 sm:grid-cols-2">
+              <div className="grid flex-1 gap-4 p-5 sm:grid-cols-1">
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Email Address</label>
                   <div className="flex h-9 items-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm text-[var(--text-primary)]">
                     {user?.email || "user@example.com"}
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Auth Mode</label>
-                  <div className="flex h-9 items-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm text-[var(--text-primary)]">
-                    Backend Session
                   </div>
                 </div>
               </div>
@@ -251,13 +250,16 @@ export default function SettingsPage() {
                           placeholder={keySet ? "Enter new key to replace saved key" : "sk-..."}
                           className="h-9 w-full rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] pl-3 pr-10 font-mono text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--accent)]"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowKey((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)]"
-                        >
-                          {showKey ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                        </button>
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setShowKey((v) => !v)}
+                            className="h-7 min-w-0 px-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                          >
+                            {showKey ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -270,21 +272,25 @@ export default function SettingsPage() {
                 </span>
                 <div className="flex items-center gap-2">
                   {keySet && (
-                    <button
+                    <Button
                       onClick={handleClearKey}
-                      disabled={clearing}
-                      className="h-8 rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-surface)]"
+                      isDisabled={clearing}
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-xs font-semibold text-[var(--text-primary)]"
                     >
                       {clearing ? "Clearing..." : "Clear Key"}
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     onClick={handleSave}
-                    disabled={saving}
-                    className="h-8 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-[#e5e5e5]"
+                    isDisabled={saving}
+                    size="sm"
+                    className="flex h-8 items-center gap-2 bg-white px-4 text-xs font-semibold text-black transition-all hover:bg-[#e5e5e5] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                   >
+                    {saving && <InlineSpinner className="w-3 h-3 text-black" />}
                     {saving ? "Saving..." : "Save Config"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

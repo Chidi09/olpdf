@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   BookOpen,
@@ -21,9 +21,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useQuery } from "@tanstack/react-query";
-import { Spinner } from "@olpdf/ui";
 import { PageShell } from "@/components/layout/PageShell";
 import UploadProgressModal from "@/components/UploadProgressModal";
+import { InlineSpinner, SkeletonRow, HelperText } from "@/components/ui/MicroUI";
 
 type Project = {
   id: string;
@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
 
   type ApiDoc  = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
@@ -94,6 +95,16 @@ export default function Dashboard() {
   const displayProjects = recentLimit ? filtered.slice(0, recentLimit) : filtered;
 
   const onImportClick = () => fileInputRef.current?.click();
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+    const t = setTimeout(() => setIsSearching(false), 500);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const onFileSelected = async (file: File | null) => {
     if (!file) return;
@@ -180,8 +191,14 @@ export default function Dashboard() {
       }
       actions={
         <>
-          <div className="relative hidden md:block">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+          <div className="relative hidden md:block group">
+            <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
+              {isSearching ? (
+                <InlineSpinner className="w-3.5 h-3.5 text-[var(--accent)]" />
+              ) : (
+                <Search className="h-3.5 w-3.5 text-[var(--text-tertiary)] group-focus-within:text-[var(--accent)]" />
+              )}
+            </div>
             <input
               type="text"
               placeholder="Search projects"
@@ -204,7 +221,8 @@ export default function Dashboard() {
     >
       <div className="space-y-8">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link href="/editor/new" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+          <Link href="/editor/new" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 via-transparent to-orange-500/0 transition-all duration-500 group-hover:from-orange-500/5" />
             <DocumentTextIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
             <div>
               <h3 className="text-sm font-medium text-[var(--text-primary)]">Blank Document</h3>
@@ -212,7 +230,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link href="/books/new" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+          <Link href="/books/new" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
             <BookOpenIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
             <div>
               <h3 className="text-sm font-medium text-[var(--text-primary)]">New Book</h3>
@@ -220,7 +238,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link href="/templates" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+          <Link href="/templates" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
             <Squares2X2Icon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
             <div>
               <h3 className="text-sm font-medium text-[var(--text-primary)]">Use Template</h3>
@@ -228,7 +246,7 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link href="/toolkit" className="group flex h-28 flex-col justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--bg-elevated)]">
+          <Link href="/toolkit" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
             <WrenchScrewdriverIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
             <div>
               <h3 className="text-sm font-medium text-[var(--text-primary)]">PDF Toolkit</h3>
@@ -243,12 +261,15 @@ export default function Dashboard() {
           </h2>
 
           {isLoading ? (
-            <div className="flex h-28 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-              <Spinner />
+            <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
             </div>
           ) : displayProjects.length === 0 ? (
             <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] p-6 text-sm text-[var(--text-secondary)]">
-              No projects found.
+              <p className="text-sm font-medium text-[var(--text-primary)]">No projects found</p>
+              <HelperText>Get started by creating a new document or book.</HelperText>
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
