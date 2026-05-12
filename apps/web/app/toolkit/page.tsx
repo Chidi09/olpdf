@@ -17,6 +17,9 @@ import {
 import { PageShell } from "@/components/layout/PageShell";
 import { useToolkitStore } from "@/store/useToolkitStore";
 import { InlineSpinner } from "@/components/ui/MicroUI";
+import { usePdfWasm } from "@/hooks/usePdfWasm";
+import { normalizeWasmResult } from "@/lib/nativePdf/normalizeWasmPdf";
+import type { PdfEditSession } from "@/types/nativePdf";
 
 type MicroStatus = {
   state: "idle" | "working" | "success" | "error";
@@ -51,6 +54,8 @@ export default function ToolkitPage() {
   const [uploadStatus, setUploadStatus] = useState<MicroStatus>({ state: "idle", label: "No upload running" });
   const [operationStatus, setOperationStatus] = useState<MicroStatus>({ state: "idle", label: "Ready" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { parsePdf } = usePdfWasm();
+  const [wasmSession, setWasmSession] = useState<PdfEditSession | null>(null);
 
   const active = operations.find((o) => o.id === activeOperationId) ?? operations[0];
 
@@ -141,6 +146,13 @@ export default function ToolkitPage() {
     }
 
     setUploadStatus({ state: "working", label: "Reading PDF", detail: file.name });
+    const arrayBuffer = await file.arrayBuffer();
+    setUploadStatus({ state: "working", label: "Parsing in browser", detail: file.name });
+    const wasmResult = await parsePdf(arrayBuffer).catch(() => null);
+    if (wasmResult) {
+      const session = normalizeWasmResult(wasmResult as any, created.id, "pending");
+      setWasmSession(session);
+    }
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error("failed_to_read_file"));

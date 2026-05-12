@@ -27,6 +27,9 @@ import { InlineSpinner, SkeletonRow, HelperText } from "@/components/ui/MicroUI"
 import { ImportStatusToast } from "@/components/ui/ImportStatusToast";
 import { InlineEditableText } from "@/components/ui/InlineEditableText";
 import { InlineConfirmButton } from "@/components/ui/InlineConfirmButton";
+import { usePdfWasm } from "@/hooks/usePdfWasm";
+import { normalizeWasmResult } from "@/lib/nativePdf/normalizeWasmPdf";
+import type { PdfEditSession } from "@/types/nativePdf";
 
 type Project = {
   id: string;
@@ -47,7 +50,9 @@ export default function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [titleOverrides, setTitleOverrides] = useState<Record<string, string>>({});
   const [pendingDelete, setPendingDelete] = useState<{ project: Project; timeoutId: number } | null>(null);
+  const [wasmSession, setWasmSession] = useState<PdfEditSession | null>(null);
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
+  const { parsePdf } = usePdfWasm();
 
   type ApiDoc  = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
   type ApiBook = { id: string; title?: string; updated_at?: string; created_at?: string; chapters?: unknown[] };
@@ -149,8 +154,16 @@ export default function Dashboard() {
       setUploadStatus("failed");
       return;
     }
-    setUploadStatus("reading file");
+    setUploadStatus("Reading PDF");
     setUploadProgress(30);
+    const arrayBuffer = await file.arrayBuffer();
+    setUploadStatus("Parsing in browser");
+    setUploadProgress(40);
+    const wasmResult = await parsePdf(arrayBuffer).catch(() => null);
+    if (wasmResult) {
+      const session = normalizeWasmResult(wasmResult as any, created.id, "pending");
+      setWasmSession(session);
+    }
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error("failed_to_read_file"));
@@ -161,6 +174,8 @@ export default function Dashboard() {
       };
       reader.readAsDataURL(file);
     });
+    setUploadStatus("Uploading original");
+    setUploadProgress(50);
     importAbortRef.current = new AbortController();
     await fetch("/api/bff/import/start", {
       method: "POST",
@@ -168,7 +183,7 @@ export default function Dashboard() {
       body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
       signal: importAbortRef.current.signal,
     }).catch(() => null);
-    setUploadStatus("processing");
+    setUploadStatus("Server enriching");
     setUploadProgress(45);
 
     const poll = async () => {

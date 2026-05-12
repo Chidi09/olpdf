@@ -6,7 +6,10 @@ import AppSidebar from "@/components/AppSidebar";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { DragDropOverlay } from "@/components/DragDropOverlay";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { usePdfWasm } from "@/hooks/usePdfWasm";
+import { normalizeWasmResult } from "@/lib/nativePdf/normalizeWasmPdf";
+import type { PdfEditSession } from "@/types/nativePdf";
 
 // Pages that render with absolutely no chrome
 const BARE_ROUTES = ["/embed"];
@@ -38,6 +41,8 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+  const { parsePdf } = usePdfWasm();
+  const wasmSessionRef = useRef<PdfEditSession | null>(null);
 
   const handleFileDrop = async (file: File) => {
     if (file.type !== "application/pdf") return;
@@ -49,6 +54,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       });
       const created = await res.json();
       if (!created?.id) return;
+      const arrayBuffer = await file.arrayBuffer();
+      const wasmResult = await parsePdf(arrayBuffer).catch(() => null);
+      if (wasmResult) {
+        const session = normalizeWasmResult(wasmResult as any, created.id, "pending");
+        wasmSessionRef.current = session;
+      }
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = () => reject(new Error("failed_to_read"));
