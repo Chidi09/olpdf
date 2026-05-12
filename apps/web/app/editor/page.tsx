@@ -12,12 +12,11 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
-import UploadProgressModal from "@/components/UploadProgressModal";
+import { ImportStatusToast } from "@/components/ui/ImportStatusToast";
 
 export default function EditorDocsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -26,7 +25,6 @@ export default function EditorDocsPage() {
 
   const onFileSelected = async (file: File | null) => {
     if (!file) return;
-    setUploadOpen(true);
     setUploadError(null);
     setUploadStatus("creating document");
     setUploadProgress(10);
@@ -143,12 +141,11 @@ export default function EditorDocsPage() {
         onChange={(e) => void onFileSelected(e.target.files?.[0] || null)}
       />
 
-      <UploadProgressModal
-        open={uploadOpen}
+      <ImportStatusToast
         status={uploadStatus}
         progress={uploadProgress}
         error={uploadError}
-        onClose={() => setUploadOpen(false)}
+        filename="Importing PDF..."
       />
     </PageShell>
   );

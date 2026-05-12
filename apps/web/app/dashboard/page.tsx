@@ -22,8 +22,8 @@ import {
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useQuery } from "@tanstack/react-query";
 import { PageShell } from "@/components/layout/PageShell";
-import UploadProgressModal from "@/components/UploadProgressModal";
 import { InlineSpinner, SkeletonRow, HelperText } from "@/components/ui/MicroUI";
+import { ImportStatusToast } from "@/components/ui/ImportStatusToast";
 
 type Project = {
   id: string;
@@ -36,7 +36,6 @@ type Project = {
 export default function Dashboard() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -108,7 +107,6 @@ export default function Dashboard() {
 
   const onFileSelected = async (file: File | null) => {
     if (!file) return;
-    setUploadOpen(true);
     setUploadError(null);
     setUploadStatus("creating document");
     setUploadProgress(10);
@@ -321,12 +319,11 @@ export default function Dashboard() {
         className="hidden"
         onChange={(e) => void onFileSelected(e.target.files?.[0] || null)}
       />
-      <UploadProgressModal
-        open={uploadOpen}
+      <ImportStatusToast
         status={uploadStatus}
         progress={uploadProgress}
         error={uploadError}
-        onClose={() => setUploadOpen(false)}
+        filename="Importing PDF..."
       />
     </PageShell>
   );
