@@ -27,30 +27,25 @@ async def update_document_title(doc_id: str, payload: Dict[str, Any], user: dict
 
 
 def ensure_profile_row(user: dict) -> None:
+    """Upsert a profile row for the user.
+
+    The profiles.id column may have a FK constraint referencing auth.users in some
+    environments.  Users created via the custom credential auth flow will not exist
+    in auth.users, so this function silently swallows FK violations.
+    """
     profile_id = user["sub"]
     email = user.get("email") or ""
     full_name = user.get("name") or ""
-    try:
-        supabase.table("profiles").upsert({
-            "id": profile_id,
-            "email": email,
-            "full_name": full_name,
-        }).execute()
-        return
-    except Exception:
-        pass
-
-    try:
-        display_name = full_name or (email.split("@")[0] if email else "")
-        supabase.table("profiles").upsert({
-            "id": profile_id,
-            "display_name": display_name,
-        }).execute()
-        return
-    except Exception:
-        pass
-
-    supabase.table("profiles").upsert({"id": profile_id}).execute()
+    for attempt in (
+        {"id": profile_id, "email": email, "full_name": full_name},
+        {"id": profile_id, "full_name": full_name or email.split("@")[0]},
+        {"id": profile_id},
+    ):
+        try:
+            supabase.table("profiles").upsert(attempt).execute()
+            return
+        except Exception:
+            continue
 
 @router.post("/import/start")
 @limiter.limit("5/minute")

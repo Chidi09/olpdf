@@ -13,21 +13,14 @@ class DocumentRepository:
         try:
             return (
                 supabase.table("documents")
-                .select("id, title, status, created_at, updated_at, document_model->meta->>page_count")
+                .select("id, title, status, created_at, updated_at, document_model")
                 .eq("user_id", user_id)
                 .order("updated_at", desc=True)
                 .execute()
                 .data
             )
         except Exception:
-            return (
-                supabase.table("documents")
-                .select("id, title, status, created_at, updated_at")
-                .eq("user_id", user_id)
-                .order("updated_at", desc=True)
-                .execute()
-                .data
-            )
+            return []
 
     @staticmethod
     def create(title: str, model: Dict[str, Any], status: str = "ready", user_id: Optional[str] = None, workspace_id: Optional[str] = None) -> Dict[str, Any]:
