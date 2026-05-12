@@ -177,14 +177,33 @@ export default function Dashboard() {
     setUploadStatus("Uploading original");
     setUploadProgress(50);
     importAbortRef.current = new AbortController();
+    const importPayload: Record<string, unknown> = { documentId: created.id, fileBytes: base64, layout_mode: "fidelity" };
+    if (wasmSession) {
+      importPayload.client_model = {
+        blocks: wasmSession.objects.map((obj) => ({
+          id: obj.id,
+          type: "text",
+          content: obj.text || "",
+          page_index: obj.pageIndex,
+          bounding_box: obj.bbox,
+          z_index: obj.zIndex,
+          font_meta: obj.fontFamily ? { family: obj.fontFamily, size: obj.fontSize, color: obj.color } : undefined,
+        })),
+        page_dimensions: wasmSession.pages.map((p) => ({
+          page_index: p.pageIndex,
+          width: p.width,
+          height: p.height,
+        })),
+      };
+    }
     await fetch("/api/bff/import/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
+      body: JSON.stringify(importPayload),
       signal: importAbortRef.current.signal,
     }).catch(() => null);
     setUploadStatus("Server enriching");
-    setUploadProgress(45);
+    setUploadProgress(55);
 
     const poll = async () => {
       for (let i = 0; i < 45; i += 1) {

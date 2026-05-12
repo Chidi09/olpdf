@@ -56,8 +56,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       if (!created?.id) return;
       const arrayBuffer = await file.arrayBuffer();
       const wasmResult = await parsePdf(arrayBuffer).catch(() => null);
+      let session: PdfEditSession | null = null;
       if (wasmResult) {
-        const session = normalizeWasmResult(wasmResult as any, created.id, "pending");
+        session = normalizeWasmResult(wasmResult as any, created.id, "pending");
         wasmSessionRef.current = session;
       }
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -66,10 +67,29 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         reader.onload = () => resolve(String(reader.result || "").split(",")[1] || "");
         reader.readAsDataURL(file);
       });
+      const importPayload: Record<string, unknown> = { documentId: created.id, fileBytes: base64, layout_mode: "fidelity" };
+      if (session) {
+        importPayload.client_model = {
+          blocks: session.objects.map((obj) => ({
+            id: obj.id,
+            type: "text",
+            content: obj.text || "",
+            page_index: obj.pageIndex,
+            bounding_box: obj.bbox,
+            z_index: obj.zIndex,
+            font_meta: obj.fontFamily ? { family: obj.fontFamily, size: obj.fontSize, color: obj.color } : undefined,
+          })),
+          page_dimensions: session.pages.map((p) => ({
+            page_index: p.pageIndex,
+            width: p.width,
+            height: p.height,
+          })),
+        };
+      }
       await fetch("/api/bff/import/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
+        body: JSON.stringify(importPayload),
       });
       router.push(`/editor/${created.id}`);
     } catch {
