@@ -18,14 +18,17 @@ class AiSettingsPayload(BaseModel):
 @router.get("")
 async def get_ai_settings(user: dict = Depends(require_auth)):
     user_id = user["sub"]
-    row = (
-        supabase.table("user_ai_settings")
-        .select("provider, model, encrypted_api_key")
-        .eq("user_id", user_id)
-        .maybe_single()
-        .execute()
-    )
-    data = row.data or {}
+    try:
+        row = (
+            supabase.table("user_ai_settings")
+            .select("provider, model, encrypted_api_key")
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        data = row.data or {}
+    except Exception:
+        data = {}
     return {
         "provider": data.get("provider", "gemini_free"),
         "model": data.get("model"),
@@ -43,14 +46,17 @@ async def save_ai_settings(payload: AiSettingsPayload, user: dict = Depends(requ
 
     if cfg["requires_key"]:
         # Check if user already has a stored key when none is being provided now
-        existing = (
-            supabase.table("user_ai_settings")
-            .select("encrypted_api_key")
-            .eq("user_id", user_id)
-            .maybe_single()
-            .execute()
-        )
-        has_existing = bool(existing.data and existing.data.get("encrypted_api_key"))
+        try:
+            existing = (
+                supabase.table("user_ai_settings")
+                .select("encrypted_api_key")
+                .eq("user_id", user_id)
+                .maybe_single()
+                .execute()
+            )
+            has_existing = bool(existing.data and existing.data.get("encrypted_api_key"))
+        except Exception:
+            has_existing = False
 
         if not payload.api_key and not has_existing:
             raise HTTPException(status_code=400, detail="An API key is required for this provider.")
@@ -59,13 +65,15 @@ async def save_ai_settings(payload: AiSettingsPayload, user: dict = Depends(requ
         "user_id": user_id,
         "provider": payload.provider,
         "model": payload.model or cfg["default_model"],
-        "updated_at": "now()",
     }
 
     if payload.api_key:
         upsert_data["encrypted_api_key"] = encrypt_key(payload.api_key)
 
-    supabase.table("user_ai_settings").upsert(upsert_data).execute()
+    try:
+        supabase.table("user_ai_settings").upsert(upsert_data).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to save AI settings: {exc}")
     return {"status": "saved", "provider": payload.provider}
 
 
@@ -78,6 +86,5 @@ async def clear_api_key(user: dict = Depends(require_auth)):
         "provider": "gemini_free",
         "model": None,
         "encrypted_api_key": None,
-        "updated_at": "now()",
     }).execute()
     return {"status": "cleared"}

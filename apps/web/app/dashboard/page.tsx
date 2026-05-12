@@ -318,9 +318,14 @@ export default function Dashboard() {
                 const Icon = project.type === "Document" ? FileText : BookOpen;
                 const updated = new Date(project.updated_at).toLocaleDateString();
                 return (
-                  <Link
+                  <div
                     key={project.id}
-                    href={href}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => router.push(href)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") router.push(href);
+                    }}
                     className={`group flex items-center justify-between px-4 py-3 transition-colors hover:bg-[var(--bg-elevated)] ${
                       index < displayProjects.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                     }`}
@@ -358,12 +363,19 @@ export default function Dashboard() {
                       {project.type === "Document" ? (
                         <InlineConfirmButton idleLabel="Delete" confirmLabel="Click to confirm" onConfirm={() => queueDelete(project)} />
                       ) : (
-                        <button type="button" className="rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          className="rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                        >
                           <MoreVertical className="h-4 w-4" />
                         </button>
                       )}
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
