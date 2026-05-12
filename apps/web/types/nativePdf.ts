@@ -1,5 +1,6 @@
 export type PdfNativeObjectType = "text" | "image" | "path" | "shape" | "annotation" | "form_field";
 
+/** 4-element tuple: [left, top, width, height] in PDF coordinate space */
 export type PdfRect = [number, number, number, number];
 
 export type PdfNativeObject = {
@@ -15,9 +16,11 @@ export type PdfNativeObject = {
   sourceRef?: string;
 };
 
+export type PdfEditOperationType = "replace_text" | "move_object" | "resize_object" | "delete_object" | "insert_text" | "insert_shape";
+
 export type PdfEditOperation = {
   id: string;
-  type: "replace_text" | "move_object" | "resize_object" | "delete_object" | "insert_text" | "insert_shape";
+  type: PdfEditOperationType;
   pageIndex: number;
   targetObjectId: string;
   before: Record<string, unknown>;
