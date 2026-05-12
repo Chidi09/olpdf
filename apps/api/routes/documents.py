@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from ..models import DocumentModel, DocumentSnapshotPayload, VersionHistoryEntry, ImportStartPayload, ExportRequest
 from ..repositories import DocumentRepository
 from ..auth_utils import require_auth, check_ownership
+from ..core.auth import ensure_profile_row
 from ..security_utils import sanitize_document_model
 from ..factories import ExportEngineFactory
 from ..export_utils import run_preflight
@@ -25,27 +26,6 @@ async def update_document_title(doc_id: str, payload: Dict[str, Any], user: dict
     DocumentRepository.update(doc_id, {"title": title})
     return {"id": doc_id, "status": "success", "title": title}
 
-
-def ensure_profile_row(user: dict) -> None:
-    """Upsert a profile row for the user.
-
-    The profiles.id column may have a FK constraint referencing auth.users in some
-    environments.  Users created via the custom credential auth flow will not exist
-    in auth.users, so this function silently swallows FK violations.
-    """
-    profile_id = user["sub"]
-    email = user.get("email") or ""
-    full_name = user.get("name") or ""
-    for attempt in (
-        {"id": profile_id, "email": email, "full_name": full_name},
-        {"id": profile_id, "full_name": full_name or email.split("@")[0]},
-        {"id": profile_id},
-    ):
-        try:
-            supabase.table("profiles").upsert(attempt).execute()
-            return
-        except Exception:
-            continue
 
 @router.post("/import/start")
 @limiter.limit("5/minute")

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..auth_utils import require_auth
+from ..core.auth import ensure_profile_row
 from ..core.supabase_client import supabase
 from ..services.ai_providers import PROVIDER_CONFIGS, encrypt_key
 
@@ -73,7 +74,12 @@ async def save_ai_settings(payload: AiSettingsPayload, user: dict = Depends(requ
     try:
         supabase.table("user_ai_settings").upsert(upsert_data).execute()
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to save AI settings: {exc}")
+        # FK violation: the user may not have a profile row.  Try fixing it.
+        if "violates foreign key constraint" in str(exc):
+            ensure_profile_row(user)
+            supabase.table("user_ai_settings").upsert(upsert_data).execute()
+        else:
+            raise HTTPException(status_code=500, detail=f"Failed to save AI settings: {exc}")
     return {"status": "saved", "provider": payload.provider}
 
 
@@ -81,10 +87,22 @@ async def save_ai_settings(payload: AiSettingsPayload, user: dict = Depends(requ
 async def clear_api_key(user: dict = Depends(require_auth)):
     """Remove stored API key — reverts user to the free Gemini tier."""
     user_id = user["sub"]
-    supabase.table("user_ai_settings").upsert({
-        "user_id": user_id,
-        "provider": "gemini_free",
-        "model": None,
-        "encrypted_api_key": None,
-    }).execute()
+    try:
+        supabase.table("user_ai_settings").upsert({
+            "user_id": user_id,
+            "provider": "gemini_free",
+            "model": None,
+            "encrypted_api_key": None,
+        }).execute()
+    except Exception as exc:
+        if "violates foreign key constraint" in str(exc):
+            ensure_profile_row(user)
+            supabase.table("user_ai_settings").upsert({
+                "user_id": user_id,
+                "provider": "gemini_free",
+                "model": None,
+                "encrypted_api_key": None,
+            }).execute()
+        else:
+            raise
     return {"status": "cleared"}

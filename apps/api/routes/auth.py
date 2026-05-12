@@ -97,21 +97,33 @@ def _upsert_profile(user: Dict[str, Any]) -> None:
 
 
 def _ensure_auth_user_id(email: str, name: str) -> str:
-    try:
-        created = supabase_admin.auth.admin.create_user(
-            {
-                "email": email,
-                "email_confirm": True,
-                "user_metadata": {"full_name": name},
-                "password": secrets.token_urlsafe(24),
-            }
-        )
-        user = getattr(created, "user", None) or (created.get("user") if isinstance(created, dict) else None)
-        user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
-        if user_id:
-            return str(user_id)
-    except Exception:
-        pass
+    """Create a user in auth.users via the Supabase admin API.
+
+    Returns a valid auth.users UUID, or falls back to a synthetic UUID if the
+    admin API is unavailable.  Callers **must** handle the case where the
+    returned UUID does not exist in auth.users (e.g. by catching FK violations
+    gracefully when writing to tables that reference profiles.id).
+    """
+    import logging
+    logger = logging.getLogger("olpdf-api")
+    for attempt in range(2):
+        try:
+            created = supabase_admin.auth.admin.create_user(
+                {
+                    "email": email,
+                    "email_confirm": True,
+                    "user_metadata": {"full_name": name},
+                    "password": secrets.token_urlsafe(24),
+                }
+            )
+            user = getattr(created, "user", None) or (created.get("user") if isinstance(created, dict) else None)
+            user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
+            if user_id:
+                logger.info("Created auth.users entry for %s → %s", email, user_id)
+                return str(user_id)
+        except Exception as exc:
+            logger.warning("admin.create_user attempt %d failed for %s: %s", attempt + 1, email, exc)
+    logger.warning("Falling back to synthetic UUID for %s", email)
     return str(uuid.uuid4())
 
 
