@@ -529,7 +529,7 @@ export default function DocsPage() {
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-black text-[var(--text-primary)] transition-colors duration-300">
+    <main className="app-shell-font relative min-h-screen overflow-x-hidden bg-black text-[var(--text-primary)] transition-colors duration-300">
       <AmbientBackground />
       <div className="relative z-10 max-w-8xl mx-auto flex">
 
