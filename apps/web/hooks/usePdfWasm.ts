@@ -1,21 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import type { DocumentModel } from "@olpdf/document-model";
 
 type Resolver = {
-  resolve: (model: DocumentModel) => void;
+  resolve: (result: unknown) => void;
   reject: (err: Error) => void;
 };
 
 /**
  * Spawns a Web Worker that runs the Rust/Wasm PDF parser.
- * Call parsePdf(arrayBuffer) to get an instant DocumentModel (confidence 0.8).
- * The server-side PyMuPDF pass then enriches it to confidence 1.0.
+ * Call parsePdf(arrayBuffer) to get the raw wasm parse result.
+ * Use normalizeWasmResult() to convert it into a PdfEditSession.
  *
  * Usage:
- *   const { parsePdf } = usePdfWasm();
- *   const preview = await parsePdf(file.arrayBuffer());
+ *   const { parsePdf, ready } = usePdfWasm();
+ *   const raw = await parsePdf(file.arrayBuffer());
  */
 export function usePdfWasm() {
   const workerRef = useRef<Worker | null>(null);
@@ -30,12 +29,12 @@ export function usePdfWasm() {
     );
     workerRef.current = worker;
 
-    worker.onmessage = (e: MessageEvent<{ id: string; result?: DocumentModel; error?: string }>) => {
+    worker.onmessage = (e: MessageEvent<{ id: string; result?: unknown; error?: string }>) => {
       const { id, result, error } = e.data;
       const p = pending.current.get(id);
       if (!p) return;
       pending.current.delete(id);
-      error ? p.reject(new Error(error)) : p.resolve(result!);
+      error ? p.reject(new Error(error)) : p.resolve(result);
     };
 
     return () => {
@@ -44,8 +43,8 @@ export function usePdfWasm() {
     };
   }, []);
 
-  const parsePdf = useCallback((arrayBuffer: ArrayBuffer): Promise<DocumentModel> => {
-    return new Promise<DocumentModel>((resolve, reject) => {
+  const parsePdf = useCallback((arrayBuffer: ArrayBuffer): Promise<unknown> => {
+    return new Promise<unknown>((resolve, reject) => {
       if (!workerRef.current) {
         reject(new Error("PDF WASM worker not ready"));
         return;
@@ -57,5 +56,5 @@ export function usePdfWasm() {
     });
   }, []);
 
-  return { parsePdf };
+  return { parsePdf, ready: Boolean(workerRef.current) };
 }

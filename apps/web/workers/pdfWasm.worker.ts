@@ -31,7 +31,7 @@ self.onmessage = async (e: MessageEvent<{ id: string; buffer: ArrayBuffer }>) =>
   try {
     if (!parseFn) throw new Error("Wasm not initialized");
     const result = parseFn(new Uint8Array(buffer));
-    self.postMessage({ id, result });
+    self.postMessage({ id, result: { source: "rust-wasm", ...(result as Record<string, unknown>) } });
   } catch (err) {
     self.postMessage({ id, error: String(err) });
   }

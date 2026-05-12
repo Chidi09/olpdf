@@ -50,6 +50,8 @@ struct RichSpan {
 #[derive(Serialize, Clone)]
 struct WasmBlock {
     id: String,
+    object_id: String,
+    source_ref: String,
     #[serde(rename = "type")]
     block_type: String,
     content: String,
@@ -170,6 +172,8 @@ fn make_block(
     let rich_spans = build_rich_spans(segments, &family, font_size);
     Some(WasmBlock {
         id: format!("blk_wasm_{page_index}_{idx}"),
+        object_id: format!("pdfobj_{page_index}_{idx}"),
+        source_ref: format!("page:{page_index}:content:{idx}"),
         block_type: "paragraph".to_string(),
         content: t.to_string(),
         rich_spans,
