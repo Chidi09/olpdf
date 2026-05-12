@@ -114,7 +114,7 @@ export default function EditorDocsPage() {
         </>
       }
     >
-      <div className="mt-8 rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-panel)] px-6 py-14 text-center">
+      <div className="mt-8 rounded-lg border border-white/10 bg-white/[0.02] px-6 py-14 text-center backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)]">
           <DocumentTextIcon className="h-6 w-6 text-[var(--text-secondary)]" />
         </div>
@@ -124,12 +124,12 @@ export default function EditorDocsPage() {
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link href="/editor/new">
-            <Button variant="outline" className="h-9 rounded-md border-[var(--border-strong)] bg-[var(--bg-surface)] px-4 text-sm text-[var(--text-primary)]">
+            <Button variant="outline" className="h-9 rounded-md border-white/15 bg-white/[0.06] px-4 text-sm text-[var(--text-primary)] backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] hover:bg-white/[0.1]">
               <PlusIcon className="h-4 w-4" /> Blank Document
             </Button>
           </Link>
-          <Button onClick={onImportClick} className="h-9 rounded-md bg-[var(--accent)] px-4 text-sm font-medium text-[var(--text-on-accent)]">
-            <ArrowUpTrayIcon className="h-4 w-4" /> Import PDF
+          <Button onClick={onImportClick} className="h-9 rounded-md border border-white/15 bg-white/[0.12] px-4 text-sm font-medium text-white backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:bg-white/[0.18]">
+              <ArrowUpTrayIcon className="h-4 w-4" /> Import PDF
           </Button>
         </div>
       </div>
