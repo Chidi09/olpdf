@@ -1,17 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { BarChart3, Folder, Star, Settings, HelpCircle, FileText, BookOpen, CalendarClock } from "lucide-react";
+import { PageShell } from "@/components/layout/PageShell";
+import {
+  DocumentTextIcon,
+  BookOpenIcon,
+  DocumentDuplicateIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 
 type ApiDoc = { id: string; title?: string; updated_at?: string; created_at?: string; page_count?: number };
 type ApiBook = { id: string; title?: string; updated_at?: string; created_at?: string; chapters?: unknown[] };
 
 export default function AnalyticsPage() {
-  const pathname = usePathname();
-
   const documentsQuery = useQuery<ApiDoc[]>({
     queryKey: ["analytics-documents"],
     queryFn: async () => {
@@ -35,6 +37,7 @@ export default function AnalyticsPage() {
 
   const totalPages = docs.reduce((sum, d) => sum + (d.page_count || 0), 0);
   const totalChapters = books.reduce((sum, b) => sum + (b.chapters?.length || 0), 0);
+
   const recent = [
     ...docs.map((d) => ({
       id: d.id,
@@ -53,67 +56,90 @@ export default function AnalyticsPage() {
     .slice(0, 10);
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
-      <aside className="hidden lg:flex w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] flex-col fixed h-screen z-20">
-        <div className="h-16 border-b border-[var(--border-subtle)]" />
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <Link href="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/dashboard" ? "bg-[var(--accent)]/10 text-[var(--accent)] font-bold" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"}`}><Folder className="h-5 w-5" /> All Projects</Link>
-          <Link href="/favorites" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/favorites" ? "bg-[var(--accent)]/10 text-[var(--accent)] font-bold" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"}`}><Star className="h-5 w-5" /> Favorites</Link>
-          <Link href="/analytics" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/analytics" ? "bg-[var(--accent)]/10 text-[var(--accent)] font-bold" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"}`}><BarChart3 className="h-5 w-5" /> Analytics</Link>
-          <Link href="/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === "/settings" ? "bg-[var(--accent)]/10 text-[var(--accent)] font-bold" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"}`}><Settings className="h-5 w-5" /> Settings</Link>
-        </nav>
-        <div className="p-4 border-t border-[var(--border-subtle)]">
-          <Link href="/docs" className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer"><HelpCircle className="h-4 w-4" /> Help & Support</Link>
+    <PageShell>
+      <div className="max-w-5xl space-y-8">
+        <div className="border-b border-[#222] pb-5">
+          <h1 className="text-xl font-semibold tracking-tight text-white">Analytics</h1>
+          <p className="mt-1 text-sm text-[#888]">Overview of your workspace usage and activity.</p>
         </div>
-      </aside>
 
-      <main className="flex-1 lg:ml-64 pb-24">
-        <header className="sticky top-0 z-10 bg-[var(--bg-base)]/80 backdrop-blur-md border-b border-[var(--border-subtle)] px-8 py-4">
-          <h1 className="text-xl font-bold">Analytics</h1>
-        </header>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Total Documents"
+            value={String(docs.length)}
+            icon={<DocumentTextIcon className="h-5 w-5 text-blue-500" />}
+          />
+          <StatCard
+            label="Total Books"
+            value={String(books.length)}
+            icon={<BookOpenIcon className="h-5 w-5 text-amber-500" />}
+          />
+          <StatCard
+            label="Document Pages"
+            value={String(totalPages)}
+            icon={<DocumentDuplicateIcon className="h-5 w-5 text-emerald-500" />}
+          />
+          <StatCard
+            label="Book Chapters"
+            value={String(totalChapters)}
+            icon={<ClockIcon className="h-5 w-5 text-purple-500" />}
+          />
+        </div>
 
-        <section className="p-8 space-y-8">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Documents" value={String(docs.length)} icon={<FileText className="h-5 w-5 text-blue-500" />} />
-            <StatCard label="Books" value={String(books.length)} icon={<BookOpen className="h-5 w-5 text-amber-500" />} />
-            <StatCard label="Doc Pages" value={String(totalPages)} icon={<BarChart3 className="h-5 w-5 text-emerald-500" />} />
-            <StatCard label="Book Chapters" value={String(totalChapters)} icon={<CalendarClock className="h-5 w-5 text-purple-500" />} />
+        <div className="mt-8 flex flex-col overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+          <div className="border-b border-[#222] bg-[#050505] px-5 py-4">
+            <h2 className="text-sm font-semibold text-white">Recent Activity</h2>
           </div>
 
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl p-6">
-            <h2 className="text-lg font-bold mb-4">Recent Activity</h2>
-            {documentsQuery.isLoading || booksQuery.isLoading ? (
-              <p className="text-sm text-[var(--text-secondary)]">Loading activity...</p>
-            ) : recent.length === 0 ? (
-              <p className="text-sm text-[var(--text-secondary)]">No activity yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {recent.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-4 py-3">
-                    <div>
-                      <p className="font-semibold">{item.title}</p>
-                      <p className="text-xs text-[var(--text-tertiary)]">{item.type}</p>
+          {documentsQuery.isLoading || booksQuery.isLoading ? (
+            <div className="p-6 text-center text-xs font-mono uppercase tracking-widest text-[#666]">
+              Loading activity...
+            </div>
+          ) : recent.length === 0 ? (
+            <div className="p-6 text-center text-xs text-[#666]">No activity yet.</div>
+          ) : (
+            <div className="divide-y divide-[#222]">
+              {recent.map((item) => (
+                <div key={`${item.type}-${item.id}`} className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-[#111]">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#333] bg-[#1A1A1A]">
+                      {item.type === "Document" ? (
+                        <DocumentTextIcon className="h-4 w-4 text-[#888]" />
+                      ) : (
+                        <BookOpenIcon className="h-4 w-4 text-[#888]" />
+                      )}
                     </div>
-                    <p className="text-xs text-[var(--text-tertiary)]">{new Date(item.updated_at).toLocaleString()}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[#ededed]">{item.title}</p>
+                      <p className="text-[11px] text-[#666]">{item.type}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      </main>
-    </div>
+                  <p className="shrink-0 tabular-nums text-xs text-[#666]">
+                    {new Date(item.updated_at).toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </PageShell>
   );
 }
 
 function StatCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className="bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="h-10 w-10 rounded-lg bg-black/10 flex items-center justify-center">{icon}</div>
+    <div className="flex flex-col justify-between rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-colors hover:border-[#333]">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-xs font-semibold text-[#888]">{label}</h3>
+        {icon}
       </div>
-      <div className="text-2xl font-black">{value}</div>
-      <div className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-widest mt-1">{label}</div>
+      <div className="text-2xl font-semibold tracking-tight text-[#ededed]">{value}</div>
     </div>
   );
 }

@@ -1,75 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Search, Filter, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PageShell } from "@/components/layout/PageShell";
+import {
+  BookOpenIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 
 export default function BooksPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
-      <header className="sticky top-0 z-10 bg-[var(--bg-base)]/80 backdrop-blur-md border-b border-[var(--border-subtle)] px-8 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-[var(--accent)]" />
-          My Books
-        </h1>
-        <div className="flex items-center gap-3">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
-            <input 
-              type="text"
-              placeholder="Search books..."
-              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none focus:border-[var(--accent)] transition-all"
-            />
+    <PageShell>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 border-b border-[#222] pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-white">Books</h1>
+            <p className="mt-1 text-sm text-[#888]">Compile multiple documents with structural consistency checks.</p>
           </div>
-          <Link href="/dashboard">
-            <Button variant="outline" className="rounded-full h-10 w-10 p-0 border-[var(--border-strong)]"><Filter className="h-4 w-4" /></Button>
-          </Link>
-          <Link href="/books/new">
-            <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg hover:shadow-xl transition-all h-10 gap-2">
-              <Plus className="h-4 w-4" /> New Book
-            </Button>
-          </Link>
-        </div>
-      </header>
 
-      <main className="flex-1 p-8">
-        <div className="py-20 flex flex-col items-center text-center">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full scale-150" />
-            <div className="h-24 w-24 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 relative z-10">
-              <BookOpen className="h-10 w-10" />
+          <div className="flex items-center gap-3">
+            <div className="group relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666] transition-colors group-focus-within:text-orange-500" />
+              <input
+                type="text"
+                placeholder="Search books..."
+                className="h-9 w-full rounded-md border border-[#333] bg-[#0A0A0A] pl-9 pr-3 text-sm text-[#ededed] placeholder-[#666] transition-all focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 sm:w-64"
+              />
             </div>
-          </div>
-          <h3 className="text-xl font-bold mb-2">No books yet</h3>
-          <p className="text-[var(--text-secondary)] max-w-sm mb-8">
-            Compile multiple documents into a structured book with consistency checking.
-          </p>
-          <div className="flex gap-4">
-            <Link href="/books/new">
-              <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-6 font-bold shadow-lg h-12 gap-2">
-                <Plus className="h-4 w-4" /> Create Book
-              </Button>
+            <button className="flex h-9 w-9 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111]">
+              <FunnelIcon className="h-4 w-4" />
+            </button>
+            <Link href="/books/new" className="flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-orange-600 px-4 text-sm font-semibold text-white shadow-[0_0_12px_rgba(234,88,12,0.2)] transition-colors hover:bg-orange-500">
+              <PlusIcon className="h-4 w-4" /> New Book
             </Link>
           </div>
         </div>
 
-        {/* Skeleton State */}
-        <div className="mt-24 border-t border-[var(--border-subtle)] pt-12">
-          <h4 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-6">Loading State Preview</h4>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 animate-pulse flex items-start gap-4">
-                <div className="h-16 w-12 rounded-lg bg-[var(--bg-elevated)] shrink-0" />
-                <div className="flex-1">
-                  <div className="h-4 w-3/4 bg-[var(--bg-elevated)] rounded mb-2" />
-                  <div className="h-3 w-1/2 bg-[var(--bg-elevated)] rounded mb-4" />
-                  <div className="h-2 w-full bg-[var(--bg-elevated)] rounded" />
-                </div>
-              </div>
-            ))}
+        <div className="mt-8 flex flex-col items-center rounded-lg border border-dashed border-[#222] bg-[#050505] p-12 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-[#333] bg-[#111]">
+            <BookOpenIcon className="h-6 w-6 text-[#888]" />
+          </div>
+          <h3 className="mb-1 text-base font-medium text-white">No books found</h3>
+          <p className="mb-6 max-w-sm text-sm text-[#666]">
+            Create a new book workspace to compile chapters and run cross-document consistency checks.
+          </p>
+          <div className="flex items-center gap-3">
+            <Link href="/books/new" className="flex h-9 items-center gap-1.5 rounded-md border border-[#333] bg-[#111] px-4 text-sm font-medium text-white transition-all hover:border-[#444] hover:bg-[#1A1A1A]">
+              <PlusIcon className="h-4 w-4" /> Create Book
+            </Link>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </PageShell>
   );
 }

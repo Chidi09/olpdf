@@ -154,7 +154,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <PageShell title="Settings">
+    <PageShell>
       <div className="max-w-5xl space-y-10">
         <div className="mb-8 border-b border-[var(--border-subtle)] pb-5">
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Settings</h1>

@@ -1,88 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { 
-  Star,
-  Search,
-  Upload,
-  Folder,
-  BarChart3,
-  Settings,
-  HelpCircle
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PageShell } from "@/components/layout/PageShell";
+import {
+  StarIcon,
+  MagnifyingGlassIcon,
+  ArrowUpTrayIcon,
+} from "@heroicons/react/24/outline";
 
 export default function FavoritesPage() {
-  const pathname = usePathname();
-
   return (
-    <div className="flex min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
-      
-      {/* Sidebar */}
-      <aside className="hidden lg:flex w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] flex-col fixed h-screen z-20">
-        <div className="h-16 border-b border-[var(--border-subtle)]" />
-        
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-           <Link href="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === '/dashboard' ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-bold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}`}>
-              <Folder className="h-5 w-5" /> All Projects
-           </Link>
-           <Link href="/favorites" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === '/favorites' ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-bold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}`}>
-              <Star className="h-5 w-5" /> Favorites
-           </Link>
-           <Link href="/analytics" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === '/analytics' ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-bold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}`}>
-              <BarChart3 className="h-5 w-5" /> Analytics
-           </Link>
-           <Link href="/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${pathname === '/settings' ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-bold' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}`}>
-              <Settings className="h-5 w-5" /> Settings
-           </Link>
-        </nav>
+    <PageShell>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 border-b border-[#222] pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-white">Favorites</h1>
+            <p className="mt-1 text-sm text-[#888]">Quick access to your most important documents and books.</p>
+          </div>
 
-        <div className="p-4 border-t border-[var(--border-subtle)] space-y-4">
-           <Link href="/docs" className="flex items-center gap-3 px-3 py-2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors text-xs font-medium cursor-pointer">
-              <HelpCircle className="h-4 w-4" /> Help & Support
-           </Link>
+          <div className="flex items-center gap-3">
+            <div className="group relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666] transition-colors group-focus-within:text-orange-500" />
+              <input
+                type="text"
+                placeholder="Search favorites..."
+                className="h-9 w-full rounded-md border border-[#333] bg-[#0A0A0A] pl-9 pr-3 text-sm text-[#ededed] placeholder-[#666] transition-all focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 sm:w-64"
+              />
+            </div>
+            <Link href="/toolkit" className="flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-white px-4 text-sm font-semibold text-black transition-colors hover:bg-[#e5e5e5]">
+              <ArrowUpTrayIcon className="h-4 w-4" /> Import
+            </Link>
+          </div>
         </div>
-      </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 lg:ml-64 pb-24">
-        {/* Header */}
-        <header className="sticky top-0 z-10 bg-[var(--bg-base)]/80 backdrop-blur-md border-b border-[var(--border-subtle)] px-8 py-4 flex items-center justify-between">
-           <div className="flex items-center gap-6">
-              <h1 className="text-xl font-bold">Favorites</h1>
-           </div>
-           <div className="flex items-center gap-3">
-              <div className="relative hidden md:block">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
-                 <input 
-                   type="text"
-                   placeholder="Search favorites..."
-                   className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none focus:border-[var(--accent)] transition-all"
-                 />
-              </div>
-              <Link href="/toolkit">
-                <Button className="rounded-full bg-[var(--accent)] text-[var(--text-on-accent)] px-4 font-bold shadow-lg h-10 gap-2">
-                   <Upload className="h-4 w-4" /> Import PDF
-                </Button>
-              </Link>
-           </div>
-        </header>
-
-        <section className="p-8">
-           <div className="py-20 flex flex-col items-center text-center">
-              <div className="relative mb-8">
-                 <div className="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full scale-150" />
-                 <Star className="h-24 w-24 text-amber-500/20 relative animate-float" strokeWidth={1} />
-              </div>
-              <h3 className="text-xl font-bold mb-2">No favorites yet</h3>
-              <p className="text-[var(--text-secondary)] max-w-xs mb-8">Mark documents or books as favorites to see them here for quick access.</p>
-              <Link href="/dashboard">
-                 <Button variant="outline" className="rounded-full px-6 font-bold border-[var(--border-strong)] h-12">Go to Dashboard</Button>
-              </Link>
-           </div>
-        </section>
-      </main>
-    </div>
+        <div className="mt-8 flex flex-col items-center rounded-lg border border-dashed border-[#222] bg-[#050505] p-12 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-[#333] bg-[#111]">
+            <StarIcon className="h-6 w-6 text-[#888]" />
+          </div>
+          <h3 className="mb-1 text-base font-medium text-white">No favorites yet</h3>
+          <p className="mb-6 max-w-sm text-sm text-[#666]">
+            Mark documents or books as favorites to see them here for quick access.
+          </p>
+          <Link href="/dashboard" className="flex h-9 items-center rounded-md border border-[#333] bg-[#111] px-4 text-sm font-medium text-white transition-all hover:border-[#444] hover:bg-[#1A1A1A]">
+            Go to Dashboard
+          </Link>
+        </div>
+      </div>
+    </PageShell>
   );
 }

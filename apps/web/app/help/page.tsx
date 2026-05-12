@@ -1,85 +1,115 @@
 "use client";
 
 import Link from "next/link";
-import { HelpCircle, Search, Mail, FileText, ExternalLink, MessageSquare } from "lucide-react";
+import { PageShell } from "@/components/layout/PageShell";
+import {
+  LifebuoyIcon,
+  MagnifyingGlassIcon,
+  EnvelopeIcon,
+  DocumentTextIcon,
+  ArrowTopRightOnSquareIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
+} from "@heroicons/react/24/outline";
 
 export default function HelpPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-300">
-      <header className="sticky top-0 z-10 bg-[var(--bg-base)]/80 backdrop-blur-md border-b border-[var(--border-subtle)] px-8 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <HelpCircle className="h-6 w-6 text-[var(--accent)]" />
-          Help & Support
-        </h1>
-        <div className="flex items-center gap-3">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
-            <input 
+    <PageShell>
+      <div className="max-w-5xl space-y-8">
+        <div className="flex flex-col gap-4 border-b border-[#222] pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-white">Help & Support</h1>
+            <p className="mt-1 text-sm text-[#888]">Browse documentation, FAQs, or get in touch.</p>
+          </div>
+
+          <div className="group relative w-full sm:w-64">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#666] transition-colors group-focus-within:text-orange-500" />
+            <input
               type="text"
               placeholder="Search help articles..."
-              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-full pl-10 pr-4 py-2 text-sm w-64 outline-none focus:border-[var(--accent)] transition-all"
+              className="h-9 w-full rounded-md border border-[#333] bg-[#0A0A0A] pl-9 pr-3 text-sm text-[#ededed] placeholder-[#666] transition-all focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30"
             />
           </div>
         </div>
-      </header>
 
-      <main className="flex-1 p-8 max-w-5xl mx-auto w-full space-y-12">
-        <div className="py-12 flex flex-col items-center text-center">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-blue-500/10 blur-3xl rounded-full scale-150" />
-            <div className="h-20 w-20 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20 relative z-10">
-              <MessageSquare className="h-10 w-10" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <Link href="/docs" className="group flex flex-col rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-all hover:border-orange-500/40 hover:bg-[#111]">
+            <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#111]">
+              <DocumentTextIcon className="h-4 w-4 text-[#888] transition-colors group-hover:text-orange-500" />
             </div>
-          </div>
-          <h2 className="text-3xl font-extrabold mb-4">How can we help you today?</h2>
-          <p className="text-[var(--text-secondary)] max-w-xl text-lg">
-            Browse our documentation, read frequently asked questions, or get in touch with our support team.
-          </p>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Link href="/docs" className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 transition-all hover:border-[var(--accent)] hover:shadow-lg">
-            <div className="mb-4 h-12 w-12 bg-[var(--bg-elevated)] rounded-xl flex items-center justify-center border border-[var(--border-subtle)] group-hover:bg-[var(--accent)]/10 group-hover:text-[var(--accent)] transition-colors">
-              <FileText className="h-6 w-6" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Documentation</h3>
-            <p className="text-[var(--text-secondary)] text-sm mb-4">Detailed guides on using the editor, API, and managing templates.</p>
-            <span className="text-[var(--accent)] text-sm font-semibold flex items-center gap-1">Read docs <ExternalLink className="h-3 w-3" /></span>
+            <h3 className="mb-1 text-sm font-semibold text-[#ededed]">Documentation</h3>
+            <p className="mb-4 flex-1 text-xs leading-relaxed text-[#666]">
+              Detailed guides on using the editor, API, and managing templates.
+            </p>
+            <span className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-orange-500">
+              Read docs <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+            </span>
           </Link>
 
-          <div className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 transition-all hover:border-emerald-500/50 hover:shadow-lg">
-            <div className="mb-4 h-12 w-12 bg-[var(--bg-elevated)] rounded-xl flex items-center justify-center border border-[var(--border-subtle)] group-hover:bg-emerald-500/10 group-hover:text-emerald-500 transition-colors">
-              <HelpCircle className="h-6 w-6" />
+          <div className="group flex cursor-pointer flex-col rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-all hover:border-[#444] hover:bg-[#111]">
+            <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#111]">
+              <LifebuoyIcon className="h-4 w-4 text-[#888] transition-colors group-hover:text-[#ededed]" />
             </div>
-            <h3 className="text-xl font-bold mb-2">FAQ</h3>
-            <p className="text-[var(--text-secondary)] text-sm mb-4">Answers to the most common questions about features and billing.</p>
-            <span className="text-emerald-500 text-sm font-semibold flex items-center gap-1">View FAQ <ExternalLink className="h-3 w-3" /></span>
+            <h3 className="mb-1 text-sm font-semibold text-[#ededed]">FAQ</h3>
+            <p className="mb-4 flex-1 text-xs leading-relaxed text-[#666]">
+              Answers to the most common questions about features and billing.
+            </p>
+            <span className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-[#ededed]">
+              View FAQ <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+            </span>
           </div>
 
-          <div className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 transition-all hover:border-amber-500/50 hover:shadow-lg">
-            <div className="mb-4 h-12 w-12 bg-[var(--bg-elevated)] rounded-xl flex items-center justify-center border border-[var(--border-subtle)] group-hover:bg-amber-500/10 group-hover:text-amber-500 transition-colors">
-              <Mail className="h-6 w-6" />
+          <div className="group flex cursor-pointer flex-col rounded-lg border border-[#222] bg-[#0A0A0A] p-5 transition-all hover:border-[#444] hover:bg-[#111]">
+            <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#111]">
+              <EnvelopeIcon className="h-4 w-4 text-[#888] transition-colors group-hover:text-[#ededed]" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Contact Support</h3>
-            <p className="text-[var(--text-secondary)] text-sm mb-4">Can&apos;t find what you need? Send us a message directly.</p>
-            <span className="text-amber-500 text-sm font-semibold flex items-center gap-1">Email us <ExternalLink className="h-3 w-3" /></span>
+            <h3 className="mb-1 text-sm font-semibold text-[#ededed]">Contact Support</h3>
+            <p className="mb-4 flex-1 text-xs leading-relaxed text-[#666]">
+              Can&apos;t find what you need? Send us a message directly.
+            </p>
+            <span className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-[#ededed]">
+              Email us <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+            </span>
           </div>
         </div>
 
-        {/* Skeleton State Example for potential dynamic FAQ loading */}
-        <div className="mt-16 border-t border-[var(--border-subtle)] pt-12">
-          <h4 className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-6">Popular Articles (Loading...)</h4>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 animate-pulse">
-                <div className="h-5 w-1/3 bg-[var(--bg-elevated)] rounded mb-3" />
-                <div className="h-3 w-full bg-[var(--bg-elevated)] rounded mb-2" />
-                <div className="h-3 w-2/3 bg-[var(--bg-elevated)] rounded" />
+        <section className="mt-8 overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+          <div className="border-b border-[#222] bg-[#050505] px-5 py-4">
+            <h2 className="text-sm font-semibold text-white">Popular Articles</h2>
+          </div>
+
+          <div className="divide-y divide-[#222]">
+            <div className="group flex cursor-pointer items-start gap-4 px-5 py-4 transition-colors hover:bg-[#111]">
+              <div className="mt-0.5 shrink-0">
+                <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4 text-[#666] transition-colors group-hover:text-orange-500" />
               </div>
-            ))}
+              <div>
+                <h4 className="mb-1 text-sm font-medium text-[#ededed]">How to edit scanned PDFs with AI</h4>
+                <p className="text-xs text-[#666]">Learn how the OCR pipeline automatically triggers on scanned documents and reconstructs the layout.</p>
+              </div>
+            </div>
+
+            <div className="group flex cursor-pointer items-start gap-4 px-5 py-4 transition-colors hover:bg-[#111]">
+              <div className="mt-0.5 shrink-0">
+                <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4 text-[#666] transition-colors group-hover:text-orange-500" />
+              </div>
+              <div>
+                <h4 className="mb-1 text-sm font-medium text-[#ededed]">Exporting a Book to EPUB3</h4>
+                <p className="text-xs text-[#666]">A step-by-step guide to compiling multiple documents into a reflowable EPUB3 file.</p>
+              </div>
+            </div>
+
+            <div className="group flex cursor-pointer items-start gap-4 px-5 py-4 transition-colors hover:bg-[#111]">
+              <div className="mt-0.5 shrink-0">
+                <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4 text-[#666] transition-colors group-hover:text-orange-500" />
+              </div>
+              <div>
+                <h4 className="mb-1 text-sm font-medium text-[#ededed]">Managing API Keys and Webhooks</h4>
+                <p className="text-xs text-[#666]">How to securely authenticate server-to-server requests and listen to document events.</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </section>
+      </div>
+    </PageShell>
   );
 }

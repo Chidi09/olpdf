@@ -137,7 +137,7 @@ export default function ToolkitPage() {
   };
 
   return (
-    <PageShell title="PDF Toolkit">
+    <PageShell>
       <div className="max-w-5xl space-y-8">
         <div className="border-b border-[var(--border-subtle)] pb-5">
           <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">PDF Toolkit</h1>

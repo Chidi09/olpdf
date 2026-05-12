@@ -13,6 +13,33 @@ from ..core.supabase_client import supabase
 
 router = APIRouter(prefix="/api/books", tags=["books"])
 
+
+def ensure_profile_row(user: dict) -> None:
+    profile_id = user["sub"]
+    email = user.get("email") or ""
+    full_name = user.get("name") or ""
+    try:
+        supabase.table("profiles").upsert({
+            "id": profile_id,
+            "email": email,
+            "full_name": full_name,
+        }).execute()
+        return
+    except Exception:
+        pass
+
+    try:
+        display_name = full_name or (email.split("@")[0] if email else "")
+        supabase.table("profiles").upsert({
+            "id": profile_id,
+            "display_name": display_name,
+        }).execute()
+        return
+    except Exception:
+        pass
+
+    supabase.table("profiles").upsert({"id": profile_id}).execute()
+
 @router.get("")
 async def list_books(user: dict = Depends(require_auth)) -> List[dict]:
     return BookRepository.list_for_user(user["sub"])
@@ -22,11 +49,8 @@ async def create_book(book: BookModel, user: dict = Depends(require_auth)) -> di
     title = sanitize_string(book.title)
     meta = sanitize_dict(book.meta)
     # Ensure profile exists for schemas enforcing book/document user FK to profiles.
-    supabase.table("profiles").upsert({
-        "id": user["sub"],
-        "email": user.get("email") or "",
-        "full_name": user.get("name") or "",
-    }).execute()
+    # Handles both newer and legacy profile schemas.
+    ensure_profile_row(user)
     res = BookRepository.create(title, meta, user_id=user["sub"])
     return {"id": res["id"], "status": "created"}
 

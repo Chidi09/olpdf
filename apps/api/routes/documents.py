@@ -15,6 +15,33 @@ from ..limiter import limiter
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
+
+def ensure_profile_row(user: dict) -> None:
+    profile_id = user["sub"]
+    email = user.get("email") or ""
+    full_name = user.get("name") or ""
+    try:
+        supabase.table("profiles").upsert({
+            "id": profile_id,
+            "email": email,
+            "full_name": full_name,
+        }).execute()
+        return
+    except Exception:
+        pass
+
+    try:
+        display_name = full_name or (email.split("@")[0] if email else "")
+        supabase.table("profiles").upsert({
+            "id": profile_id,
+            "display_name": display_name,
+        }).execute()
+        return
+    except Exception:
+        pass
+
+    supabase.table("profiles").upsert({"id": profile_id}).execute()
+
 @router.post("/import/start")
 @limiter.limit("5/minute")
 async def start_import(request: Request, payload: ImportStartPayload, background_tasks: BackgroundTasks, user: dict = Depends(require_auth)) -> dict:
@@ -58,13 +85,9 @@ async def create_document(request: Request, doc: DocumentModel, user: dict = Dep
     payload = sanitize_document_model(doc.model_dump())
     title = payload.get("meta", {}).get("title", "Untitled Document")
 
-    # Ensure profile row exists for schemas that enforce documents.user_id -> profiles.id
-    profile_id = user["sub"]
-    supabase.table("profiles").upsert({
-        "id": profile_id,
-        "email": user.get("email") or "",
-        "full_name": user.get("name") or "",
-    }).execute()
+    # Ensure profile row exists for schemas that enforce documents.user_id -> profiles.id.
+    # Handles both newer (email/full_name) and legacy (display_name) profile schemas.
+    ensure_profile_row(user)
 
     new_doc = DocumentRepository.create(title, payload, user_id=user["sub"])
 

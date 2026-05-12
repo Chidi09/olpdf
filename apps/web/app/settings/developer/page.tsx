@@ -91,7 +91,7 @@ export default function DeveloperSettingsPage() {
 
   if (loading) {
     return (
-      <PageShell title="Developer Settings">
+      <PageShell>
         <div className="max-w-5xl animate-pulse space-y-10">
           <div className="h-20 rounded-lg border border-[#222] bg-[#111]" />
           <div className="h-64 rounded-lg border border-[#222] bg-[#111]" />
@@ -101,7 +101,7 @@ export default function DeveloperSettingsPage() {
   }
 
   return (
-    <PageShell title="Developer Settings">
+    <PageShell>
       <div className="max-w-5xl space-y-10">
         <div className="mb-8 flex items-center justify-between border-b border-[#222] pb-5">
           <div>
