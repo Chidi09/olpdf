@@ -125,6 +125,11 @@ export default function CollaborativeEditor({
 
   const saveMutation = useSaveDocumentMutation(documentId);
   const hydratedModel = initialModel || documentQuery.data?.document_model || model;
+  const hydratedModelRef = useRef(hydratedModel);
+
+  useEffect(() => {
+    hydratedModelRef.current = hydratedModel;
+  }, [hydratedModel]);
 
   const saveRef = useRef(
     debounce(async (nextModel: DocumentModel) => {
@@ -202,11 +207,12 @@ export default function CollaborativeEditor({
     ],
     content: documentModelToTiptap(hydratedModel),
     onUpdate: ({ editor }) => {
+        const baseModel = hydratedModelRef.current;
         const newModel = {
-          ...hydratedModel,
+          ...baseModel,
           ...tiptapToDocumentModel(editor.getJSON(), documentId),
-          meta: hydratedModel.meta,
-          styles: hydratedModel.styles,
+          meta: baseModel.meta,
+          styles: baseModel.styles,
         };
         setModel(newModel);
         setIsDirty(true);
@@ -228,7 +234,7 @@ export default function CollaborativeEditor({
         return false;
       },
     },
-  }, [hydratedModel]);
+  }, [documentId]);
 
   const insertBlock = (type: string) => {
     if (!editor) return;

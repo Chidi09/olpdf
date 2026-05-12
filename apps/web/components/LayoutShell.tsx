@@ -28,6 +28,8 @@ const APP_ROUTES = [
   "/profile",
 ];
 
+const EDITOR_ROUTES = ["/editor"];
+
 function matchesPrefix(pathname: string, routes: string[]) {
   return routes.some((r) => pathname === r || pathname.startsWith(r + "/"));
 }
@@ -70,6 +72,15 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   if (matchesPrefix(pathname, AUTH_ROUTES)) {
     return <>{children}</>;
+  }
+
+  if (matchesPrefix(pathname, EDITOR_ROUTES)) {
+    return (
+      <div className="app-shell-font relative h-screen overflow-hidden bg-black">
+        {children}
+        <OfflineIndicator />
+      </div>
+    );
   }
 
   if (matchesPrefix(pathname, APP_ROUTES)) {

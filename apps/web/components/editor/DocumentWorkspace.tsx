@@ -358,7 +358,11 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         </header>
 
         <div ref={editorContentRef} className="relative z-20 min-h-0 flex-1 overflow-hidden">
-          {layoutMode === "fidelity" && currentModel ? (
+          {!currentModel ? (
+            <div className="flex h-full w-full items-center justify-center bg-black/20 text-xs font-semibold uppercase tracking-[0.18em] text-[#777]">
+              Loading editor
+            </div>
+          ) : layoutMode === "fidelity" ? (
             <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} />
           ) : (
             <CollaborativeEditor

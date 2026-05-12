@@ -10,7 +10,7 @@ from ..models import (
     PdfProtectPayload,
 )
 from ..auth_utils import require_auth
-from ..core.auth import require_scopes
+from ..core.auth import check_ownership as check_document_ownership, require_scopes
 from ..export_utils import (
     apply_true_redaction,
     detect_form_fields,
@@ -33,6 +33,25 @@ from ..limiter import limiter
 router = APIRouter(prefix="/api/pdf", tags=["pdf"])
 
 # ... helpers ...
+
+def _check_ownership(doc_id: str, user: dict) -> dict:
+    return check_document_ownership(doc_id, user)
+
+
+def _download_pdf_from_storage(doc_id: str) -> bytes:
+    object_name = f"documents/{doc_id}.pdf"
+    pdf_bytes = r2_storage.download_bytes(object_name)
+    if not pdf_bytes:
+        raise HTTPException(status_code=404, detail="Original PDF not found. Upload or import a PDF before running toolkit operations.")
+    return pdf_bytes
+
+
+def _upload_result(data: bytes, file_name: str) -> str:
+    object_name = f"toolkit/{file_name}"
+    url = r2_storage.upload_bytes(data, object_name)
+    if not url:
+        raise HTTPException(status_code=500, detail="Failed to upload toolkit result")
+    return url
 
 @router.post("/redact")
 @limiter.limit("5/minute")
