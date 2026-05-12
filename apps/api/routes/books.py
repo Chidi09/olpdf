@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from ..models import BookModel, BookChapter
 from ..repositories import DocumentRepository, BookRepository
 from ..auth_utils import require_auth, check_ownership
+from ..core.auth import ensure_profile_row
 from ..security_utils import sanitize_string, sanitize_dict
 from ..factories import BookExportFactory
 from ..worker_utils import index_chapter_embeddings
@@ -12,33 +13,6 @@ from ..storage_client import r2_storage
 from ..core.supabase_client import supabase
 
 router = APIRouter(prefix="/api/books", tags=["books"])
-
-
-def ensure_profile_row(user: dict) -> None:
-    profile_id = user["sub"]
-    email = user.get("email") or ""
-    full_name = user.get("name") or ""
-    try:
-        supabase.table("profiles").upsert({
-            "id": profile_id,
-            "email": email,
-            "full_name": full_name,
-        }).execute()
-        return
-    except Exception:
-        pass
-
-    try:
-        display_name = full_name or (email.split("@")[0] if email else "")
-        supabase.table("profiles").upsert({
-            "id": profile_id,
-            "display_name": display_name,
-        }).execute()
-        return
-    except Exception:
-        pass
-
-    supabase.table("profiles").upsert({"id": profile_id}).execute()
 
 @router.get("")
 async def list_books(user: dict = Depends(require_auth)) -> List[dict]:

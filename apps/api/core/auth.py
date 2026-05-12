@@ -126,6 +126,11 @@ def check_ownership(
         return resource
 
     owner_id = resource.get("user_id")
+    if not owner_id and resource.get("document_model") and isinstance(resource.get("document_model"), dict):
+        owner_id = resource["document_model"].get("owner_id")
+    elif not owner_id and resource.get("meta") and isinstance(resource.get("meta"), dict):
+        owner_id = resource["meta"].get("owner_id")
+
     if owner_id and str(owner_id) == user["sub"]:
         return resource
 

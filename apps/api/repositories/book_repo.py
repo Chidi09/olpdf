@@ -14,14 +14,29 @@ class BookRepository:
 
     @staticmethod
     def list_for_user(user_id: str) -> List[Dict[str, Any]]:
-        return supabase.table("books").select("*").eq("user_id", user_id).order("updated_at", desc=True).execute().data
+        return (
+            supabase.table("books")
+            .select("*")
+            .or_(f"user_id.eq.{user_id},meta->>owner_id.eq.{user_id}")
+            .order("updated_at", desc=True)
+            .execute()
+            .data
+        )
 
     @staticmethod
     def create(title: str, meta: Dict[str, Any], user_id: Optional[str] = None) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"title": title, "meta": meta}
         if user_id:
             payload["user_id"] = user_id
-        return supabase.table("books").insert(payload).execute().data[0]
+            payload["meta"]["owner_id"] = user_id
+            
+        try:
+            return supabase.table("books").insert(payload).execute().data[0]
+        except Exception as e:
+            if "violates foreign key constraint" in str(e):
+                payload["user_id"] = None
+                return supabase.table("books").insert(payload).execute().data[0]
+            raise
 
     @staticmethod
     def update(book_id: str, updates: Dict[str, Any]) -> None:

@@ -10,9 +10,7 @@ export async function POST(request: Request) {
   return forwardJson("/api/books/create", {
     method: "POST",
     body: JSON.stringify({
-      id: "",
       title,
-      user_id: "",
       meta: {},
       front_matter: [],
       back_matter: [],

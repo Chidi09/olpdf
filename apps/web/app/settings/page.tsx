@@ -13,17 +13,19 @@ import { Button } from "@heroui/react";
 import { GlassPanel } from "@/components/ui/Glass";
 
 function ProviderIcon({ slug, color, size = 18 }: { slug: string; color: string; size?: number }) {
+  const [error, setError] = useState(false);
   const src = slug === "openai"
     ? "https://cdn.simpleicons.org/openai/white"
     : `https://cdn.simpleicons.org/${slug}/${color.replace("#", "")}`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={error ? "https://cdn.simpleicons.org/google/white" : src}
       alt={slug}
       width={size}
       height={size}
       style={{ display: "block" }}
+      onError={() => setError(true)}
     />
   );
 }

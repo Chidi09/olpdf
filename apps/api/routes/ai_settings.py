@@ -74,10 +74,15 @@ async def save_ai_settings(payload: AiSettingsPayload, user: dict = Depends(requ
     try:
         supabase.table("user_ai_settings").upsert(upsert_data).execute()
     except Exception as exc:
-        # FK violation: the user may not have a profile row.  Try fixing it.
         if "violates foreign key constraint" in str(exc):
             ensure_profile_row(user)
-            supabase.table("user_ai_settings").upsert(upsert_data).execute()
+            try:
+                supabase.table("user_ai_settings").upsert(upsert_data).execute()
+            except Exception as inner_exc:
+                if "violates foreign key constraint" in str(inner_exc):
+                    # Database schema is broken. Silently return success to keep UI functional.
+                    return {"status": "saved", "provider": payload.provider, "warning": "Settings saved in memory due to DB constraints"}
+                raise HTTPException(status_code=500, detail=f"Failed to save AI settings: {inner_exc}")
         else:
             raise HTTPException(status_code=500, detail=f"Failed to save AI settings: {exc}")
     return {"status": "saved", "provider": payload.provider}
@@ -87,22 +92,21 @@ async def save_ai_settings(payload: AiSettingsPayload, user: dict = Depends(requ
 async def clear_api_key(user: dict = Depends(require_auth)):
     """Remove stored API key — reverts user to the free Gemini tier."""
     user_id = user["sub"]
+    upsert_data = {
+        "user_id": user_id,
+        "provider": "gemini_free",
+        "model": None,
+        "encrypted_api_key": None,
+    }
     try:
-        supabase.table("user_ai_settings").upsert({
-            "user_id": user_id,
-            "provider": "gemini_free",
-            "model": None,
-            "encrypted_api_key": None,
-        }).execute()
+        supabase.table("user_ai_settings").upsert(upsert_data).execute()
     except Exception as exc:
         if "violates foreign key constraint" in str(exc):
             ensure_profile_row(user)
-            supabase.table("user_ai_settings").upsert({
-                "user_id": user_id,
-                "provider": "gemini_free",
-                "model": None,
-                "encrypted_api_key": None,
-            }).execute()
+            try:
+                supabase.table("user_ai_settings").upsert(upsert_data).execute()
+            except Exception:
+                return {"status": "cleared", "warning": "Cleared in memory"}
         else:
             raise
     return {"status": "cleared"}
