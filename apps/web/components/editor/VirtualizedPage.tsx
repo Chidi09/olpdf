@@ -11,6 +11,7 @@ interface VirtualizedPageProps {
   onCanvasReady: (pageIndex: number, el: HTMLCanvasElement) => void;
   onCanvasDestroy: (pageIndex: number) => void;
   children?: ReactNode;
+  backgroundUrl?: string;
 }
 
 function captureThumbnail(canvas: HTMLCanvasElement, callback: (url: string) => void) {
@@ -35,7 +36,7 @@ async function cacheThumbnail(pageIndex: number, thumbnailUrl: string) {
   }
 }
 
-export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, children }: VirtualizedPageProps) {
+export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, children, backgroundUrl }: VirtualizedPageProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const thumbnailCacheRef = useRef<Map<number, string>>(new Map());
@@ -101,6 +102,15 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
       className="relative mx-auto rounded-sm bg-white shadow-[0_8px_30px_rgba(0,0,0,0.14)]"
       style={{ width: pageWidth, height: pageHeight }}
     >
+      {backgroundUrl && (
+        <img
+          src={backgroundUrl}
+          alt=""
+          className="pointer-events-none absolute inset-0 z-0 h-full w-full object-fill"
+          draggable={false}
+        />
+      )}
+
       {state === "live" && (
         <canvas
           ref={(node) => {
