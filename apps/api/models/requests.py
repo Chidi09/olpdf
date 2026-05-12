@@ -16,6 +16,7 @@ class ImportStartPayload(BaseModel):
     document_id: str = Field(min_length=1, max_length=100)
     file_bytes: Base64Bytes
     layout_mode: Literal["editable", "fidelity"] = "editable"
+    client_model: Optional[Dict[str, Any]] = None
 
 
 class WorkerImportPayload(BaseModel):

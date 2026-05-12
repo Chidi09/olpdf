@@ -43,7 +43,32 @@ async def start_import(request: Request, payload: ImportStartPayload, background
     if not storage_url:
         raise HTTPException(status_code=500, detail="Failed to upload PDF to storage")
     
-    # 3. Process import in background
+    # 3. Mark document as native PDF and persist original key
+    DocumentRepository.update(payload.document_id, {
+        "document_model": {
+            "meta": {
+                "original_pdf_key": object_name,
+                "native_pdf": True,
+                "layout_mode": payload.layout_mode,
+            },
+            "blocks": [],
+            "page_dimensions": [],
+            "styles": {},
+        }
+    })
+    
+    # 4. If client_model provided, save it immediately so editor can open instantly
+    if payload.client_model:
+        try:
+            existing = DocumentRepository.find_by_id(payload.document_id)
+            merged_model = (existing.get("document_model") or {}) if existing else {}
+            merged_model["blocks"] = payload.client_model.get("blocks", [])
+            merged_model["page_dimensions"] = payload.client_model.get("page_dimensions", [])
+            DocumentRepository.update(payload.document_id, {"document_model": merged_model})
+        except Exception:
+            pass  # non-critical; background enrichment will fill in
+    
+    # 5. Process import in background
     background_tasks.add_task(route_pdf_import, payload.file_bytes, payload.document_id, payload.layout_mode, request_id)
     
     return {"id": payload.document_id, "status": "queued", "storage_url": storage_url}
