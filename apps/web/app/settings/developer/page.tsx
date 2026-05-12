@@ -2,8 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { PageShell } from "@/components/layout/PageShell";
-import { Key, Webhook, Code2, Plus, Trash2, Copy, CheckCircle2, Eye, EyeOff, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  KeyIcon,
+  GlobeAltIcon,
+  CodeBracketIcon,
+  PlusIcon,
+  TrashIcon,
+  DocumentDuplicateIcon,
+  CheckIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
 
 type ApiKey = { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null };
 type WebhookModel = { id: string; url: string; events: string[]; is_active: boolean; created_at: string };
@@ -12,19 +20,17 @@ export default function DeveloperSettingsPage() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookModel[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [newKeyName, setNewKeyName] = useState("");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
-  
+
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
-  
   const [copied, setCopied] = useState(false);
-  const [showKeyId, setShowKeyId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/bff/api-keys").then(r => r.ok ? r.json() : []),
-      fetch("/api/bff/webhooks").then(r => r.ok ? r.json() : [])
+      fetch("/api/bff/api-keys").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/bff/webhooks").then((r) => (r.ok ? r.json() : [])),
     ]).then(([k, w]) => {
       setKeys(k);
       setWebhooks(w);
@@ -37,7 +43,7 @@ export default function DeveloperSettingsPage() {
     const res = await fetch("/api/bff/api-keys", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newKeyName })
+      body: JSON.stringify({ name: newKeyName }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -51,7 +57,7 @@ export default function DeveloperSettingsPage() {
     if (!confirm("Revoke this API key? Any applications using it will instantly fail.")) return;
     const res = await fetch(`/api/bff/api-keys/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setKeys(keys.filter(k => k.id !== id));
+      setKeys(keys.filter((k) => k.id !== id));
     }
   };
 
@@ -60,7 +66,7 @@ export default function DeveloperSettingsPage() {
     const res = await fetch("/api/bff/webhooks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: newWebhookUrl, events: ["document.status_changed", "book.created"] })
+      body: JSON.stringify({ url: newWebhookUrl, events: ["document.status_changed", "book.created"] }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -73,7 +79,7 @@ export default function DeveloperSettingsPage() {
     if (!confirm("Delete this webhook endpoint?")) return;
     const res = await fetch(`/api/bff/webhooks/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setWebhooks(webhooks.filter(w => w.id !== id));
+      setWebhooks(webhooks.filter((w) => w.id !== id));
     }
   };
 
@@ -86,9 +92,9 @@ export default function DeveloperSettingsPage() {
   if (loading) {
     return (
       <PageShell title="Developer Settings">
-        <div className="animate-pulse space-y-8">
-          <div className="h-32 bg-elevated rounded-2xl" />
-          <div className="h-32 bg-elevated rounded-2xl" />
+        <div className="max-w-5xl animate-pulse space-y-10">
+          <div className="h-20 rounded-lg border border-[#222] bg-[#111]" />
+          <div className="h-64 rounded-lg border border-[#222] bg-[#111]" />
         </div>
       </PageShell>
     );
@@ -96,171 +102,190 @@ export default function DeveloperSettingsPage() {
 
   return (
     <PageShell title="Developer Settings">
-      <div className="space-y-16">
-        
-        {/* API Keys */}
-        <section>
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
-                <Key className="h-5 w-5 text-accent" /> API Keys
-              </h2>
-              <p className="text-sm text-text-secondary">Manage programmatic access to your account and workspaces.</p>
-            </div>
+      <div className="max-w-5xl space-y-10">
+        <div className="mb-8 flex items-center justify-between border-b border-[#222] pb-5">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-white">Developer Settings</h1>
+            <p className="mt-1 text-sm text-[#888]">Manage API keys, webhooks, and integrations.</p>
           </div>
-          
-          <div className="bg-elevated border border-border-subtle rounded-2xl overflow-hidden shadow-sm">
-            {/* Generate New Key */}
-            <div className="p-6 border-b border-border-subtle bg-surface/50">
-              <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-text-tertiary">Generate New Key</h3>
-              <div className="flex gap-4">
-                <input 
-                  type="text" 
-                  placeholder="Key name (e.g. Production Backend)"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  className="flex-1 bg-base border border-border-strong rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent transition-all"
-                />
-                <Button onClick={createApiKey} disabled={!newKeyName} className="bg-accent text-white px-6 rounded-xl font-bold">
-                  <Plus className="h-4 w-4 mr-2" /> Generate
-                </Button>
-              </div>
-              
-              {generatedKey && (
-                <div className="mt-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-start gap-4">
-                  <AlertCircle className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-emerald-700 mb-1">Key generated successfully!</p>
-                    <p className="text-xs text-emerald-600 mb-3">Copy this key now. You will not be able to see it again.</p>
-                    <div className="flex items-center gap-2">
-                      <code className="bg-base border border-emerald-500/20 px-3 py-2 rounded text-emerald-800 font-mono text-sm flex-1">
-                        {generatedKey}
-                      </code>
-                      <Button onClick={() => copyToClipboard(generatedKey)} variant="outline" className="border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/20">
-                        {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
+        </div>
+
+        <section className="grid gap-8 border-b border-[#222] pb-10 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white">
+              <KeyIcon className="h-4 w-4 text-orange-500" /> API Keys
+            </h2>
+            <p className="pr-4 text-xs leading-relaxed text-[#888]">
+              Manage programmatic access to your account and workspaces. Never share your secret keys.
+            </p>
+          </div>
+
+          <div className="md:col-span-2">
+            <div className="flex flex-col overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+              <div className="border-b border-[#222] bg-[#050505] p-5">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[#666]">Generate New Key</label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Key name (e.g. Production Backend)"
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value)}
+                    className="h-9 flex-1 rounded-md border border-[#333] bg-[#111] px-3 text-sm text-[#ededed] placeholder-[#666] outline-none transition-all focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
+                  />
+                  <button
+                    onClick={createApiKey}
+                    disabled={!newKeyName}
+                    className="flex h-9 items-center gap-1.5 rounded-md bg-white px-4 text-xs font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:opacity-50"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" /> Generate
+                  </button>
+                </div>
+
+                {generatedKey && (
+                  <div className="mt-4 flex items-start gap-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-4">
+                    <ExclamationCircleIcon className="h-5 w-5 shrink-0 text-emerald-500" />
+                    <div className="flex-1">
+                      <p className="mb-1 text-sm font-medium text-emerald-500">Key generated successfully</p>
+                      <p className="mb-3 text-xs text-emerald-500/80">Copy this key now. You will not be able to see it again.</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded border border-emerald-500/30 bg-black px-3 py-1.5 font-mono text-xs text-emerald-400">
+                          {generatedKey}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(generatedKey)}
+                          className="rounded-md border border-emerald-500/30 p-1.5 text-emerald-500 transition-colors hover:bg-emerald-500/20"
+                        >
+                          {copied ? <CheckIcon className="h-4 w-4" /> : <DocumentDuplicateIcon className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Keys List */}
-            <div className="p-0">
-              {keys.length === 0 ? (
-                <div className="p-8 text-center text-text-secondary text-sm">No API keys generated yet.</div>
-              ) : (
-                <div className="divide-y divide-border-subtle">
-                  {keys.map(key => (
-                    <div key={key.id} className="p-6 flex items-center justify-between hover:bg-surface/30 transition-colors">
+              <div className="divide-y divide-[#222]">
+                {keys.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-[#666]">No API keys generated yet.</div>
+                ) : (
+                  keys.map((key) => (
+                    <div key={key.id} className="group flex items-center justify-between p-4 transition-colors hover:bg-[#111]">
                       <div>
-                        <div className="font-bold flex items-center gap-3">
-                          {key.name}
-                          <span className="text-xs font-mono bg-surface border border-border-strong px-2 py-0.5 rounded text-text-tertiary">
-                            {key.prefix}...
-                          </span>
+                        <div className="mb-1 flex items-center gap-3">
+                          <span className="text-sm font-medium text-[#ededed]">{key.name}</span>
+                          <code className="rounded border border-[#333] bg-[#1A1A1A] px-1.5 py-0.5 font-mono text-[10px] text-[#888]">
+                            {key.prefix}......
+                          </code>
                         </div>
-                        <div className="text-xs text-text-tertiary mt-2">
+                        <div className="text-[11px] text-[#666]">
                           Created {new Date(key.created_at).toLocaleDateString()} • Last used {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : "Never"}
                         </div>
                       </div>
-                      <Button variant="ghost" onClick={() => deleteApiKey(key.id)} className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <button
+                        onClick={() => deleteApiKey(key.id)}
+                        className="rounded-md p-1.5 text-[#666] opacity-0 transition-colors group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Webhooks */}
-        <section>
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
-                <Webhook className="h-5 w-5 text-blue-500" /> Webhooks
-              </h2>
-              <p className="text-sm text-text-secondary">Receive real-time HTTP POST payloads when events happen.</p>
-            </div>
+        <section className="grid gap-8 border-b border-[#222] pb-10 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white">
+              <GlobeAltIcon className="h-4 w-4 text-blue-500" /> Webhooks
+            </h2>
+            <p className="pr-4 text-xs leading-relaxed text-[#888]">
+              Receive real-time HTTP POST payloads to your external servers when events happen.
+            </p>
           </div>
-          
-          <div className="bg-elevated border border-border-subtle rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-border-subtle bg-surface/50">
-              <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-text-tertiary">Add Endpoint</h3>
-              <div className="flex gap-4">
-                <input 
-                  type="url" 
-                  placeholder="https://your-domain.com/webhooks"
-                  value={newWebhookUrl}
-                  onChange={(e) => setNewWebhookUrl(e.target.value)}
-                  className="flex-1 bg-base border border-border-strong rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500 transition-all"
-                />
-                <Button onClick={createWebhook} disabled={!newWebhookUrl} className="bg-blue-500 text-white px-6 rounded-xl font-bold hover:bg-blue-600">
-                  <Plus className="h-4 w-4 mr-2" /> Add
-                </Button>
-              </div>
-            </div>
 
-            <div className="p-0">
-              {webhooks.length === 0 ? (
-                <div className="p-8 text-center text-text-secondary text-sm">No webhooks configured.</div>
-              ) : (
-                <div className="divide-y divide-border-subtle">
-                  {webhooks.map(webhook => (
-                    <div key={webhook.id} className="p-6 flex items-center justify-between hover:bg-surface/30 transition-colors">
+          <div className="md:col-span-2">
+            <div className="flex flex-col overflow-hidden rounded-lg border border-[#222] bg-[#0A0A0A]">
+              <div className="border-b border-[#222] bg-[#050505] p-5">
+                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[#666]">Add Endpoint</label>
+                <div className="flex gap-3">
+                  <input
+                    type="url"
+                    placeholder="https://api.yourdomain.com/webhooks"
+                    value={newWebhookUrl}
+                    onChange={(e) => setNewWebhookUrl(e.target.value)}
+                    className="h-9 flex-1 rounded-md border border-[#333] bg-[#111] px-3 text-sm text-[#ededed] placeholder-[#666] outline-none transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
+                  />
+                  <button
+                    onClick={createWebhook}
+                    disabled={!newWebhookUrl}
+                    className="flex h-9 items-center gap-1.5 rounded-md border border-[#333] bg-[#111] px-4 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#1A1A1A] disabled:opacity-50"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" /> Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="divide-y divide-[#222]">
+                {webhooks.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-[#666]">No webhooks configured.</div>
+                ) : (
+                  webhooks.map((webhook) => (
+                    <div key={webhook.id} className="group flex items-center justify-between p-4 transition-colors hover:bg-[#111]">
                       <div>
-                        <div className="font-mono text-sm text-blue-400 font-medium bg-blue-500/10 px-3 py-1 rounded inline-block mb-2">
-                          {webhook.url}
-                        </div>
-                        <div className="flex gap-2">
-                          {webhook.events.map(ev => (
-                            <span key={ev} className="text-[10px] font-bold text-text-tertiary uppercase border border-border-subtle rounded px-2 py-0.5 bg-base">
+                        <code className="mb-1.5 block font-mono text-xs text-[#ededed]">{webhook.url}</code>
+                        <div className="mt-2 flex gap-1.5">
+                          {webhook.events.map((ev) => (
+                            <span key={ev} className="rounded border border-[#333] bg-[#111] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#888]">
                               {ev}
                             </span>
                           ))}
                         </div>
                       </div>
-                      <Button variant="ghost" onClick={() => deleteWebhook(webhook.id)} className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <button
+                        onClick={() => deleteWebhook(webhook.id)}
+                        className="rounded-md p-1.5 text-[#666] opacity-0 transition-colors group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Integration Snippets */}
-        <section>
-          <div className="mb-6">
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
-              <Code2 className="h-5 w-5 text-purple-500" /> Integration
+        <section className="grid gap-8 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white">
+              <CodeBracketIcon className="h-4 w-4 text-purple-500" /> Integration
             </h2>
-            <p className="text-sm text-text-secondary">Quick start examples using your API keys.</p>
+            <p className="pr-4 text-xs leading-relaxed text-[#888]">
+              Quick start examples using your API keys to interface with OLPDF.
+            </p>
           </div>
-          
-          <div className="bg-elevated border border-border-subtle rounded-2xl p-6 shadow-sm">
-            <div className="bg-base border border-border-strong rounded-xl p-4 overflow-x-auto relative group">
-              <Button 
-                variant="ghost" 
-                className="absolute top-2 right-2 h-8 w-8 p-0 border border-border-subtle bg-surface"
-                onClick={() => copyToClipboard('curl -X POST "https://api.olpdf.xyz/api/documents/create" \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"title": "My Document"}\'')}
-              >
-                <Copy className="h-4 w-4 text-text-tertiary" />
-              </Button>
-              <pre className="text-sm font-mono text-text-primary">
-<span className="text-purple-400">curl</span> -X POST <span className="text-amber-400">"https://api.olpdf.xyz/api/documents/create"</span> \
-  -H <span className="text-amber-400">"Authorization: Bearer YOUR_API_KEY"</span> \
-  -H <span className="text-amber-400">"Content-Type: application/json"</span> \
+
+          <div className="md:col-span-2">
+            <div className="group relative overflow-hidden rounded-lg border border-[#222] bg-black">
+              <div className="flex items-center justify-between border-b border-[#222] bg-[#0A0A0A] px-3 py-2">
+                <span className="text-xs font-medium text-[#888]">cURL Example</span>
+                <button
+                  onClick={() => copyToClipboard('curl -X POST "https://api.olpdf.xyz/api/documents/create" \\\n+  -H "Authorization: Bearer YOUR_API_KEY" \\\n+  -H "Content-Type: application/json" \\\n+  -d \'{"title": "My Document"}\'')}
+                  className="p-1 text-[#666] transition-colors hover:text-white"
+                >
+                  <DocumentDuplicateIcon className="h-4 w-4" />
+                </button>
+              </div>
+              <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-relaxed text-[#ededed]">
+<span className="text-purple-400">curl</span> -X POST <span className="text-amber-300">"https://api.olpdf.xyz/api/documents/create"</span> \
+  -H <span className="text-amber-300">"Authorization: Bearer YOUR_API_KEY"</span> \
+  -H <span className="text-amber-300">"Content-Type: application/json"</span> \
   -d <span className="text-emerald-400">'&#123;"title": "My Document"&#125;'</span>
               </pre>
             </div>
           </div>
         </section>
-
       </div>
     </PageShell>
   );
