@@ -7,6 +7,10 @@ from ..models.requests import PublishTemplatePayload
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
+
+def _user_id(current_user: dict) -> str:
+    return str(current_user.get("sub") or current_user.get("user_id") or "")
+
 @router.get("/", response_model=List[TemplateResponse])
 async def list_templates(category: str = None):
     supabase = get_supabase()
@@ -32,7 +36,11 @@ async def publish_template(
     supabase = get_supabase()
     
     # Verify document ownership and get model
-    doc = supabase.table("documents").select("document_model").eq("id", payload.document_id).eq("user_id", current_user["user_id"]).single().execute()
+    user_id = _user_id(current_user)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    doc = supabase.table("documents").select("document_model").eq("id", payload.document_id).eq("user_id", user_id).single().execute()
     if not doc.data:
         raise HTTPException(status_code=404, detail="Document not found or access denied")
         
@@ -42,7 +50,7 @@ async def publish_template(
         "category": payload.category,
         "description": payload.description,
         "document_model": doc.data["document_model"],
-        "author_id": current_user["user_id"],
+        "author_id": user_id,
         "author_name": current_user.get("user_metadata", {}).get("full_name", "Community Contributor"),
         "is_public": True,
         "uses_count": 0
@@ -67,9 +75,13 @@ async def apply_template(
         raise HTTPException(status_code=404, detail="Template not found")
         
     # Create document directly from template's document_model
+    user_id = _user_id(current_user)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     new_doc = supabase.table("documents").insert({
         "workspace_id": workspace_id,
-        "user_id": current_user["user_id"],
+        "user_id": user_id,
         "document_model": template.data["document_model"],
         "title": f"New from {template.data['title']}"
     }).execute()

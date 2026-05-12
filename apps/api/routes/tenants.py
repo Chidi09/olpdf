@@ -8,11 +8,18 @@ from ..services import tenant_service
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 
 
+def _user_id(current_user: dict) -> str:
+    return str(current_user.get("sub") or current_user.get("user_id") or "")
+
+
 @router.get("/me", response_model=List[TenantResponse])
 async def list_my_tenants(current_user: dict = Depends(get_current_user)):
     """List all tenants where the current user is a member."""
     from ..repositories.tenant_repo import TenantRepository
-    return TenantRepository.list_for_user(current_user["user_id"])
+    user_id = _user_id(current_user)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return TenantRepository.list_for_user(user_id)
 
 
 @router.post("/", response_model=TenantResponse)
@@ -21,8 +28,11 @@ async def create_tenant(
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new white-label tenant."""
+    user_id = _user_id(current_user)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
     return tenant_service.create_tenant(
-        owner_id=current_user["user_id"],
+        owner_id=user_id,
         slug=payload.slug,
         name=payload.name
     )
@@ -50,9 +60,12 @@ async def update_tenant_branding(
     current_user: dict = Depends(get_current_user)
 ):
     """Update tenant branding and custom domain (requires correct plan)."""
+    user_id = _user_id(current_user)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
     return tenant_service.update_branding(
         tenant_id=tenant_id,
-        user_id=current_user["user_id"],
+        user_id=user_id,
         branding=payload.model_dump(exclude_unset=True)
     )
 
@@ -64,9 +77,12 @@ async def add_tenant_member(
     current_user: dict = Depends(get_current_user)
 ):
     """Add a member to the tenant (requires admin/owner)."""
+    user_id = _user_id(current_user)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
     tenant_service.add_member(
         tenant_id=tenant_id,
-        requester_id=current_user["user_id"],
+        requester_id=user_id,
         user_id=payload.user_id,
         role=payload.role
     )

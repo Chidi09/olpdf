@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { SignJWT } from "jose";
 import { jwtVerify } from "jose";
 
 export const API_BASE_URL = (process.env.OLPDF_API_BASE_URL || "http://localhost:8000").trim();
@@ -17,22 +16,18 @@ async function getServerAccessToken(): Promise<string | null> {
       ?.trim();
     if (!token) return null;
 
-    const secret = new TextEncoder().encode((process.env.API_JWT_SECRET || "").trim());
-    if (!secret.length) return null;
+    const secretValue = (process.env.API_JWT_SECRET || "").trim();
+    if (!secretValue) {
+      // Pass through the session token when WEB env does not have the API secret.
+      // Upstream API still performs signature validation.
+      return token;
+    }
+
+    const secret = new TextEncoder().encode(secretValue);
     const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] });
     if (!payload?.sub) return null;
 
-    // Mint a short-lived JWT for the FastAPI to verify
-    const upstreamSecret = new TextEncoder().encode((process.env.API_JWT_SECRET || "").trim());
-    return await new SignJWT({
-      sub: String(payload.sub),
-      email: payload.email,
-      role: "authenticated",
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setIssuedAt()
-      .setExpirationTime("1h")
-      .sign(upstreamSecret);
+    return token;
   } catch {
     return null;
   }

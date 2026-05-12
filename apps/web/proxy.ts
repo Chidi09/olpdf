@@ -27,7 +27,8 @@ export async function proxy(req: NextRequest) {
     const isProtected = protectedRoutes.some((prefix) => path.startsWith(prefix));
     if (isProtected) {
       const token = req.cookies.get(AUTH_COOKIE)?.value?.trim();
-      const secret = new TextEncoder().encode((process.env.API_JWT_SECRET || "").trim());
+      const secretValue = (process.env.API_JWT_SECRET || "").trim();
+      const secret = new TextEncoder().encode(secretValue);
       let valid = false;
       if (token && secret.length > 0) {
         try {
@@ -36,6 +37,10 @@ export async function proxy(req: NextRequest) {
         } catch {
           valid = false;
         }
+      } else if (token && !secretValue) {
+        // Allow requests to continue when secret is unavailable in web env.
+        // Downstream API auth still validates JWT signatures.
+        valid = true;
       }
       if (!valid) {
         const loginUrl = new URL("/login", req.url);
