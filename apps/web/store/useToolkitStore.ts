@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type ToolkitResult = { output_url?: string; status?: string; pages_processed?: number } | null;
+type ToolkitResult = Record<string, unknown> | null;
 
 interface ToolkitState {
   activeOperationId: string;
