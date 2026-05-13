@@ -1,18 +1,20 @@
 from typing import Any, Dict, List, Optional
 from ..core.supabase_client import supabase
+from ..services.cache_service import cache_or_fetch, delete
 
 
 class DocumentRepository:
     @staticmethod
     def get_by_id(doc_id: str) -> Optional[Dict[str, Any]]:
-        res = supabase.table("documents").select("*").eq("id", doc_id).single().execute()
-        return res.data
+        return cache_or_fetch(
+            f"doc:{doc_id}",
+            lambda: _get_doc_by_id(doc_id),
+            ttl=60,
+        )
 
     @staticmethod
     def list_for_user(user_id: str) -> List[Dict[str, Any]]:
         try:
-            # Query for documents where user_id matches OR the fallback document_model->>owner_id matches
-            # PostgREST allows or=(user_id.eq.X,document_model->>owner_id.eq.X)
             return (
                 supabase.table("documents")
                 .select("id, title, status, created_at, updated_at, document_model")
@@ -32,12 +34,10 @@ class DocumentRepository:
             payload["document_model"]["owner_id"] = user_id
         if workspace_id:
             payload["workspace_id"] = workspace_id
-        
         try:
             return supabase.table("documents").insert(payload).execute().data[0]
         except Exception as e:
             if "violates foreign key constraint" in str(e):
-                # Bypass FK constraint by setting user_id to None
                 payload["user_id"] = None
                 return supabase.table("documents").insert(payload).execute().data[0]
             raise
@@ -45,6 +45,7 @@ class DocumentRepository:
     @staticmethod
     def update(doc_id: str, updates: Dict[str, Any]) -> None:
         supabase.table("documents").update(updates).eq("id", doc_id).execute()
+        delete(f"doc:{doc_id}")
 
     @staticmethod
     def delete(doc_id: str) -> None:
@@ -66,3 +67,8 @@ class DocumentRepository:
     @staticmethod
     def update_log(log_id: str, updates: Dict[str, Any]) -> None:
         supabase.table("ai_edit_logs").update(updates).eq("id", log_id).execute()
+
+
+def _get_doc_by_id(doc_id: str) -> Optional[Dict[str, Any]]:
+    res = supabase.table("documents").select("*").eq("id", doc_id).single().execute()
+    return res.data

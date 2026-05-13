@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from ..core.supabase_client import supabase
+from ..services.cache_service import cache_or_fetch, delete
 
 
 class ApiKeyRepository:
@@ -49,9 +50,6 @@ class ApiKeyRepository:
             if key["name"].startswith(f"{user_id}::"):
                 key["name"] = key["name"].replace(f"{user_id}::", "", 1)
         return keys
-        return res.data
-
-
 
     @staticmethod
     def get_by_id(key_id: str) -> Optional[Dict[str, Any]]:
@@ -62,14 +60,27 @@ class ApiKeyRepository:
 
     @staticmethod
     def get_by_hash(key_hash: str) -> Optional[Dict[str, Any]]:
-        try:
-            return supabase.table("api_keys").select("*").eq("key_hash", key_hash).eq("is_active", True).single().execute().data
-        except Exception:
-            return None
+        return cache_or_fetch(
+            f"apikey:{key_hash}",
+            lambda: _get_by_hash_db(key_hash),
+            ttl=300,
+        )
 
     @staticmethod
     def delete(key_id: str, user_id: str) -> None:
         supabase.table("api_keys").update({"is_active": False}).eq("id", key_id).eq("user_id", user_id).execute()
+        delete(f"apikey:*")
+
+    @staticmethod
+    def update_last_used(key_id: str) -> None:
+        supabase.table("api_keys").update({"last_used_at": datetime.now().isoformat()}).eq("id", key_id).execute()
+
+
+def _get_by_hash_db(key_hash: str) -> Optional[Dict[str, Any]]:
+    try:
+        return supabase.table("api_keys").select("*").eq("key_hash", key_hash).eq("is_active", True).single().execute().data
+    except Exception:
+        return None
 
     @staticmethod
     def update_last_used(key_id: str) -> None:
