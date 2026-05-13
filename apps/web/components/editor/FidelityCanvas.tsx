@@ -1,6 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import {
+  CursorArrowRaysIcon,
+  StopIcon,
+  RectangleGroupIcon,
+  EllipsisHorizontalCircleIcon,
+  MinusIcon,
+  ArrowLongRightIcon,
+  PencilSquareIcon,
+  ClipboardDocumentIcon,
+  PencilIcon,
+  LightBulbIcon,
+  ClipboardDocumentCheckIcon,
+  Squares2X2Icon,
+  SparklesIcon,
+  BookmarkIcon,
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
+  MagnifyingGlassPlusIcon,
+  MagnifyingGlassMinusIcon,
+  EllipsisHorizontalIcon,
+} from "@heroicons/react/24/outline";
+import { GlassTooltip } from "@/components/ui/GlassTooltip";
 import * as Y from "yjs";
 import debounce from "lodash/debounce";
 import { Canvas, Ellipse, FabricObject, Group, IText, Line, PencilBrush, Rect, Textbox } from "fabric";
@@ -236,6 +258,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const [awarenessUsers, setAwarenessUsers] = useState<Array<{ id: string; name: string; color: string; selectedBlockId?: string | null }>>([]);
   const [changes, setChanges] = useState<ChangeRecord[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [userZoom, setUserZoom] = useState(1.0);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
   const { activeTool, setActiveTool, selectedBlock, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode, formMode, toggleFormMode } = useFidelityCanvasStore();
@@ -327,12 +352,57 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   );
 
 
+  // ── Zoom helpers ─────────────────────────────────────────────────────────
+
+  const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0];
+
+  const changeZoom = useCallback((delta: "in" | "out" | "reset") => {
+    setUserZoom((prev) => {
+      if (delta === "reset") return 1.0;
+      if (delta === "in") {
+        const next = ZOOM_STEPS.find((z) => z > prev + 0.01);
+        return next ?? prev;
+      }
+      const next = [...ZOOM_STEPS].reverse().find((z) => z < prev - 0.01);
+      return next ?? prev;
+    });
+  }, []);
+
+  // Close overflow menu on outside click
+  useEffect(() => {
+    if (!showOverflowMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (overflowMenuRef.current && !overflowMenuRef.current.contains(e.target as Node)) {
+        setShowOverflowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [showOverflowMenu]);
+
   // ── Keyboard shortcuts ───────────────────────────────────────────────────
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isEditing = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+
+      if ((e.metaKey || e.ctrlKey) && (e.key === "=" || e.key === "+")) {
+        e.preventDefault();
+        changeZoom("in");
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "-") {
+        e.preventDefault();
+        changeZoom("out");
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "0") {
+        e.preventDefault();
+        changeZoom("reset");
+        return;
+      }
+
       if (isEditing) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
@@ -362,13 +432,27 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [model, history, redoStack]);
+  }, [model, history, redoStack, changeZoom]);
+
+  // ── Ctrl/Cmd + scroll to zoom ────────────────────────────────────────────
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      changeZoom(e.deltaY < 0 ? "in" : "out");
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [changeZoom]);
 
   // ── Layout ───────────────────────────────────────────────────────────────
 
   const pageDimensions = model.page_dimensions?.length ? model.page_dimensions : [DEFAULT_PAGE];
   const primaryPage = pageDimensions[0] ?? DEFAULT_PAGE;
-  const scale = Math.max(0.4, Math.min(2, containerWidth / primaryPage.width));
+  const scale = Math.max(0.4, Math.min(3, (containerWidth / primaryPage.width) * userZoom));
 
   useEffect(() => {
     const update = () => {
@@ -876,127 +960,216 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   return (
     <div ref={rootRef} className="h-full overflow-auto bg-[var(--bg-surface)] p-4 md:p-6 xl:p-8">
 
-      {/* Toolbar */}
-      <div className="sticky top-4 z-40 mx-auto mb-4 flex w-full min-w-[760px] max-w-[1200px] items-center gap-2 overflow-x-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2 shadow-sm">
-        {(["select", "rect", "roundedRect", "ellipse", "line", "arrow", "text", "sticky", "draw"] as ShapeTool[]).map((tool) => (
-          <button
-            key={tool}
-            onClick={() => setActiveTool(tool)}
-            className={`rounded px-3 py-1.5 text-xs font-semibold uppercase transition-colors ${
-              activeTool === tool
-                ? "bg-[var(--accent)] text-[var(--text-on-accent)]"
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass-subtle)]"
-            }`}
-          >
-            {tool}
-          </button>
-        ))}
+      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+      <div className="sticky top-4 z-40 mx-auto mb-4 w-full min-w-[760px] max-w-[1200px]">
+        <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[var(--bg-elevated)] px-2 py-1.5 shadow-[0_1px_0_inset_rgb(255_255_255/6%),0_8px_24px_-8px_rgb(0_0_0/50%)] backdrop-blur-xl">
 
-        <div className="mx-2 h-6 w-px bg-[var(--border-subtle)] hidden md:block" />
-
-        <button
-          onClick={() => {
-            toggleSuggestMode();
-            trackEdit("suggest_mode_toggled", { enabled: !suggestMode });
-          }}
-          className={`rounded px-3 py-1.5 text-[10px] font-bold uppercase ${suggestMode ? "bg-amber-500 text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"}`}
-        >
-          Suggest {suggestMode ? "On" : "Off"}
-        </button>
-
-        <button
-          onClick={() => {
-            toggleFormMode();
-            trackEdit("form_mode_toggled", { enabled: !formMode });
-          }}
-          className={`rounded px-3 py-1.5 text-[10px] font-bold uppercase ${formMode ? "bg-orange-500 text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"}`}
-        >
-          Form {formMode ? "On" : "Off"}
-        </button>
-
-        <button
-          onClick={() => {
-            if (!selectedBlock?.blockId || !formMode) return;
-            convertBlockToField(selectedBlock.blockId, "text");
-          }}
-          className="rounded px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"
-        >
-          To Field
-        </button>
-
-        <button
-          onClick={() => {
-            void summariseDoc();
-          }}
-          className="rounded px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"
-        >
-          Summarise
-        </button>
-
-        <button
-          onClick={() => {
-            void saveVersionSnapshot();
-          }}
-          className="rounded px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] hover:bg-[var(--bg-glass-subtle)]"
-        >
-          Save Version
-        </button>
-
-        <select
-          className="rounded border border-[var(--border-subtle)] bg-[var(--bg-base)] px-2 py-1 text-[10px]"
-          defaultValue=""
-          onChange={(e) => {
-            const preset = SMART_STYLE_PRESETS.find((p) => p.id === e.target.value);
-            if (!preset) return;
-            const nextModel = applySmartStyle(currentModelRef.current, preset);
-            pushToHistory(nextModel);
-            saveDebounced.current(nextModel);
-            currentModelRef.current = nextModel;
-            trackEdit("style_applied", { style: preset.id });
-            e.currentTarget.value = "";
-          }}
-        >
-          <option value="" disabled>Smart Style</option>
-          {SMART_STYLE_PRESETS.map((preset) => (
-            <option key={preset.id} value={preset.id}>{preset.label}</option>
-          ))}
-        </select>
-
-        {activeTool === "sticky" && (
-          <div className="flex gap-1 items-center mr-auto">
-            {["#fff59d", "#a5d6a7", "#90caf9", "#f48fb1", "#ce93d8"].map((color) => (
+          {/* ── Group 1: Drawing tools ── */}
+          {([
+            { tool: "select",      Icon: CursorArrowRaysIcon,         label: "Select",       shortcut: "V" },
+            { tool: "rect",        Icon: StopIcon,                    label: "Rectangle",    shortcut: "R" },
+            { tool: "roundedRect", Icon: RectangleGroupIcon,          label: "Rounded rect", shortcut: "⇧R" },
+            { tool: "ellipse",     Icon: EllipsisHorizontalCircleIcon,label: "Ellipse",      shortcut: "O" },
+            { tool: "line",        Icon: MinusIcon,                   label: "Line",         shortcut: "L" },
+            { tool: "arrow",       Icon: ArrowLongRightIcon,          label: "Arrow",        shortcut: "A" },
+            { tool: "text",        Icon: PencilSquareIcon,            label: "Text",         shortcut: "T" },
+            { tool: "sticky",      Icon: ClipboardDocumentIcon,       label: "Sticky note",  shortcut: "S" },
+            { tool: "draw",        Icon: PencilIcon,                  label: "Freehand",     shortcut: "P" },
+          ] as { tool: ShapeTool; Icon: React.FC<React.SVGProps<SVGSVGElement>>; label: string; shortcut: string }[]).map(({ tool, Icon, label, shortcut }) => (
+            <GlassTooltip key={tool} label={label} shortcut={shortcut} placement="bottom">
               <button
-                key={color}
-                className="w-5 h-5 rounded-full border border-black/10 hover:scale-110 transition-transform"
-                style={{ backgroundColor: color }}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className={`${activeTool === "sticky" ? "" : "ml-auto"} flex gap-2 items-center`}>
-          <span className="text-[10px] text-[var(--text-tertiary)] hidden sm:inline mr-2 font-mono">⌘Z / ⌘⇧Z</span>
-          <button onClick={undo} disabled={history.length === 0} className="px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] disabled:opacity-30 hover:text-[var(--text-primary)] transition-colors">Undo</button>
-          <button onClick={redo} disabled={redoStack.length === 0} className="px-3 py-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)] disabled:opacity-30 hover:text-[var(--text-primary)] transition-colors">Redo</button>
-          <div className="ml-2 flex -space-x-2">
-            {awarenessUsers.slice(0, 5).map((user) => (
-              <div
-                key={user.id}
-                title={user.name}
-                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[9px] font-bold text-white"
-                style={{ backgroundColor: user.color }}
+                onClick={() => setActiveTool(tool)}
+                aria-label={label}
+                aria-pressed={activeTool === tool}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  activeTool === tool
+                    ? "bg-white/10 text-white ring-1 ring-white/20"
+                    : "text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]"
+                }`}
               >
-                {(user.name || "?")[0]?.toUpperCase()}
-              </div>
+                <Icon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+          ))}
+
+          {/* Sticky colour swatches — visible only when sticky is active */}
+          {activeTool === "sticky" && (
+            <div className="flex items-center gap-1 border-l border-white/10 pl-2 ml-1">
+              {["#fff59d", "#a5d6a7", "#90caf9", "#f48fb1", "#ce93d8"].map((color) => (
+                <button
+                  key={color}
+                  className="h-4 w-4 rounded-full border border-black/20 transition-transform hover:scale-125 active:scale-110"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="mx-1 h-5 w-px shrink-0 bg-white/10" />
+
+          {/* ── Group 2: Modes ── */}
+          <GlassTooltip label="Suggest mode" placement="bottom">
+            <button
+              onClick={() => { toggleSuggestMode(); trackEdit("suggest_mode_toggled", { enabled: !suggestMode }); }}
+              aria-pressed={suggestMode}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${suggestMode ? "bg-[var(--accent)]/20 text-[var(--accent)] ring-1 ring-[var(--accent)]/30" : "text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]"}`}
+            >
+              <LightBulbIcon className="h-4 w-4" />
+            </button>
+          </GlassTooltip>
+
+          <GlassTooltip label="Form mode" placement="bottom">
+            <button
+              onClick={() => { toggleFormMode(); trackEdit("form_mode_toggled", { enabled: !formMode }); }}
+              aria-pressed={formMode}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${formMode ? "bg-[var(--accent)]/20 text-[var(--accent)] ring-1 ring-[var(--accent)]/30" : "text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]"}`}
+            >
+              <ClipboardDocumentCheckIcon className="h-4 w-4" />
+            </button>
+          </GlassTooltip>
+
+          {formMode && selectedBlock?.blockId && (
+            <GlassTooltip label="Convert to field" placement="bottom">
+              <button
+                onClick={() => convertBlockToField(selectedBlock.blockId, "text")}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)]"
+              >
+                <Squares2X2Icon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+          )}
+
+          <div className="mx-1 h-5 w-px shrink-0 bg-white/10" />
+
+          {/* ── Group 3: Actions ── */}
+          <GlassTooltip label="AI summarise" placement="bottom">
+            <button
+              onClick={() => void summariseDoc()}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)]"
+            >
+              <SparklesIcon className="h-4 w-4" />
+            </button>
+          </GlassTooltip>
+
+          {/* Smart Style */}
+          <select
+            title="Smart Style"
+            className="h-8 rounded-lg border border-white/10 bg-transparent px-2 text-[11px] font-medium text-[var(--text-tertiary)] transition-colors hover:border-white/20 hover:text-[var(--text-primary)] focus:outline-none cursor-pointer"
+            defaultValue=""
+            onChange={(e) => {
+              const preset = SMART_STYLE_PRESETS.find((p) => p.id === e.target.value);
+              if (!preset) return;
+              const nextModel = applySmartStyle(currentModelRef.current, preset);
+              pushToHistory(nextModel);
+              saveDebounced.current(nextModel);
+              currentModelRef.current = nextModel;
+              trackEdit("style_applied", { style: preset.id });
+              e.currentTarget.value = "";
+            }}
+          >
+            <option value="" disabled>Style</option>
+            {SMART_STYLE_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>{preset.label}</option>
             ))}
-            {awarenessUsers.length > 5 && (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-gray-400 text-[9px] font-bold text-white">
-                +{awarenessUsers.length - 5}
+          </select>
+
+          {/* Overflow: Save Version + other rare actions */}
+          <div className="relative" ref={overflowMenuRef}>
+            <GlassTooltip label="More actions" placement="bottom">
+              <button
+                onClick={() => setShowOverflowMenu((v) => !v)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)]"
+              >
+                <EllipsisHorizontalIcon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+            {showOverflowMenu && (
+              <div className="absolute left-0 top-full mt-1 z-50 min-w-[160px] rounded-xl border border-white/10 bg-[var(--bg-elevated)] py-1 shadow-2xl backdrop-blur-xl">
+                <button
+                  onClick={() => { void saveVersionSnapshot(); setShowOverflowMenu(false); }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[11px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)]"
+                >
+                  <BookmarkIcon className="h-3.5 w-3.5 shrink-0" /> Save version
+                </button>
               </div>
             )}
           </div>
-        </div>
-      </div>
+
+          <div className="ml-auto flex items-center gap-1">
+            <div className="mx-1 h-5 w-px shrink-0 bg-white/10" />
+
+            {/* ── Zoom controls ── */}
+            <GlassTooltip label="Zoom out" shortcut="⌘−" placement="bottom">
+              <button
+                onClick={() => changeZoom("out")}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)]"
+              >
+                <MagnifyingGlassMinusIcon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+
+            <button
+              onClick={() => changeZoom("reset")}
+              className="min-w-[44px] rounded-lg px-2 py-1 text-center font-mono text-[11px] text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)]"
+              title="Reset zoom (⌘0)"
+            >
+              {Math.round(userZoom * 100)}%
+            </button>
+
+            <GlassTooltip label="Zoom in" shortcut="⌘+" placement="bottom">
+              <button
+                onClick={() => changeZoom("in")}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)]"
+              >
+                <MagnifyingGlassPlusIcon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+
+            <div className="mx-1 h-5 w-px shrink-0 bg-white/10" />
+
+            {/* ── History ── */}
+            <GlassTooltip label="Undo" shortcut="⌘Z" placement="bottom">
+              <button
+                onClick={undo}
+                disabled={history.length === 0}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)] disabled:opacity-25"
+              >
+                <ArrowUturnLeftIcon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+
+            <GlassTooltip label="Redo" shortcut="⌘⇧Z" placement="bottom">
+              <button
+                onClick={redo}
+                disabled={redoStack.length === 0}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition-colors hover:bg-white/5 hover:text-[var(--text-primary)] disabled:opacity-25"
+              >
+                <ArrowUturnRightIcon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+
+            {/* ── Presence avatars ── */}
+            <div className="ml-1 flex -space-x-2">
+              {awarenessUsers.slice(0, 5).map((user) => (
+                <div
+                  key={user.id}
+                  title={user.name}
+                  className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--bg-elevated)] text-[8px] font-bold text-white"
+                  style={{ backgroundColor: user.color }}
+                >
+                  {(user.name || "?")[0]?.toUpperCase()}
+                </div>
+              ))}
+              {awarenessUsers.length > 5 && (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--bg-elevated)] bg-[#555] text-[8px] font-bold text-white">
+                  +{awarenessUsers.length - 5}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>{/* end toolbar row */}
+      </div>{/* end toolbar wrapper */}
 
       {/* Format Bar — appears when a text block is selected */}
       <FormatBar />
