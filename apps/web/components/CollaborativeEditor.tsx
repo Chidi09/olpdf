@@ -13,6 +13,8 @@ import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import LinkExtension from "@tiptap/extension-link";
+import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
 
 // Custom extension for block metadata and interactions
 const BlockMetadata = Extension.create({
@@ -63,6 +65,7 @@ import VersionDiffViewer from "./editor/VersionDiffViewer";
 import FloatingToolbar from "./editor/FloatingToolbar";
 import PageMinimap from "./editor/PageMinimap";
 import VirtualizedPageRail from "./editor/VirtualizedPageRail";
+import { FindReplaceBar } from "./editor/FindReplaceBar";
 import {
   createEmptyDocumentModel,
   documentModelToTiptap,
@@ -227,6 +230,8 @@ export default function CollaborativeEditor({
       DragHandle, TextStyle, Color,
       LinkExtension.configure({ openOnClick: true }),
       Table.configure({ resizable: true }), TableRow, TableCell, TableHeader,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ["paragraph", "heading"] }),
       BlockMetadata, RenderDataAttributes,
     ],
     content: documentModelToTiptap(hydratedModel),
@@ -258,6 +263,23 @@ export default function CollaborativeEditor({
         }
         if (event.key === "Escape") {
           setShowCommandPalette(false);
+        }
+        if (event.altKey && event.ctrlKey) {
+          if (event.key === "1") {
+            event.preventDefault();
+            view.dispatch(view.state.tr.setNodeMarkup(view.state.selection.from, undefined, { level: 1 }));
+            return true;
+          }
+          if (event.key === "2") {
+            event.preventDefault();
+            view.dispatch(view.state.tr.setNodeMarkup(view.state.selection.from, undefined, { level: 2 }));
+            return true;
+          }
+          if (event.key === "3") {
+            event.preventDefault();
+            view.dispatch(view.state.tr.setNodeMarkup(view.state.selection.from, undefined, { level: 3 }));
+            return true;
+          }
         }
         return false;
       },
@@ -444,6 +466,7 @@ export default function CollaborativeEditor({
         </aside>
 
         <main className="min-w-0 flex-1 flex flex-col relative overflow-hidden bg-[var(--bg-base)]">
+            <FindReplaceBar model={model} onModelChange={setModel} />
             <div className="min-h-0 flex-1 overflow-auto p-4 editor-canvas-container scrollbar-hide md:p-8 xl:p-10">
                 <div className="mx-auto min-w-[760px] max-w-[850px] paper-sheet min-h-[1100px] rounded-sm relative group transition-all duration-500">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

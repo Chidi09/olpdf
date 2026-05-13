@@ -368,9 +368,23 @@ export default function Dashboard() {
               <SkeletonRow index={2} />
             </div>
           ) : displayProjects.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] p-6 text-sm text-[var(--text-secondary)]">
-              <p className="text-sm font-medium text-[var(--text-primary)]">No projects found</p>
-              <HelperText>Get started by creating a new document or book.</HelperText>
+            <div className="flex flex-col items-center gap-5 rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] px-6 py-12 text-center">
+              <DocumentTextIcon className="h-10 w-10 text-[var(--text-tertiary)] opacity-40" />
+              <div>
+                <p className="text-sm font-medium text-[var(--text-primary)]">No projects yet</p>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">Create a document, import a PDF, or pick a template to get started.</p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link href="/editor/new" className="flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--text-on-accent)] hover:opacity-90 transition-opacity">
+                  <DocumentTextIcon className="h-3.5 w-3.5" /> Blank Document
+                </Link>
+                <button onClick={onImportClick} className="flex items-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-panel)] transition-colors">
+                  <Upload className="h-3.5 w-3.5" /> Import PDF
+                </button>
+                <Link href="/templates" className="flex items-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-panel)] transition-colors">
+                  <Squares2X2Icon className="h-3.5 w-3.5" /> Use Template
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">

@@ -188,9 +188,22 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       ).trim();
       const label = text || `Block ${index + 1}`;
       const type = String((b as { type?: string }).type || "p").toUpperCase().slice(0, 2);
-      return { id: b.id, label, type };
+      const pageIdx = (b as { page_index?: number }).page_index;
+      return { id: b.id, label, type, pageIndex: pageIdx ?? -1 };
     });
   }, [currentModel?.blocks]);
+
+  const scrollToHeading = useCallback((text: string) => {
+    const pm = document.querySelector(".ProseMirror");
+    if (!pm) return;
+    const headings = pm.querySelectorAll("h1, h2, h3, h4, h5, h6");
+    for (const h of headings) {
+      if (h.textContent?.trim() === text) {
+        h.scrollIntoView({ behavior: "smooth", block: "center" });
+        break;
+      }
+    }
+  }, []);
 
   const ITEM_HEIGHT = 36;
 
@@ -354,6 +367,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               {outlineItems.map((item) => (
                 <div
                   key={item.id}
+                  onClick={() => scrollToHeading(item.label)}
                   className={`group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[var(--bg-elevated)] ${
                     activeSectionId === item.id
                       ? "text-[var(--text-primary)] font-medium"
@@ -368,7 +382,12 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
                   }`}>
                     {leftTab === "outline" ? item.type : "B"}
                   </span>
-                  <span className="truncate">{item.label}</span>
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {item.pageIndex >= 0 && (
+                    <span className="shrink-0 text-[9px] font-mono text-[var(--text-tertiary)] opacity-60 group-hover:opacity-100 transition-opacity">
+                      p.{item.pageIndex + 1}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
