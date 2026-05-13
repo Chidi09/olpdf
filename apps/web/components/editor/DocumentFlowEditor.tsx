@@ -19,17 +19,62 @@ import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { useFidelityCanvasStore } from "@/store/useFidelityCanvasStore";
 
+import { ImageExtension } from "./extensions/ImageExtension";
+import { ShapeExtension } from "./extensions/ShapeExtension";
+
 // ─── ASTSpan ↔ TipTap JSON conversion (mirrors TipTapOverlay helpers) ─────────
 
 type TipTapMark = { type: string; attrs?: Record<string, unknown> };
 type TipTapNode = {
   type: string;
+  attrs?: Record<string, unknown>;
   text?: string;
   marks?: TipTapMark[];
   content?: TipTapNode[];
 };
 
-function richSpansToDoc(spans: ASTSpan[]): TipTapNode {
+function richSpansToDoc(block: DocumentBlock): TipTapNode {
+  if (block.type === "image") {
+    return {
+      type: "doc",
+      content: [
+        {
+          type: "imageBlock",
+          attrs: {
+            src: block.src,
+            width: block.bounding_box ? block.bounding_box[2] - block.bounding_box[0] : "100%",
+            height: block.bounding_box ? block.bounding_box[3] - block.bounding_box[1] : "auto",
+            float: block.float || "none",
+            blockId: block.id,
+          },
+        },
+      ],
+    };
+  }
+
+  if (block.type === "shape") {
+    const fd = block.fabric_data || {};
+    return {
+      type: "doc",
+      content: [
+        {
+          type: "shapeBlock",
+          attrs: {
+            shapeType: fd.shapeType || "rect",
+            fill: fd.fill || "rgba(14,165,233,0.12)",
+            stroke: fd.stroke || "#0284c7",
+            strokeWidth: fd.strokeWidth || 2,
+            width: block.bounding_box ? block.bounding_box[2] - block.bounding_box[0] : 100,
+            height: block.bounding_box ? block.bounding_box[3] - block.bounding_box[1] : 100,
+            float: block.float || "none",
+            blockId: block.id,
+          },
+        },
+      ],
+    };
+  }
+
+  const spans = block.rich_spans || [];
   const inlineNodes: TipTapNode[] = spans
     .filter((s) => s.text)
     .map((span) => {
@@ -172,8 +217,8 @@ function BlockCell({
   const fm = block.font_meta ?? ({} as NonNullable<DocumentBlock["font_meta"]>);
 
   const initialContent: string | Record<string, unknown> =
-    block.rich_spans?.length
-      ? richSpansToDoc(block.rich_spans)
+    block.rich_spans?.length || block.type === "image" || block.type === "shape"
+      ? (richSpansToDoc(block) as unknown as Record<string, unknown>)
       : (block.rich_content as Record<string, unknown> | undefined) ?? block.content ?? "";
 
   // Keep stable references to callbacks so the extension sees the latest values
@@ -212,6 +257,8 @@ function BlockCell({
       StarterKit,
       TextStyle,
       Color,
+      ImageExtension,
+      ShapeExtension,
       // eslint-disable-next-line react-hooks/refs -- callbacks are closures; cbRef.current is read at call-time, not during render
       CrossBlockNav.configure({
         onNavigateNext: () => cbRef.current.onNavigateNext(),
@@ -357,7 +404,6 @@ export function DocumentFlowEditor({
   const ordered = useMemo(
     () =>
       blocks
-        .filter((b) => !["shape", "table", "field", "image"].includes(b.type))
         .sort((a, b) => {
           const ci = (a.column_index ?? 0) - (b.column_index ?? 0);
           if (ci !== 0) return ci;
@@ -407,7 +453,7 @@ export function DocumentFlowEditor({
       // Try to find the first block on the next page
       const nextPageIdx = pageIndex + 1;
       const nextPageBlocks = allBlocks
-        .filter((b) => (b.page_index ?? 0) === nextPageIdx && !["shape","table","field","image"].includes(b.type))
+        .filter((b) => (b.page_index ?? 0) === nextPageIdx)
         .sort((a, b) => (a.column_index ?? 0) - (b.column_index ?? 0) || (a.bounding_box?.[1] ?? 0) - (b.bounding_box?.[1] ?? 0));
       if (nextPageBlocks.length > 0) {
         commitAndClose();
@@ -425,8 +471,8 @@ export function DocumentFlowEditor({
       const prevPageIdx = pageIndex - 1;
       if (prevPageIdx < 0) return;
       const prevPageBlocks = allBlocks
-        .filter((b) => (b.page_index ?? 0) === prevPageIdx && !["shape","table","field","image"].includes(b.type))
-        .sort((a, b) => (b.column_index ?? 0) - (a.column_index ?? 0) || (b.bounding_box?.[1] ?? 0) - (a.bounding_box?.[1] ?? 0));
+        .filter((b) => (b.page_index ?? 0) === prevPageIdx)
+        .sort((a, b) => (a.column_index ?? 0) - (b.column_index ?? 0) || (b.bounding_box?.[1] ?? 0) - (a.bounding_box?.[1] ?? 0));
       if (prevPageBlocks.length > 0) {
         commitAndClose();
         onNavigateToPage(prevPageIdx, prevPageBlocks[0].id, "end");

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const BlockType = z.enum([
   "paragraph", "heading1", "heading2", "heading3", "callout",
-  "table", "list", "divider", "page_break", "image", "shape", "bullet_list", "ordered_list", "field"
+  "table", "list", "list_item", "divider", "page_break", "image", "shape", "bullet_list", "ordered_list", "field"
 ]);
 
 export const FontMeta = z.object({
@@ -25,6 +25,7 @@ export const ASTSpan = z.object({
   color: z.string().optional(),
   font_family: z.string().optional(),
   font_size: z.number().optional(),
+  vertical_align: z.enum(["super", "sub"]).optional(),
   link_href: z.string().optional(),
   mark: z.boolean().default(false),
 });
@@ -49,6 +50,7 @@ export const ASTNode = z.object({
   float: z.enum(["none", "left", "right"]).default("none"),
   // Polygon of exclusion zone when float !== "none" (for text wrapping)
   wrap_polygon: z.array(z.number()).optional(),
+  is_invisible: z.boolean().optional(),
 });
 export type ASTNode = z.infer<typeof ASTNode>;
 
@@ -90,7 +92,17 @@ export const DocumentModel = z.object({
     page_size: z.enum(["A4", "letter"]),
     margins: z.object({ top: z.number(), bottom: z.number(), left: z.number(), right: z.number() }),
     export_standard: z.enum(["pdf_a", "tagged"]),
-    layout_mode: z.enum(["editable", "fidelity"])
+    layout_mode: z.enum(["editable", "fidelity"]),
+    parse_metrics: z.object({
+      duration_ms: z.number(),
+      total_blocks: z.number(),
+      unmapped_chars: z.number(),
+      pages_failed: z.number(),
+      warnings: z.array(z.string()),
+      image_count: z.number().optional(),
+      missing_fonts_count: z.number().optional(),
+      is_likely_scanned: z.boolean().optional(),
+    }).optional(),
   }),
   styles: z.any(),
   // Optional authoritative AST — when present the layout engine uses this
@@ -128,6 +140,8 @@ export const DocumentModel = z.object({
     // Floating objects: text wraps around blocks with float !== "none"
     float: z.enum(["none", "left", "right"]).default("none"),
     wrap_polygon: z.array(z.number()).optional(),
+    is_invisible: z.boolean().optional(),
+    src: z.string().optional(),
   })),
   page_dimensions: z.array(z.object({
     page_index: z.number().int(),
@@ -167,5 +181,3 @@ export const BookModel = z.object({
 });
 
 export type BookModel = z.infer<typeof BookModel>;
-
-

@@ -3,16 +3,13 @@ use lopdf::{Document, Object, ObjectId};
 use base64::Engine;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
-
-// ── Init ──────────────────────────────────────────────────────────────────
+use web_sys::window;
 
 #[wasm_bindgen(start)]
 pub fn init_hooks() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }
-
-// ── Types ─────────────────────────────────────────────────────────────────
 
 #[derive(Serialize, Clone)]
 struct FontMeta {
@@ -39,6 +36,8 @@ struct RichSpan {
     #[serde(skip_serializing_if = "Option::is_none")]
     link_href: Option<String>,
     mark: bool,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    vertical_align: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -61,6 +60,62 @@ struct WasmBlock {
     z_index: usize,
     column_index: usize,
     style_overrides: HashMap<String, String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bullet: Option<String>,
+    #[serde(default)]
+    is_invisible: bool,
+}
+
+#[derive(Clone)]
+struct Matrix {
+    a: f64, b: f64, c: f64, d: f64, e: f64, f: f64,
+}
+
+impl Default for Matrix {
+    fn default() -> Self {
+        Self { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+    }
+}
+
+impl Matrix {
+    fn multiply(&self, other: &Self) -> Self {
+        Self {
+            a: self.a * other.a + self.b * other.c,
+            b: self.a * other.b + self.b * other.d,
+            c: self.c * other.a + self.d * other.c,
+            d: self.c * other.b + self.d * other.d,
+            e: self.e * other.a + self.f * other.c + other.e,
+            f: self.e * other.b + self.f * other.d + other.f,
+        }
+    }
+    fn transform(&self, x: f64, y: f64) -> (f64, f64) {
+        (x * self.a + y * self.c + self.e, x * self.b + y * self.d + self.f)
+    }
+}
+
+#[derive(Clone)]
+struct GraphicsState {
+    ctm: Matrix,
+    font_name: String,
+    font_size: f64,
+    fill_color: String,
+    stroke_color: String,
+    leading: f64,
+    render_mode: i64,
+}
+
+impl Default for GraphicsState {
+    fn default() -> Self {
+        Self {
+            ctm: Matrix::default(),
+            font_name: "Helvetica".to_string(),
+            font_size: 11.0,
+            fill_color: "#111111".to_string(),
+            stroke_color: "#111111".to_string(),
+            leading: 0.0,
+            render_mode: 0,
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -71,12 +126,23 @@ struct WasmPageDimension {
 }
 
 #[derive(Serialize)]
+struct ParseMetrics {
+    duration_ms: f64,
+    total_blocks: usize,
+    unmapped_chars: usize,
+    pages_failed: usize,
+    warnings: Vec<String>,
+    image_count: usize,
+    missing_fonts_count: usize,
+    is_likely_scanned: bool,
+}
+
+#[derive(Serialize)]
 struct ParseResult {
     blocks: Vec<WasmBlock>,
     page_dimensions: Vec<WasmPageDimension>,
+    metrics: ParseMetrics,
 }
-
-// ── Page resource helpers ─────────────────────────────────────────────────
 
 struct PageFontInfo {
     unicode_map: HashMap<u16, char>,
@@ -155,7 +221,6 @@ fn parse_cmap_char(s: &str) -> char {
         let code = u32::from_str_radix(hex, 16).unwrap_or(0);
         char::from_u32(code).unwrap_or('\u{FFFD}')
     } else {
-        // Multi-byte Unicode (e.g., <006500730073> = "ess")
         let chars: String = (0..hex.len())
             .step_by(4)
             .filter_map(|i| {
@@ -168,7 +233,7 @@ fn parse_cmap_char(s: &str) -> char {
     }
 }
 
-fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str) -> Option<PageFontInfo> {
+fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str, warnings: &mut Vec<String>, missing_fonts_count: &mut usize) -> Option<PageFontInfo> {
     let page_obj = doc.get_object(page_id).ok()?;
     let page_dict = page_obj.as_dict().ok()?;
 
@@ -177,20 +242,28 @@ fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str) -> Option<
     let font_obj = resources.get(b"Font").ok()?;
     let fonts_dict = get_dict(doc, font_obj)?;
 
-    let font_ref = fonts_dict.get(font_name.as_bytes()).ok()?;
-    let font_dict = get_dict(doc, font_ref)?;
+    let font_ref = fonts_dict.get(font_name.as_bytes()).ok();
+    let font_dict = match font_ref.and_then(|r| get_dict(doc, r)) {
+        Some(d) => d,
+        None => {
+            *missing_fonts_count += 1;
+            return None;
+        }
+    };
 
-    // ToUnicode CMap
     let unicode_map = if let Ok(tu) = font_dict.get(b"ToUnicode") {
         match resolve_object(doc, tu) {
             Some(Object::Stream(stream)) => parse_cmap(&stream.content),
-            _ => HashMap::new(),
+            _ => {
+                warnings.push(format!("Failed to resolve ToUnicode CMap for font '{}'", font_name));
+                HashMap::new()
+            }
         }
     } else {
+        warnings.push(format!("No ToUnicode CMap for font '{}'", font_name));
         HashMap::new()
     };
 
-    // Widths
     let mut widths = Vec::new();
     let mut first_char: i64 = 32;
     let mut default_width = 500.0;
@@ -220,7 +293,6 @@ fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str) -> Option<
 
     Some(PageFontInfo { unicode_map, widths, first_char, default_width })
 }
-
 
 fn decode_with_map(bytes: &[u8], unicode_map: &HashMap<u16, char>) -> String {
     if bytes.len() >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
@@ -257,8 +329,6 @@ fn text_width(text: &str, info: &Option<PageFontInfo>, font_size: f64) -> f64 {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
 fn obj_f64(obj: &Object) -> f64 {
     match obj {
         Object::Real(f) => *f as f64,
@@ -287,6 +357,12 @@ fn build_rich_spans(segments: &[(String, String, f64)], base_family: &str, base_
         .filter(|(t, _, _)| !t.trim().is_empty())
         .map(|(text, font, size)| {
             let (family, is_bold, is_italic) = parse_font_name(font);
+            let lower_font = font.to_lowercase();
+            let vert_align = if base_size > 0.0 && *size < base_size * 0.65 {
+                if lower_font.contains("sub") { "sub".to_string() } else { "super".to_string() }
+            } else {
+                String::new()
+            };
             RichSpan {
                 text: text.clone(),
                 bold: is_bold,
@@ -298,6 +374,7 @@ fn build_rich_spans(segments: &[(String, String, f64)], base_family: &str, base_
                 font_size: if (*size - base_size).abs() > 0.5 { Some(*size) } else { None },
                 link_href: None,
                 mark: false,
+                vertical_align: vert_align,
             }
         })
         .collect()
@@ -339,6 +416,7 @@ fn make_block(
         z_index: idx,
         column_index: 0,
         style_overrides: HashMap::new(),
+        bullet: None,
     })
 }
 
@@ -379,8 +457,6 @@ fn assign_columns_and_links(blocks: &mut Vec<WasmBlock>, page_width: f64) {
     }
 }
 
-// ── Page size ─────────────────────────────────────────────────────────────
-
 fn get_page_size(doc: &Document, page_id: (u32, u16)) -> (f64, f64) {
     let default = (595.28_f64, 841.89_f64);
     let result: Option<(f64, f64)> = (|| {
@@ -403,51 +479,84 @@ fn get_page_size(doc: &Document, page_id: (u32, u16)) -> (f64, f64) {
     result.unwrap_or(default)
 }
 
-// ── Content stream parser ─────────────────────────────────────────────────
-
-fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_height: f64, page_width: f64) -> Vec<WasmBlock> {
+fn parse_page(
+    doc: &Document,
+    page_id: (u32, u16),
+    page_index: usize,
+    page_height: f64,
+    page_width: f64,
+    warnings: &mut Vec<String>,
+    unmapped_chars: &mut usize,
+    vector_paths: &mut Vec<[f64; 4]>,
+    image_count: &mut usize,
+    missing_fonts_count: &mut usize,
+) -> Vec<WasmBlock> {
     let content = match doc.get_and_decode_page_content(page_id) {
         Ok(c) => c,
-        Err(_) => return vec![],
+        Err(e) => {
+            warnings.push(format!("Failed to decode page {} content stream: {}", page_index, e));
+            return vec![];
+        }
     };
 
     let mut blocks: Vec<WasmBlock> = Vec::new();
     let mut idx = 0usize;
 
+    // Graphics State Stack
+    let mut stack: Vec<GraphicsState> = vec![GraphicsState::default()];
     let mut in_bt = false;
     let mut cur_text = String::new();
     let mut cur_segments: Vec<(String, String, f64)> = Vec::new();
     let mut cur_seg_text = String::new();
-    let mut start_x = 0.0_f64;
-    let mut start_y = 0.0_f64;
-    let mut tlm_e = 0.0_f64;
-    let mut tlm_f = 0.0_f64;
-    let mut font_name = String::from("Helvetica");
-    let mut font_size = 11.0_f64;
-    let mut leading = 0.0_f64;
-    let mut fill_color = String::from("#111111");
+
+    // Text Matrices
+    let mut tm = Matrix::default();
+    let mut tlm = Matrix::default();
     let mut font_info: Option<PageFontInfo> = None;
 
+    // Path tracking state
+    let mut current_path: Vec<(f64, f64)> = Vec::new();
+
+    // Marked Content state (Artifacts)
+    let mut artifact_depth = 0usize;
+
+    macro_rules! state {
+        () => { stack.last_mut().unwrap() };
+    }
+
     macro_rules! flush_segment {
-        () => { if !cur_seg_text.is_empty() { cur_segments.push((cur_seg_text.clone(), font_name.clone(), font_size)); cur_seg_text.clear(); } };
+        () => {
+            if !cur_seg_text.is_empty() {
+                cur_segments.push((cur_seg_text.clone(), state!().font_name.clone(), state!().font_size));
+                cur_seg_text.clear();
+            }
+        };
     }
 
     macro_rules! flush {
         () => {
             flush_segment!();
-            if let Some(b) = make_block(&cur_text, &cur_segments, start_x, start_y, font_size, &font_name, page_index, page_height, idx, &fill_color, &font_info) {
-                blocks.push(b);
-                idx += 1;
-            }
-            cur_text.clear();
-            cur_segments.clear();
-        };
-    }
+            if !cur_text.is_empty() {
+                let (x, y) = state!().ctm.transform(tm.e, tm.f);
+                let font_name = state!().font_name.clone();
+                let font_size = state!().font_size;
+                let fill_color = state!().fill_color.clone();
+                let is_invisible = state!().render_mode == 3;
 
-    macro_rules! set_pos {
-        ($ex:expr, $fy:expr) => {
-            tlm_e = $ex; tlm_f = $fy;
-            if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
+                // Only emit block if not inside an Artifact
+                if artifact_depth == 0 {
+                    if let Some(mut b) = make_block(
+                        &cur_text, &cur_segments, x, y, font_size, &font_name,
+                        page_index, page_height, idx, &fill_color, &font_info
+                    ) {
+                        b.is_invisible = is_invisible;
+                        blocks.push(b);
+                        idx += 1;
+                    }
+                }
+                cur_text.clear();
+                cur_segments.clear();
+            }
         };
     }
 
@@ -460,60 +569,119 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
         ((1.0 - c) * kc, (1.0 - m) * kc, (1.0 - y) * kc)
     }
 
+    let count_unmapped = |s: &str| s.chars().filter(|&c| c == '\u{FFFD}').count();
+
     for op in &content.operations {
         match op.operator.as_str() {
-            "BT" => {
-                in_bt = true;
-                cur_text.clear(); cur_segments.clear(); cur_seg_text.clear();
-                tlm_e = 0.0; tlm_f = 0.0; start_x = 0.0; start_y = 0.0;
-            }
-            "ET" => { if in_bt { flush!(); } in_bt = false; }
-            "Tf" if in_bt => {
-                if op.operands.len() >= 2 {
-                    flush_segment!();
-                    if let Object::Name(n) = &op.operands[0] {
-                        font_name = String::from_utf8_lossy(n).to_string();
-                        font_info = load_font_info(doc, page_id, &font_name);
-                    }
-                    let sz = obj_f64(&op.operands[1]);
-                    if sz > 0.0 { font_size = sz; }
+            "q" => { stack.push(state!().clone()); }
+            "Q" => { if stack.len() > 1 { stack.pop(); } }
+            "cm" => {
+                if op.operands.len() >= 6 {
+                    let m = Matrix {
+                        a: obj_f64(&op.operands[0]),
+                        b: obj_f64(&op.operands[1]),
+                        c: obj_f64(&op.operands[2]),
+                        d: obj_f64(&op.operands[3]),
+                        e: obj_f64(&op.operands[4]),
+                        f: obj_f64(&op.operands[5]),
+                    };
+                    state!().ctm = m.multiply(&state!().ctm);
                 }
             }
-            "TL" if in_bt => { if let Some(o) = op.operands.first() { leading = obj_f64(o).abs(); } }
-            "Td" | "TD" if in_bt => {
+            "BT" => {
+                in_bt = true;
+                tm = Matrix::default();
+                tlm = Matrix::default();
+                cur_text.clear(); cur_segments.clear(); cur_seg_text.clear();
+            }
+            "ET" => { if in_bt { flush!(); } in_bt = false; }
+            "Tf" => {
+                if op.operands.len() >= 2 {
+                    if in_bt { flush_segment!(); }
+                    if let Object::Name(n) = &op.operands[0] {
+                        state!().font_name = String::from_utf8_lossy(n).to_string();
+                        font_info = load_font_info(doc, page_id, &state!().font_name, warnings, missing_fonts_count);
+                    }
+                    let sz = obj_f64(&op.operands[1]);
+                    if sz > 0.0 { state!().font_size = sz; }
+                }
+            }
+            "Tr" => {
+                if let Some(Object::Integer(n)) = op.operands.first() {
+                    state!().render_mode = *n;
+                }
+            }
+            "TL" => { if let Some(o) = op.operands.first() { state!().leading = obj_f64(o).abs(); } }
+            "Td" | "TD" => {
                 if op.operands.len() >= 2 {
                     let tx = obj_f64(&op.operands[0]);
                     let ty = obj_f64(&op.operands[1]);
-                    if op.operator == "TD" { leading = -ty; }
-                    if ty.abs() > 0.5 { flush!(); }
-                    set_pos!(tlm_e + tx, tlm_f + ty);
+                    if op.operator == "TD" { state!().leading = -ty; }
+                    if ty.abs() > 0.5 && in_bt { flush!(); }
+                    let m = Matrix { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: tx, f: ty };
+                    tlm = m.multiply(&tlm);
+                    tm = tlm.clone();
                 }
             }
-            "Tm" if in_bt => {
+            "Tm" => {
                 if op.operands.len() >= 6 {
-                    let new_f = obj_f64(&op.operands[5]);
-                    if (new_f - tlm_f).abs() > 0.5 { flush!(); }
-                    set_pos!(obj_f64(&op.operands[4]), new_f);
+                    let m = Matrix {
+                        a: obj_f64(&op.operands[0]),
+                        b: obj_f64(&op.operands[1]),
+                        c: obj_f64(&op.operands[2]),
+                        d: obj_f64(&op.operands[3]),
+                        e: obj_f64(&op.operands[4]),
+                        f: obj_f64(&op.operands[5]),
+                    };
+                    if (m.f - tm.f).abs() > 0.5 && in_bt { flush!(); }
+                    tm = m.clone();
+                    tlm = m.clone();
                 }
             }
-            "T*" if in_bt => { flush!(); set_pos!(tlm_e, tlm_f - leading); }
-            "Tj" if in_bt => {
-                if let Some(Object::String(b, _)) = op.operands.first() {
+            "T*" => {
+                if in_bt { flush!(); }
+                let m = Matrix { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: -state!().leading };
+                tlm = m.multiply(&tlm);
+                tm = tlm.clone();
+            }
+            "Tj" | "'" | "\"" => {
+                let bytes = match op.operator.as_str() {
+                    "Tj" => op.operands.first().and_then(|o| o.as_str().ok()),
+                    "'" => {
+                        if in_bt { flush!(); }
+                        let m = Matrix { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: -state!().leading };
+                        tlm = m.multiply(&tlm);
+                        tm = tlm.clone();
+                        op.operands.first().and_then(|o| o.as_str().ok())
+                    }
+                    "\"" => {
+                        if op.operands.len() >= 3 {
+                            if in_bt { flush!(); }
+                            state!().leading = obj_f64(&op.operands[1]).abs();
+                            let m = Matrix { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: -state!().leading };
+                            tlm = m.multiply(&tlm);
+                            tm = tlm.clone();
+                            op.operands[2].as_str().ok()
+                        } else { None }
+                    }
+                    _ => None
+                };
+                if let Some(b) = bytes {
                     let empty = std::collections::HashMap::new();
                     let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
-                    if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
+                    *unmapped_chars += count_unmapped(&decoded);
                     cur_text.push_str(&decoded);
                     cur_seg_text.push_str(&decoded);
                 }
             }
-            "TJ" if in_bt => {
+            "TJ" => {
                 if let Some(Object::Array(items)) = op.operands.first() {
-                    if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
                     for item in items {
                         match item {
                             Object::String(b, _) => {
                                 let empty = std::collections::HashMap::new();
                                 let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
+                                *unmapped_chars += count_unmapped(&decoded);
                                 cur_text.push_str(&decoded);
                                 cur_seg_text.push_str(&decoded);
                             }
@@ -524,50 +692,86 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     }
                 }
             }
-            "'" if in_bt => {
-                flush!();
-                set_pos!(tlm_e, tlm_f - leading);
-                if let Some(Object::String(b, _)) = op.operands.first() {
-                    let empty = std::collections::HashMap::new();
-                    let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
-                    cur_text.push_str(&decoded);
-                    cur_seg_text.push_str(&decoded);
-                }
-            }
-            "\"" if in_bt => {
-                if op.operands.len() >= 3 {
-                    flush!();
-                    set_pos!(tlm_e, tlm_f - leading);
-                    if let Object::String(b, _) = &op.operands[2] {
-                        let empty = std::collections::HashMap::new();
-                        let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
-                        cur_text.push_str(&decoded);
-                        cur_seg_text.push_str(&decoded);
-                    }
-                }
-            }
-            // Color operators (tracked even outside BT)
+            // Color operators
             "rg" | "RG" => {
                 if op.operands.len() >= 3 {
-                    fill_color = rgb_to_hex(obj_f64(&op.operands[0]), obj_f64(&op.operands[1]), obj_f64(&op.operands[2]));
+                    let hex = rgb_to_hex(obj_f64(&op.operands[0]), obj_f64(&op.operands[1]), obj_f64(&op.operands[2]));
+                    if op.operator == "rg" { state!().fill_color = hex; } else { state!().stroke_color = hex; }
                 }
             }
             "g" | "G" => {
                 if let Some(o) = op.operands.first() {
                     let v = obj_f64(o);
-                    fill_color = rgb_to_hex(v, v, v);
+                    let hex = rgb_to_hex(v, v, v);
+                    if op.operator == "g" { state!().fill_color = hex; } else { state!().stroke_color = hex; }
                 }
             }
             "k" | "K" => {
                 if op.operands.len() >= 4 {
                     let (r, g, b) = cmyk_to_rgb(obj_f64(&op.operands[0]), obj_f64(&op.operands[1]), obj_f64(&op.operands[2]), obj_f64(&op.operands[3]));
-                    fill_color = rgb_to_hex(r, g, b);
+                    let hex = rgb_to_hex(r, g, b);
+                    if op.operator == "k" { state!().fill_color = hex; } else { state!().stroke_color = hex; }
                 }
             }
-            "scn" | "SCN" => {
-                if op.operands.len() >= 3 {
-                    fill_color = rgb_to_hex(obj_f64(&op.operands[0]), obj_f64(&op.operands[1]), obj_f64(&op.operands[2]));
+            // Path operators (Phase 3)
+            "m" => {
+                if op.operands.len() >= 2 {
+                    let x = obj_f64(&op.operands[0]);
+                    let y = obj_f64(&op.operands[1]);
+                    current_path.clear();
+                    current_path.push(state!().ctm.transform(x, y));
                 }
+            }
+            "l" => {
+                if op.operands.len() >= 2 {
+                    let x = obj_f64(&op.operands[0]);
+                    let y = obj_f64(&op.operands[1]);
+                    current_path.push(state!().ctm.transform(x, y));
+                }
+            }
+            "re" => {
+                if op.operands.len() >= 4 {
+                    let x = obj_f64(&op.operands[0]);
+                    let y = obj_f64(&op.operands[1]);
+                    let w = obj_f64(&op.operands[2]);
+                    let h = obj_f64(&op.operands[3]);
+                    let (x0, y0) = state!().ctm.transform(x, y);
+                    let (x1, y1) = state!().ctm.transform(x + w, y + h);
+                    vector_paths.push([x0.min(x1), y0.min(y1), x0.max(x1), y0.max(y1)]);
+                }
+            }
+            "S" | "f" | "B" | "s" | "F" | "b" => {
+                if current_path.len() >= 2 {
+                    let x_min = current_path.iter().map(|p| p.0).fold(f64::MAX, f64::min);
+                    let x_max = current_path.iter().map(|p| p.0).fold(f64::MIN, f64::max);
+                    let y_min = current_path.iter().map(|p| p.1).fold(f64::MAX, f64::min);
+                    let y_max = current_path.iter().map(|p| p.1).fold(f64::MIN, f64::max);
+                    vector_paths.push([x_min, y_min, x_max, y_max]);
+                }
+                current_path.clear();
+            }
+            // Marked Content (Phase 3 Artifact Filtering)
+            "BDC" => {
+                let is_artifact = op.operands.iter().any(|o| {
+                    match o {
+                        Object::Name(n) => n == b"Artifact",
+                        Object::Dictionary(d) => d.get(b"Type").ok().map_or(false, |v| matches!(v, Object::Name(n) if n == b"Artifact")),
+                        _ => false,
+                    }
+                });
+                if is_artifact { artifact_depth += 1; }
+            }
+            "BMC" => {
+                if let Some(Object::Name(n)) = op.operands.first() {
+                    if n == b"Artifact" { artifact_depth += 1; }
+                }
+            }
+            "EMC" => {
+                if artifact_depth > 0 { artifact_depth -= 1; }
+            }
+            // Image tracking
+            "Do" => {
+                *image_count += 1;
             }
             _ => {}
         }
@@ -582,7 +786,301 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
     blocks
 }
 
-// ── Public export ─────────────────────────────────────────────────────────
+// ── Paragraph Reconstruction Engine ─────────────────────────────────────
+
+fn infer_margins(blocks: &[WasmBlock]) -> (f64, f64) {
+    if blocks.is_empty() {
+        return (50.0, 500.0);
+    }
+    let lefts: Vec<f64> = blocks.iter().map(|b| b.bounding_box[0]).collect();
+    let rights: Vec<f64> = blocks.iter().map(|b| b.bounding_box[2]).collect();
+    let median = |mut v: Vec<f64>| -> f64 {
+        v.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        v[v.len() / 2]
+    };
+    (median(lefts), median(rights))
+}
+
+fn detect_alignment(bbox: &[f64; 4], left_margin: f64, right_margin: f64) -> String {
+    let left = bbox[0];
+    let right = bbox[2];
+    let left_aligned = (left - left_margin).abs() < 20.0;
+    let right_aligned = (right - right_margin).abs() < 20.0;
+
+    if left_aligned && right_aligned { "justify".to_string() }
+    else if left_aligned { "left".to_string() }
+    else if right_aligned { "right".to_string() }
+    else { "center".to_string() }
+}
+
+fn detect_list(text: &str) -> (bool, Option<String>) {
+    let trimmed = text.trim_start();
+    if trimmed.is_empty() { return (false, None); }
+
+    let first = trimmed.chars().next().unwrap();
+    if first == '•' || first == '*' || first == '▪' || first == '-' {
+        let rest: String = trimmed.chars().skip(1).collect();
+        if rest.trim_start().starts_with(|c: char| c.is_alphanumeric()) {
+            return (true, Some(first.to_string()));
+        }
+    }
+
+    let digit_end = trimmed.find(|c: char| !c.is_ascii_digit()).unwrap_or(trimmed.len());
+    if digit_end > 0 {
+        let after_digits = &trimmed[digit_end..];
+        if after_digits.starts_with('.') || after_digits.starts_with(')') {
+            let rest = after_digits[1..].trim_start();
+            if !rest.is_empty() {
+                let marker = format!("{}{}", &trimmed[..digit_end], &after_digits[..1]);
+                return (true, Some(marker));
+            }
+        }
+    }
+
+    if trimmed.len() >= 2 {
+        let chars: Vec<char> = trimmed.chars().collect();
+        if chars[0].is_ascii_alphabetic() {
+            if chars[1] == '.' || chars[1] == ')' {
+                let rest = trimmed[2..].trim_start();
+                if !rest.is_empty() {
+                    return (true, Some(format!("{}{}", chars[0], chars[1])));
+                }
+            }
+        }
+    }
+
+    (false, None)
+}
+
+fn should_merge_with_previous(prev: &WasmBlock, next: &WasmBlock) -> bool {
+    if prev.column_index != next.column_index { return false; }
+
+    let font_size = prev.font_meta.size.max(1.0);
+
+    let gap = next.bounding_box[1] - prev.bounding_box[3];
+
+    gap >= -(font_size * 0.3) && gap <= font_size * 1.8
+}
+
+fn merge_line_group(group: &[WasmBlock], left_margin: f64, right_margin: f64) -> Option<WasmBlock> {
+    if group.is_empty() { return None; }
+    let first = &group[0];
+
+    let mut merged_content = String::new();
+    let mut merged_spans: Vec<RichSpan> = Vec::new();
+
+    for (i, block) in group.iter().enumerate() {
+        if i == 0 {
+            merged_content.push_str(&block.content);
+            merged_spans = block.rich_spans.clone();
+            continue;
+        }
+
+        let prev_content = merged_content.clone();
+        let text = &block.content;
+
+        let prev_ends_hyphen = prev_content.ends_with('-');
+        let next_starts_lower = text.chars().next().map_or(false, |c| c.is_ascii_lowercase());
+
+        if prev_ends_hyphen && next_starts_lower {
+            merged_content.pop();
+
+            if let Some(last_span) = merged_spans.last_mut() {
+                if last_span.text.ends_with('-') {
+                    last_span.text.pop();
+                }
+            }
+
+            let mut line_spans = block.rich_spans.clone();
+            if let Some(last_span) = merged_spans.last_mut() {
+                if let Some(first_span) = line_spans.first_mut() {
+                    let same_style = last_span.bold == first_span.bold
+                        && last_span.italic == first_span.italic
+                        && last_span.underline == first_span.underline
+                        && last_span.strikethrough == first_span.strikethrough
+                        && last_span.font_family == first_span.font_family
+                        && last_span.font_size == first_span.font_size
+                        && last_span.color == first_span.color;
+                    if same_style {
+                        last_span.text.push_str(&first_span.text);
+                        line_spans.remove(0);
+                    }
+                }
+            }
+
+            merged_content.push_str(text);
+            merged_spans.extend(line_spans);
+        } else {
+            merged_content.push(' ');
+            merged_content.push_str(text);
+
+            if let Some(last_span) = merged_spans.last_mut() {
+                if !last_span.text.ends_with(' ') {
+                    last_span.text.push(' ');
+                }
+            }
+
+            merged_spans.extend(block.rich_spans.clone());
+        }
+    }
+
+    let left = group.iter().map(|b| b.bounding_box[0]).fold(f64::MAX, |a, b| a.min(b));
+    let top = group.iter().map(|b| b.bounding_box[1]).fold(f64::MAX, |a, b| a.min(b));
+    let right = group.iter().map(|b| b.bounding_box[2]).fold(f64::MIN, |a, b| a.max(b));
+    let bottom = group.iter().map(|b| b.bounding_box[3]).fold(f64::MIN, |a, b| a.max(b));
+
+    let line_height = first.font_meta.size * 1.2;
+    let pad = (line_height * 0.2).max(2.0);
+    let bbox = [left, top - pad, right, bottom + pad];
+
+    let alignment = detect_alignment(&bbox, left_margin, right_margin);
+
+    let (is_list, bullet) = detect_list(&merged_content);
+
+    let block_type = if is_list {
+        "list_item".to_string()
+    } else {
+        first.block_type.clone()
+    };
+
+    Some(WasmBlock {
+        id: first.id.clone(),
+        object_id: first.object_id.clone(),
+        source_ref: first.source_ref.clone(),
+        block_type,
+        content: merged_content,
+        rich_spans: merged_spans,
+        next_block_id: None,
+        page_index: first.page_index,
+        bounding_box: bbox,
+        font_meta: first.font_meta.clone(),
+        alignment,
+        confidence_score: 0.85,
+        needs_review: false,
+        z_index: first.z_index,
+        column_index: first.column_index,
+        style_overrides: HashMap::new(),
+        bullet,
+    })
+}
+
+fn reconstruct_paragraphs(
+    blocks: Vec<WasmBlock>,
+    vector_paths: Vec<[f64; 4]>,
+    warnings: &mut Vec<String>
+) -> Vec<WasmBlock> {
+    if blocks.is_empty() { return vec![]; }
+
+    let (left_margin, right_margin) = infer_margins(&blocks);
+
+    let mut paragraphs: Vec<WasmBlock> = Vec::new();
+    let mut current_group: Vec<WasmBlock> = Vec::new();
+
+    for block in blocks {
+        if current_group.is_empty() {
+            current_group.push(block);
+            continue;
+        }
+
+        let prev = current_group.last().unwrap();
+        if should_merge_with_previous(prev, &block) {
+            current_group.push(block);
+        } else {
+            if let Some(mut merged) = merge_line_group(&current_group, left_margin, right_margin) {
+                // Phase 3: Underline detection
+                for path in &vector_paths {
+                    let [px0, py0, px1, py1] = *path;
+                    let [bx0, by0, bx1, by1] = merged.bounding_box;
+
+                    // If path is a thin horizontal line just below the block
+                    let is_horizontal = (py1 - py0).abs() < 2.0;
+                    let is_under = (py0 - by1).abs() < 3.0 || (py1 - by1).abs() < 3.0;
+                    let intersects_x = px0 < bx1 && px1 > bx0;
+
+                    if is_horizontal && is_under && intersects_x {
+                        for span in &mut merged.rich_spans {
+                            span.underline = true;
+                        }
+                        break;
+                    }
+                }
+                paragraphs.push(merged);
+            } else {
+                warnings.push(format!("Failed to merge line group on page {}", current_group[0].page_index));
+            }
+            current_group = vec![block];
+        }
+    }
+
+    if !current_group.is_empty() {
+        if let Some(mut merged) = merge_line_group(&current_group, left_margin, right_margin) {
+            for path in &vector_paths {
+                let [px0, py0, px1, py1] = *path;
+                let [bx0, by0, bx1, by1] = merged.bounding_box;
+                let is_horizontal = (py1 - py0).abs() < 2.0;
+                let is_under = (py0 - by1).abs() < 3.0 || (py1 - by1).abs() < 3.0;
+                let intersects_x = px0 < bx1 && px1 > bx0;
+                if is_horizontal && is_under && intersects_x {
+                    for span in &mut merged.rich_spans {
+                        span.underline = true;
+                    }
+                    break;
+                }
+            }
+            paragraphs.push(merged);
+        }
+    }
+
+    // Phase 3: Table detection
+    let mut table_blocks: Vec<WasmBlock> = Vec::new();
+    if !vector_paths.is_empty() {
+        // Simple heuristic: Group vector rectangles that are adjacent or overlapping
+        let mut grid_cells = Vec::new();
+        for path in &vector_paths {
+            let [x0, y0, x1, y1] = *path;
+            let w = x1 - x0;
+            let h = y1 - y0;
+            if w > 5.0 && h > 5.0 { // Filter out thin lines/artifacts
+                grid_cells.push([x0, y0, x1, y1]);
+            }
+        }
+
+        // Identify table-like structures where cells are aligned
+        for (i, cell) in grid_cells.iter().enumerate() {
+            let [cx0, cy0, cx1, cy1] = *cell;
+            let mut cell_content = Vec::new();
+
+            // Find text blocks contained within this cell
+            for (b_idx, block) in paragraphs.iter().enumerate() {
+                let [bx0, by0, bx1, by1] = block.bounding_box;
+                if bx0 >= cx0 - 2.0 && bx1 <= cx1 + 2.0 && by0 >= cy0 - 2.0 && by1 <= cy1 + 2.0 {
+                    cell_content.push(b_idx);
+                }
+            }
+
+            if !cell_content.is_empty() {
+                // If a cell has content, tag it or merge it into a table structure
+                // For now, we simply flag these blocks to avoid them being reflowed as standard paragraphs
+                for idx in cell_content {
+                    paragraphs[idx].style_overrides.insert("in_table".to_string(), i.to_string());
+                }
+            }
+        }
+    }
+
+    for i in 0..paragraphs.len().saturating_sub(1) {
+        if paragraphs[i].page_index == paragraphs[i + 1].page_index
+            && paragraphs[i].column_index == paragraphs[i + 1].column_index
+        {
+            let next_id = paragraphs[i + 1].id.clone();
+            paragraphs[i].next_block_id = Some(next_id);
+        }
+    }
+
+    paragraphs
+}
+
+// ── Public exports ──────────────────────────────────────────────────────
 
 #[derive(Serialize)]
 struct PreflightResult {
@@ -605,13 +1103,10 @@ pub fn preflight_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
         .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
 }
 
-// ── PdfDocument: stateful object graph API ────────────────────────────────
-
 #[wasm_bindgen]
 pub struct PdfDocument {
     doc: lopdf::Document,
 }
-
 
 fn dict_entries(dict: &lopdf::Dictionary) -> serde_json::Value {
     let mut map = serde_json::Map::new();
@@ -754,8 +1249,6 @@ impl PdfDocument {
         Ok(buf)
     }
 
-    // ── Phase 3: Annotations ───────────────────────────────────────────────
-
     pub fn get_annotations(&self, page_num: u32) -> Result<JsValue, JsValue> {
         let pages = self.doc.get_pages();
         let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
@@ -838,8 +1331,6 @@ impl PdfDocument {
         Ok(())
     }
 
-    // ── Phase 3: Metadata ──────────────────────────────────────────────────
-
     pub fn get_metadata(&self) -> Result<JsValue, JsValue> {
         let info = self.doc.trailer.get(b"Info").ok();
         let result = match info {
@@ -871,8 +1362,6 @@ impl PdfDocument {
         self.doc.trailer.set("Info".as_bytes().to_vec(), lopdf::Object::Reference((id.0, 0)));
         Ok(())
     }
-
-    // ── Phase 4: Form fields ───────────────────────────────────────────────
 
     pub fn get_form_fields(&self) -> Result<JsValue, JsValue> {
         let catalog = match self.doc.catalog() {
@@ -908,7 +1397,6 @@ impl PdfDocument {
         if let Ok(field) = self.doc.get_object_mut((field_obj_num, 0)) {
             if let Ok(dict) = field.as_dict_mut() {
                 dict.set("V".as_bytes().to_vec(), lopdf::Object::string_literal(value));
-                // Set NeedAppearances in AcroForm so viewer regenerates appearance
                 if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
                     if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
                         if let Ok(cat_dict) = catalog.as_dict_mut() {
@@ -932,7 +1420,6 @@ impl PdfDocument {
     }
 
     pub fn flatten_form(&mut self) -> Result<(), JsValue> {
-        // Remove AcroForm from catalog
         if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
             if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
                 if let Ok(dict) = catalog.as_dict_mut() {
@@ -943,15 +1430,12 @@ impl PdfDocument {
         Ok(())
     }
 
-    // ── Phase 5: Page operations ───────────────────────────────────────────
-
     pub fn delete_page(&mut self, page_num: u32) -> Result<(), JsValue> {
         self.doc.delete_pages(&[page_num]);
         Ok(())
     }
 
     pub fn insert_blank_page(&mut self, after_page: u32, width: f64, height: f64) -> Result<(), JsValue> {
-        // Create minimal page dictionary
         let mut page_dict = lopdf::Dictionary::new();
         page_dict.set("Type".as_bytes().to_vec(), lopdf::Object::Name(b"Page".to_vec()));
         page_dict.set("MediaBox".as_bytes().to_vec(), lopdf::Object::Array(vec![
@@ -962,9 +1446,8 @@ impl PdfDocument {
         ]));
         page_dict.set("Contents".as_bytes().to_vec(), lopdf::Object::Stream(lopdf::Stream::new(lopdf::Dictionary::new(), vec![])));
         let page_obj = lopdf::Object::Dictionary(page_dict);
-        let page_ref = lopdf::Object::Reference(self.doc.add_object(page_obj));
+        let _page_ref = lopdf::Object::Reference(self.doc.add_object(page_obj));
 
-        // Insert into page tree
         let pages = self.doc.get_pages();
         let total: u32 = pages.len() as u32;
         let after = after_page.min(total);
@@ -975,7 +1458,6 @@ impl PdfDocument {
         } else {
             page_ids.push((total + 1, (self.doc.objects.len() as u32, 0)));
         }
-        // Rebuild page tree
         let kids: Vec<_> = page_ids.iter().map(|(_, id)| lopdf::Object::Reference(*id)).collect();
         if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
             if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
@@ -1088,10 +1570,7 @@ impl PdfDocument {
             .map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
-    // ── Phase 6: Incremental save ──────────────────────────────────────────
-
     pub fn serialize_incremental(&mut self, _original: &[u8]) -> Result<Vec<u8>, JsValue> {
-        // Full serialization for now; incremental save can be optimized later
         let mut buf = Vec::new();
         self.doc.save_to(&mut buf)
             .map_err(|e| JsValue::from_str(&format!("save failed: {e}")))?;
@@ -1101,17 +1580,62 @@ impl PdfDocument {
 
 #[wasm_bindgen]
 pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
+    let perf = window()
+        .ok_or_else(|| JsValue::from_str("No window"))?
+        .performance()
+        .ok_or_else(|| JsValue::from_str("No performance"))?;
+    let start = perf.now();
+
     let doc = Document::load_mem(data).map_err(|e| JsValue::from_str(&format!("PDF parse error: {e}")))?;
     let pages = doc.get_pages();
     let mut all_blocks: Vec<WasmBlock> = Vec::new();
     let mut page_dimensions: Vec<WasmPageDimension> = Vec::new();
+    let mut warnings: Vec<String> = Vec::new();
+    let mut total_unmapped = 0usize;
+    let mut pages_failed = 0usize;
+    let mut total_image_count = 0usize;
+    let mut total_missing_fonts = 0usize;
+
     for (page_num, &page_id) in &pages {
         let page_index = (*page_num as usize).saturating_sub(1);
         let (width, height) = get_page_size(&doc, page_id);
         page_dimensions.push(WasmPageDimension { page_index, width, height });
-        all_blocks.extend(parse_page(&doc, page_id, page_index, height, width));
+
+        let mut vector_paths: Vec<[f64; 4]> = Vec::new();
+        let page_blocks = parse_page(
+            &doc, page_id, page_index, height, width,
+            &mut warnings, &mut total_unmapped, &mut vector_paths,
+            &mut total_image_count, &mut total_missing_fonts
+        );
+
+        if page_blocks.is_empty() {
+            pages_failed += 1;
+        }
+
+        // Phase 2 & 3: Reconstruction
+        let reconstructed = reconstruct_paragraphs(page_blocks, vector_paths, &mut warnings);
+        all_blocks.extend(reconstructed);
     }
+
     page_dimensions.sort_by_key(|p| p.page_index);
-    serde_wasm_bindgen::to_value(&ParseResult { blocks: all_blocks, page_dimensions })
+
+    let duration_ms = perf.now() - start;
+    let total_blocks = all_blocks.len();
+
+    // Simple heuristic: If there are images but very few text blocks, it's likely a scanned document.
+    let is_likely_scanned = total_image_count > 0 && total_blocks < 5 && pages.len() > 0;
+
+    let metrics = ParseMetrics {
+        duration_ms,
+        total_blocks,
+        unmapped_chars: total_unmapped,
+        pages_failed,
+        warnings,
+        image_count: total_image_count,
+        missing_fonts_count: total_missing_fonts,
+        is_likely_scanned,
+    };
+
+    serde_wasm_bindgen::to_value(&ParseResult { blocks: all_blocks, page_dimensions, metrics })
         .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
 }

@@ -25,7 +25,7 @@ import {
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
 import * as Y from "yjs";
 import debounce from "lodash/debounce";
-import { Canvas, Ellipse, FabricObject, Group, IText, Line, PencilBrush, Rect, Textbox } from "fabric";
+import { Canvas, Ellipse, FabricObject, Group, IText, Line, PencilBrush, Rect, Textbox, FabricImage } from "fabric";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useFidelityCanvasStore, type ShapeTool } from "@/store/useFidelityCanvasStore";
@@ -234,12 +234,43 @@ function createFieldBlock(block: DocumentBlock, scale: number): Rect {
     ry: 4,
     selectable: true,
   });
-  (fieldRect as FabricObjectWithMeta).data = {
+  (fieldRect as any).data = {
     blockId: block.id,
     blockType: "field",
     fieldType: block.field_type ?? "text",
   };
   return fieldRect;
+}
+
+function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
+  const bbox = block.bounding_box ?? [0, 0, 100, 100];
+  const left = bbox[0] * scale;
+  const top = bbox[1] * scale;
+  const w = (bbox[2] - bbox[0]) * scale;
+  const h = (bbox[3] - bbox[1]) * scale;
+
+  if (block.src) {
+    FabricImage.fromURL(block.src, { crossOrigin: "anonymous" }).then((img) => {
+      img.set({
+        left,
+        top,
+        scaleX: w / (img.width || 1),
+        scaleY: h / (img.height || 1),
+      });
+      (img as any).data = { blockId: block.id, blockType: "image" };
+      canvas.add(img);
+      canvas.renderAll();
+    }).catch(() => {
+      // Fallback placeholder on failure
+      const fallback = new Rect({ left, top, width: w, height: h, fill: "rgba(0,0,0,0.1)", stroke: "#ccc" });
+      (fallback as any).data = { blockId: block.id, blockType: "image" };
+      canvas.add(fallback);
+    });
+  } else {
+    const placeholder = new Rect({ left, top, width: w, height: h, fill: "rgba(0,0,0,0.1)", stroke: "#ccc" });
+    (placeholder as any).data = { blockId: block.id, blockType: "image" };
+    canvas.add(placeholder);
+  }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -261,6 +292,8 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   const [userZoom, setUserZoom] = useState(1.0);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const overflowMenuRef = useRef<HTMLDivElement>(null);
+  // pageImages[i] = presigned PNG URL for page i, or undefined while loading
+  const [pageImages, setPageImages] = useState<Record<number, string>>({});
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
   const { activeTool, setActiveTool, selectedBlock, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode, formMode, toggleFormMode } = useFidelityCanvasStore();
@@ -276,6 +309,41 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   useEffect(() => {
     suggestModeRef.current = suggestMode;
   }, [suggestMode]);
+
+  // ── Layout ───────────────────────────────────────────────────────────────
+
+  const pageDimensions = model.page_dimensions?.length ? model.page_dimensions : [DEFAULT_PAGE];
+  const primaryPage = pageDimensions[0] ?? DEFAULT_PAGE;
+  const scale = Math.max(0.4, Math.min(3, (containerWidth / primaryPage.width) * userZoom));
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      const nextImages = { ...pageImages };
+      let changed = false;
+      const pagesToFetch = pageDimensions.filter((dim) => !nextImages[dim.page_index]);
+
+      await Promise.all(
+        pagesToFetch.map(async (dim) => {
+          try {
+            const res = await fetch(`/api/bff/documents/${documentId}/page/${dim.page_index}/image`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.url) {
+                nextImages[dim.page_index] = data.url;
+                changed = true;
+              }
+            }
+          } catch (e) {
+            // best effort
+          }
+        })
+      );
+      if (changed) {
+        setPageImages(nextImages);
+      }
+    };
+    void fetchImages();
+  }, [documentId, pageDimensions]);
 
   const saveDebounced = useRef(
     debounce((m: DocumentModel) => void saveMutation.mutateAsync(m), 700)
@@ -447,12 +515,6 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [changeZoom]);
-
-  // ── Layout ───────────────────────────────────────────────────────────────
-
-  const pageDimensions = model.page_dimensions?.length ? model.page_dimensions : [DEFAULT_PAGE];
-  const primaryPage = pageDimensions[0] ?? DEFAULT_PAGE;
-  const scale = Math.max(0.4, Math.min(3, (containerWidth / primaryPage.width) * userZoom));
 
   useEffect(() => {
     const update = () => {
@@ -666,12 +728,11 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       return;
     }
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const fcanvas = new Canvas(el, {
       width,
       height,
       selection: true,
-      backgroundColor: prefersDark ? "#1e1e1e" : "transparent",
+      backgroundColor: "transparent",
     });
 
     // Load ALL blocks for this page as Fabric objects
@@ -680,6 +741,11 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       .sort((a, b) => (a.z_index ?? 0) - (b.z_index ?? 0));
 
     for (const block of pageBlocks) {
+      if (block.type === "image") {
+        loadImageBlock(block, scale, fcanvas);
+        continue;
+      }
+
       let obj;
       if (block.type === "table") {
         obj = createTableBlock(block, scale);
@@ -1196,6 +1262,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
             <VirtualizedPage
               dim={dim}
               scale={scale}
+              backgroundUrl={pageImages[dim.page_index]}
               onCanvasReady={(pageIndex, node) => setupFabricCanvas(pageIndex, node, dim.width * scale, dim.height * scale)}
               onCanvasDestroy={destroyFabricCanvas}
             >

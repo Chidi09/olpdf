@@ -10,7 +10,8 @@ type BlockTypeValue =
   | "list"
   | "divider"
   | "page_break"
-  | "image";
+  | "image"
+  | "shape";
 
 type TiptapNode = {
   type: string;
@@ -157,17 +158,27 @@ export function tiptapToDocumentModel(tiptapDoc: unknown, documentId: string): E
 
   const blocks = content
     .filter((node) => node?.type)
-    .map((node, idx) => ({
-      id: (node.attrs?.id as string) || `blk_${idx}`,
-      type: nodeTypeToBlockType(node),
-      content: extractNodeText(node),
-      confidence_score: 1,
-      needs_review: false,
-      style_overrides: (node.attrs?.style_overrides as Record<string, unknown>) || {},
-      z_index: 0,
-      page_index: 0,
-      float: "none" as const,
-    }));
+    .map((node, idx) => {
+      const base = {
+        id: (node.attrs?.id as string) || `blk_${idx}`,
+        type: nodeTypeToBlockType(node),
+        confidence_score: 1,
+        needs_review: false,
+        style_overrides: (node.attrs?.style_overrides as Record<string, unknown>) || {},
+        z_index: 0,
+        page_index: 0,
+        float: "none" as const,
+      };
+
+      if (node.type === "imageBlock") {
+        return { ...base, type: "image" as const, src: node.attrs?.src as string };
+      }
+      if (node.type === "shapeBlock") {
+        return { ...base, type: "shape" as const, fabric_data: node.attrs };
+      }
+
+      return { ...base, content: extractNodeText(node) };
+    });
 
   return {
     id: documentId,
@@ -182,26 +193,26 @@ export function documentModelToTiptap(model: EditorDocumentModel): TiptapDoc {
   const normalizedBlocks = normalizeDocumentBlocks(model.blocks as unknown as Array<Record<string, unknown>>);
 
   const content = normalizedBlocks.map((block) => {
+    if (block.type === "image") {
+      return {
+        type: "imageBlock",
+        attrs: { id: block.id, src: block.src, float: block.float },
+      };
+    }
+    if (block.type === "shape") {
+      return {
+        type: "shapeBlock",
+        attrs: { id: block.id, ...(block.fabric_data as object), float: block.float },
+      };
+    }
+
     const node = blockTypeToNodeType(String(block.type));
     const text = safeExtractBlockContent(block.content);
 
     if (node.type === "horizontalRule") {
       return { ...node, attrs: { id: block.id, type: block.type } };
     }
-
-    if (node.type === "bulletList") {
-      return {
-        ...node,
-        attrs: { id: block.id, type: block.type },
-        content: [
-          {
-            type: "listItem",
-            content: [{ type: "paragraph", content: text ? [{ type: "text", text }] : [] }],
-          },
-        ],
-      };
-    }
-
+    // ... rest of existing logic ...
     return {
       ...node,
       attrs: { ...(node.attrs || {}), id: block.id, type: block.type },

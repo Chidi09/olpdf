@@ -1,4 +1,4 @@
-export type PdfNativeObjectType = "text" | "image" | "path" | "shape" | "annotation" | "form_field";
+export type PdfNativeObjectType = "text" | "image" | "path" | "shape" | "annotation" | "form_field" | "list_item";
 
 /** 4-element tuple: [left, top, width, height] in PDF coordinate space */
 export type PdfRect = [number, number, number, number];
@@ -7,9 +7,12 @@ export type WasmRichSpan = {
   text: string;
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
   font_family?: string;
   font_size?: number;
   color?: string;
+  vertical_align?: "super" | "sub";
 };
 
 export type PdfNativeObject = {
@@ -24,6 +27,26 @@ export type PdfNativeObject = {
   zIndex?: number;
   sourceRef?: string;
   rich_spans?: WasmRichSpan[];
+  is_invisible?: boolean;
+  bullet?: string;
+  alignment?: "left" | "center" | "right" | "justify";
+};
+
+export type ParseMetrics = {
+  duration_ms: number;
+  total_blocks: number;
+  unmapped_chars: number;
+  pages_failed: number;
+  warnings: string[];
+  image_count: number;
+  missing_fonts_count: number;
+  is_likely_scanned: boolean;
+};
+
+export type WasmParseResult = {
+  blocks: PdfNativeObject[];
+  page_dimensions: Array<{ page_index: number; width: number; height: number }>;
+  metrics: ParseMetrics;
 };
 
 export type PdfEditOperationType = "replace_text" | "move_object" | "resize_object" | "delete_object" | "insert_text" | "insert_shape";
