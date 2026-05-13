@@ -24,6 +24,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
+import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -143,7 +144,24 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const [editorNotice, setEditorNotice] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [viewerName, setViewerName] = useState("You");
+  const [viewerColor] = useState("#e6a449");
+  const [titleDraft, setTitleDraft] = useState("");
   const editorContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setTitleDraft(currentModel?.meta?.title || "Untitled Document");
+  }, [currentModel?.meta?.title]);
+
+  useEffect(() => {
+    let mounted = true;
+    createSupabaseBrowserClient().auth.getUser().then(({ data }) => {
+      if (!mounted || !data.user) return;
+      const meta = data.user.user_metadata ?? {};
+      setViewerName(String(meta.full_name || meta.name || data.user.email || "You"));
+    }).catch(() => null);
+    return () => { mounted = false; };
+  }, []);
 
   const outlineItems = useMemo(() => {
     const blocks = currentModel?.blocks || [];
@@ -375,7 +393,17 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             </GlassTooltip>
             <input
               type="text"
-              defaultValue={currentModel?.meta?.title || "untitled_document.pdf"}
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={() => {
+                if (!currentModel || titleDraft === (currentModel.meta?.title ?? "")) return;
+                const nextModel = { ...currentModel, meta: { ...currentModel.meta, title: titleDraft } };
+                setCurrentModel(nextModel);
+                saveMutation.mutate(nextModel);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
               className="w-64 rounded border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-white outline-none transition-all hover:border-[#333] focus:border-orange-500 focus:bg-[#0A0A0A]"
             />
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#666]">
@@ -433,8 +461,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           ) : (
             <CollaborativeEditor
               documentId={documentId}
-              userName="Divine Adoyi"
-              userColor="#e6a449"
+              userName={viewerName}
+              userColor={viewerColor}
               initialModel={currentModel ?? undefined}
               onModelChange={setCurrentModel}
             />
