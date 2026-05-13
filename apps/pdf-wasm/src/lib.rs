@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use lopdf::{Document, Object, ObjectId};
+use base64::Engine;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -260,7 +261,7 @@ fn text_width(text: &str, info: &Option<PageFontInfo>, font_size: f64) -> f64 {
 
 fn obj_f64(obj: &Object) -> f64 {
     match obj {
-        Object::Real(f) => *f as f64,
+        Object::lopdf::Object::Real(f) => *f as f64,
         Object::Integer(i) => *i as f64,
         _ => 0.0,
     }
@@ -611,10 +612,6 @@ pub struct PdfDocument {
     doc: lopdf::Document,
 }
 
-use std::string::String as StdString;
-use base64::Engine;
-use lopdf::Object as LObject;
-use lopdf::Object::*;
 
 fn dict_entries(dict: &lopdf::Dictionary) -> serde_json::Value {
     let mut map = serde_json::Map::new();
@@ -627,42 +624,42 @@ fn dict_entries(dict: &lopdf::Dictionary) -> serde_json::Value {
 
 fn object_to_json_value(obj: &lopdf::Object) -> serde_json::Value {
     match obj {
-        Null => serde_json::Value::Null,
-        Boolean(b) => serde_json::json!({"type":"bool","value":b}),
-        Integer(n) => serde_json::json!({"type":"integer","value":n}),
-        Real(f) => serde_json::json!({"type":"real","value":f}),
-        Name(n) => serde_json::json!({"type":"name","value":StdString::from_utf8_lossy(n)}),
-        String(bytes, _) => serde_json::json!({"type":"string","value":StdString::from_utf8_lossy(bytes)}),
-        Array(items) => {
+        lopdf::Object::Null => serde_json::Value::Null,
+        lopdf::Object::Boolean(b) => serde_json::json!({"type":"bool","value":b}),
+        lopdf::Object::Integer(n) => serde_json::json!({"type":"integer","value":n}),
+        lopdf::Object::Real(f) => serde_json::json!({"type":"real","value":f}),
+        lopdf::Object::Name(n) => serde_json::json!({"type":"name","value":StdString::from_utf8_lossy(n)}),
+        lopdf::Object::String(bytes, _) => serde_json::json!({"type":"string","value":StdString::from_utf8_lossy(bytes)}),
+        lopdf::Object::Array(items) => {
             let arr: Vec<serde_json::Value> = items.iter().map(object_to_json_value).collect();
             serde_json::json!({"type":"array","items":arr})
         }
-        Dictionary(d) => serde_json::json!({"type":"dict","entries":dict_entries(d)}),
-        Stream(stream) => {
+        lopdf::Object::Dictionary(d) => serde_json::json!({"type":"dict","entries":dict_entries(d)}),
+        lopdf::Object::Stream(stream) => {
             let stream_map = serde_json::json!({
                 "dict": dict_entries(&stream.dict),
                 "decoded": BASE64_STANDARD.encode(&stream.content),
             });
             serde_json::json!({"type":"stream","stream":stream_map})
         }
-        Reference((n, g)) => serde_json::json!({"type":"ref","obj":n,"gen":g}),
+        lopdf::Object::Reference((n, g)) => serde_json::json!({"type":"ref","obj":n,"gen":g}),
     }
 }
 
 fn json_value_to_object(val: &serde_json::Value) -> Result<lopdf::Object, String> {
     let obj_type = val.get("type").and_then(|t| t.as_str()).unwrap_or("");
     match obj_type {
-        "null" => Ok(Null),
-        "bool" => Ok(Boolean(val.get("value").and_then(|v| v.as_bool()).unwrap_or(false))),
-        "integer" => Ok(Integer(val.get("value").and_then(|v| v.as_i64()).unwrap_or(0))),
-        "real" => Ok(Real(val.get("value").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32)),
+        "null" => Ok(lopdf::Object::Null),
+        "bool" => Ok(lopdf::Object::Boolean(val.get("value").and_then(|v| v.as_bool()).unwrap_or(false))),
+        "integer" => Ok(lopdf::Object::Integer(val.get("value").and_then(|v| v.as_i64()).unwrap_or(0))),
+        "real" => Ok(lopdf::Object::Real(val.get("value").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32)),
         "name" => {
             let s = val.get("value").and_then(|v| v.as_str()).unwrap_or("");
-            Ok(Name(s.as_bytes().to_vec()))
+            Ok(lopdf::Object::Name(s.as_bytes().to_vec()))
         }
         "string" => {
             let s = val.get("value").and_then(|v| v.as_str()).unwrap_or("");
-            Ok(String(s.as_bytes().to_vec(), lopdf::StringFormat::Literal))
+            Ok(lopdf::Object::String(s.as_bytes().to_vec(), lopdf::StringFormat::Literal))
         }
         "array" => {
             let items = val.get("items").and_then(|v| v.as_array()).ok_or("array missing items")?;
@@ -670,7 +667,7 @@ fn json_value_to_object(val: &serde_json::Value) -> Result<lopdf::Object, String
             for item in items {
                 objs.push(json_value_to_object(item)?);
             }
-            Ok(Array(objs))
+            Ok(lopdf::Object::Array(objs))
         }
         "dict" => {
             let entries = val.get("entries").and_then(|v| v.as_object()).ok_or("dict missing entries")?;
@@ -678,12 +675,12 @@ fn json_value_to_object(val: &serde_json::Value) -> Result<lopdf::Object, String
             for (k, v) in entries {
                 dict.set(k.as_bytes().to_vec(), json_value_to_object(v)?);
             }
-            Ok(Dictionary(dict))
+            Ok(lopdf::Object::Dictionary(dict))
         }
         "ref" => {
             let obj = val.get("obj").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
             let gen = val.get("gen").and_then(|v| v.as_u64()).unwrap_or(0) as u16;
-            Ok(Reference((obj, gen)))
+            Ok(lopdf::Object::Reference((obj, gen)))
         }
         "stream" => {
             let stream_val = val.get("stream").ok_or("stream missing stream field")?;
@@ -692,7 +689,7 @@ fn json_value_to_object(val: &serde_json::Value) -> Result<lopdf::Object, String
             let dict = dict_obj.as_dict().map_err(|_| "stream dict is not a dict")?.clone();
             let decoded = stream_val.get("decoded").and_then(|v| v.as_str()).unwrap_or("");
             let content = BASE64_STANDARD.decode(decoded).map_err(|e| format!("base64: {e}"))?;
-            Ok(Stream(lopdf::Stream::new(dict, content)))
+            Ok(lopdf::Object::Stream(lopdf::Stream::new(dict, content)))
         }
         _ => Err(format!("unknown object type: {obj_type}")),
     }
@@ -736,7 +733,7 @@ impl PdfDocument {
         let json: serde_json::Value = serde_wasm_bindgen::from_value(value)
             .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
         let obj = json_value_to_object(&json)
-            .map_err(|e| JsValue::from_str(&e))?;
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
         self.doc.objects.insert((obj_num, gen_num), obj);
         Ok(())
     }
@@ -745,7 +742,7 @@ impl PdfDocument {
         let json: serde_json::Value = serde_wasm_bindgen::from_value(value)
             .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
         let obj = json_value_to_object(&json)
-            .map_err(|e| JsValue::from_str(&e))?;
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
         let id = self.doc.add_object(obj);
         Ok(id.0)
     }
