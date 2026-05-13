@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from ..core.supabase_client import get_supabase
-from ..core.auth import get_current_user
+from ..core.auth import get_current_user, ensure_profile_row
 from ..models import TemplateResponse
 from ..models.requests import PublishTemplatePayload
 from ..repositories import DocumentRepository
@@ -488,6 +488,9 @@ async def apply_template(
     user_id = _user_id(current_user)
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Satisfy documents.user_id -> profiles.id FK (matches create_document flow).
+    ensure_profile_row(current_user)
 
     title = "Untitled"
     document_model = None

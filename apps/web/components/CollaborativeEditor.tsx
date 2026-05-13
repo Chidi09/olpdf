@@ -170,7 +170,9 @@ export default function CollaborativeEditor({
   );
 
   useEffect(() => {
-    const local = new IndexeddbPersistence(`olpdf-doc-${documentId}`, ydoc);
+    // v2 key: bumped from v1 to evict stale IndexedDB Yjs state that contains
+    // pre-normalization "HTML" node types (root cause of React #418 crashes).
+    const local = new IndexeddbPersistence(`olpdf-doc-v2-${documentId}`, ydoc);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsOffline(false);
     setConnectedUsers([{ name: userName, color: userColor }]);
@@ -294,6 +296,9 @@ export default function CollaborativeEditor({
     serverHydratedRef.current = true;
     const normalized = normalizeDocumentModel(documentQuery.data.document_model, documentId);
     const tiptap = documentModelToTiptap(normalized);
+    // Clear before setting so any stale Y-Doc fragments (e.g. unknown node types
+    // loaded from IndexedDB before our v2-key bump took effect) are evicted first.
+    editor.commands.clearContent(false);
     editor.commands.setContent(tiptap, false); // false = suppress onUpdate event
     hasHydratedRef.current = false; // allow next change event to be treated as first edit
   }, [editor, documentQuery.data, documentId]);

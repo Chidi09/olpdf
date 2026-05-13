@@ -94,12 +94,17 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const workspaceId = documentQuery.data?.workspace_id;
   const { data: installedPlugins } = useInstalledPlugins(workspaceId ?? "");
 
-  // Update store model when data arrives
+  // Update store model when data arrives. Use a ref instead of `currentModel` in
+  // deps — a server doc whose model.id doesn't match the URL documentId would
+  // otherwise loop (id stays mismatched after every set, so the guard never trips).
+  const hydratedDataRef = useRef<unknown>(null);
   useEffect(() => {
-    if (documentQuery.data?.document_model && (!currentModel || currentModel.id !== documentId)) {
-      setCurrentModel(normalizeModelForEditor(documentQuery.data.document_model, documentId));
+    const data = documentQuery.data;
+    if (data?.document_model && hydratedDataRef.current !== data) {
+      hydratedDataRef.current = data;
+      setCurrentModel(normalizeModelForEditor(data.document_model, documentId));
     }
-  }, [documentQuery.data, currentModel, documentId, setCurrentModel]);
+  }, [documentQuery.data, documentId, setCurrentModel]);
 
   const canRunAi = instruction.trim().length > 0 && !isRunningAi;
 
