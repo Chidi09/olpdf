@@ -753,6 +753,361 @@ impl PdfDocument {
             .map_err(|e| JsValue::from_str(&format!("serialize failed: {e}")))?;
         Ok(buf)
     }
+
+    // ── Phase 3: Annotations ───────────────────────────────────────────────
+
+    pub fn get_annotations(&self, page_num: u32) -> Result<JsValue, JsValue> {
+        let pages = self.doc.get_pages();
+        let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        let page_obj = self.doc.get_object(page_id)
+            .map_err(|_| JsValue::from_str("cannot get page object"))?;
+        let page_dict = page_obj.as_dict()
+            .map_err(|_| JsValue::from_str("page not a dict"))?;
+        let annots = match page_dict.get(b"Annots") {
+            Ok(obj) => match obj {
+                lopdf::Object::Array(arr) => arr.clone(),
+                lopdf::Object::Reference(id) => {
+                    let resolved = self.doc.get_object(*id)
+                        .map_err(|_| JsValue::from_str("cannot resolve annots ref"))?;
+                    resolved.as_array().map_err(|_| JsValue::from_str("annots not array"))?.clone()
+                }
+                _ => return Ok(serde_wasm_bindgen::to_value(&[]).unwrap()),
+            },
+            Err(_) => return Ok(serde_wasm_bindgen::to_value(&[]).unwrap()),
+        };
+        let mut results = Vec::new();
+        for annot_ref in &annots {
+            if let lopdf::Object::Reference(id) = annot_ref {
+                if let Ok(annot_obj) = self.doc.get_object(*id) {
+                    results.push(object_to_json_value(annot_obj));
+                }
+            }
+        }
+        serde_wasm_bindgen::to_value(&results)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    pub fn add_annotation(&mut self, page_num: u32, annotation: JsValue) -> Result<u32, JsValue> {
+        let json: serde_json::Value = serde_wasm_bindgen::from_value(annotation)
+            .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
+        let obj = json_value_to_object(&json)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let id = self.doc.add_object(obj);
+
+        let pages = self.doc.get_pages();
+        let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        if let Ok(page_obj) = self.doc.get_object_mut(page_id) {
+            if let Ok(dict) = page_obj.as_dict_mut() {
+                let mut annots = dict.get(b"Annots")
+                    .map(|o| match o {
+                        lopdf::Object::Array(a) => a.clone(),
+                        lopdf::Object::Reference(r) => {
+                            self.doc.get_object(*r).ok()
+                                .and_then(|o| o.as_array().ok().cloned())
+                                .unwrap_or_default()
+                        }
+                        _ => vec![],
+                    })
+                    .unwrap_or_default();
+                annots.push(lopdf::Object::Reference((id.0, 0)));
+                dict.set("Annots".as_bytes().to_vec(), lopdf::Object::Array(annots));
+            }
+        }
+        Ok(id.0)
+    }
+
+    pub fn remove_annotation(&mut self, page_num: u32, annot_obj_num: u32) -> Result<(), JsValue> {
+        let pages = self.doc.get_pages();
+        let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        if let Ok(page_obj) = self.doc.get_object_mut(page_id) {
+            if let Ok(dict) = page_obj.as_dict_mut() {
+                if let Ok(annots) = dict.get(b"Annots") {
+                    let arr = match annots {
+                        lopdf::Object::Array(a) => a.clone(),
+                        lopdf::Object::Reference(r) => {
+                            self.doc.get_object(*r).ok()
+                                .and_then(|o| o.as_array().ok().cloned())
+                                .unwrap_or_default()
+                        }
+                        _ => vec![],
+                    };
+                    let filtered: Vec<_> = arr.into_iter()
+                        .filter(|o| !matches!(o, lopdf::Object::Reference((n, _)) if *n == annot_obj_num))
+                        .collect();
+                    dict.set("Annots".as_bytes().to_vec(), lopdf::Object::Array(filtered));
+                }
+            }
+        }
+        self.doc.objects.remove(&(annot_obj_num, 0));
+        Ok(())
+    }
+
+    // ── Phase 3: Metadata ──────────────────────────────────────────────────
+
+    pub fn get_metadata(&self) -> Result<JsValue, JsValue> {
+        let info = self.doc.trailer.get(b"Info").ok();
+        let result = match info {
+            Some(lopdf::Object::Reference(id)) => {
+                self.doc.get_object(*id).ok()
+                    .and_then(|o| o.as_dict().ok())
+                    .map(|d| dict_entries(d))
+                    .unwrap_or(serde_json::Value::Null)
+            }
+            Some(lopdf::Object::Dictionary(d)) => dict_entries(d),
+            _ => serde_json::Value::Null,
+        };
+        serde_wasm_bindgen::to_value(&result)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    pub fn set_metadata(&mut self, meta: JsValue) -> Result<(), JsValue> {
+        let json: serde_json::Value = serde_wasm_bindgen::from_value(meta)
+            .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
+        let mut dict = lopdf::Dictionary::new();
+        if let Some(obj) = json.as_object() {
+            for (k, v) in obj {
+                let obj = json_value_to_object(v)?;
+                dict.set(k.as_bytes().to_vec(), obj);
+            }
+        }
+        let info_obj = lopdf::Object::Dictionary(dict);
+        let id = self.doc.add_object(info_obj);
+        self.doc.trailer.set("Info".as_bytes().to_vec(), lopdf::Object::Reference((id.0, 0)));
+        Ok(())
+    }
+
+    // ── Phase 4: Form fields ───────────────────────────────────────────────
+
+    pub fn get_form_fields(&self) -> Result<JsValue, JsValue> {
+        let catalog_id = match self.doc.catalog() {
+            Ok(id) => id,
+            Err(_) => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let catalog = match self.doc.get_object(catalog_id) {
+            Ok(o) => o,
+            Err(_) => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let acroform = match catalog.as_dict().ok().and_then(|d| d.get(b"AcroForm").ok()) {
+            Some(lopdf::Object::Reference(id)) => self.doc.get_object(*id).ok(),
+            Some(other) => Some(other),
+            None => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let fields_array = match acroform.and_then(|o| o.as_dict().ok()) {
+            Some(d) => d.get(b"Fields").ok(),
+            None => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let fields = match fields_array {
+            lopdf::Object::Array(a) => a.clone(),
+            _ => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let mut results = Vec::new();
+        for field_ref in &fields {
+            if let lopdf::Object::Reference(id) = field_ref {
+                if let Ok(field_obj) = self.doc.get_object(*id) {
+                    results.push(object_to_json_value(field_obj));
+                }
+            }
+        }
+        serde_wasm_bindgen::to_value(&results)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    pub fn set_field_value(&mut self, field_obj_num: u32, value: &str) -> Result<(), JsValue> {
+        if let Ok(field) = self.doc.get_object_mut((field_obj_num, 0)) {
+            if let Ok(dict) = field.as_dict_mut() {
+                dict.set("V".as_bytes().to_vec(), lopdf::Object::string_literal(value));
+                // Set NeedAppearances in AcroForm so viewer regenerates appearance
+                if let Ok(catalog_id) = self.doc.catalog() {
+                    if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+                        if let Ok(cat_dict) = catalog.as_dict_mut() {
+                            if let Ok(af_ref) = cat_dict.get(b"AcroForm").ok().cloned() {
+                                let af_id = match af_ref {
+                                    lopdf::Object::Reference(id) => id,
+                                    _ => return Ok(()),
+                                };
+                                if let Ok(af) = self.doc.get_object_mut(af_id) {
+                                    if let Ok(af_dict) = af.as_dict_mut() {
+                                        af_dict.set("NeedAppearances".as_bytes().to_vec(), lopdf::Object::Boolean(true));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn flatten_form(&mut self) -> Result<(), JsValue> {
+        // Remove AcroForm from catalog
+        if let Ok(catalog_id) = self.doc.catalog() {
+            if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+                if let Ok(dict) = catalog.as_dict_mut() {
+                    dict.remove(b"AcroForm");
+                }
+            }
+        }
+        Ok(())
+    }
+
+    // ── Phase 5: Page operations ───────────────────────────────────────────
+
+    pub fn delete_page(&mut self, page_num: u32) -> Result<(), JsValue> {
+        self.doc.delete_pages(page_num as u32..=page_num as u32);
+        Ok(())
+    }
+
+    pub fn insert_blank_page(&mut self, after_page: u32, width: f64, height: f64) -> Result<(), JsValue> {
+        // Create minimal page dictionary
+        let mut page_dict = lopdf::Dictionary::new();
+        page_dict.set("Type".as_bytes().to_vec(), lopdf::Object::Name(b"Page".to_vec()));
+        page_dict.set("MediaBox".as_bytes().to_vec(), lopdf::Object::Array(vec![
+            lopdf::Object::Integer(0),
+            lopdf::Object::Integer(0),
+            lopdf::Object::Real(width as f32),
+            lopdf::Object::Real(height as f32),
+        ]));
+        page_dict.set("Contents".as_bytes().to_vec(), lopdf::Object::Stream(lopdf::Stream::default()));
+        let page_obj = lopdf::Object::Dictionary(page_dict);
+        let page_ref = lopdf::Object::Reference(self.doc.add_object(page_obj));
+
+        // Insert into page tree
+        let pages = self.doc.get_pages();
+        let total: u32 = pages.len() as u32;
+        let after = after_page.min(total);
+        let mut page_ids: Vec<_> = pages.into_iter().collect();
+        page_ids.sort_by_key(|(k, _)| *k);
+        if after < total {
+            page_ids.insert(after as usize, (after + 1, (self.doc.objects.len() as u32, 0)));
+        } else {
+            page_ids.push((total + 1, (self.doc.objects.len() as u32, 0)));
+        }
+        // Rebuild page tree
+        let kids: Vec<_> = page_ids.iter().map(|(_, id)| lopdf::Object::Reference(*id)).collect();
+        if let Ok(0) = self.doc.catalog().map(|id| id.0) {
+            // Could not find catalog
+        }
+        if let Ok(catalog_id) = self.doc.catalog() {
+            if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+                if let Ok(dict) = catalog.as_dict_mut() {
+                    let old_pages_ref = dict.get(b"Pages").ok().cloned();
+                    if let Some(lopdf::Object::Reference(pages_id)) = old_pages_ref {
+                        if let Ok(pages_obj) = self.doc.get_object_mut(pages_id) {
+                            if let Ok(p_dict) = pages_obj.as_dict_mut() {
+                                p_dict.set("Kids".as_bytes().to_vec(), lopdf::Object::Array(kids));
+                                p_dict.set("Count".as_bytes().to_vec(), lopdf::Object::Integer(total as i64 + 1));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn reorder_pages(&mut self, new_order: Box<[u32]>) -> Result<(), JsValue> {
+        let pages = self.doc.get_pages();
+        let mut page_map: Vec<_> = pages.into_iter().collect();
+        page_map.sort_by_key(|(k, _)| *k);
+
+        let reordered: Vec<_> = new_order.iter()
+            .filter_map(|n| page_map.iter().find(|(k, _)| k == n).map(|(_, id)| *id))
+            .collect();
+        if reordered.is_empty() {
+            return Err(JsValue::from_str("no valid page numbers"));
+        }
+
+        let kids: Vec<_> = reordered.iter().map(|id| lopdf::Object::Reference(*id)).collect();
+        if let Ok(catalog_id) = self.doc.catalog() {
+            if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+                if let Ok(dict) = catalog.as_dict_mut() {
+                    let old_ref = dict.get(b"Pages").ok().cloned();
+                    if let Some(lopdf::Object::Reference(pages_id)) = old_ref {
+                        if let Ok(pages_obj) = self.doc.get_object_mut(pages_id) {
+                            if let Ok(p_dict) = pages_obj.as_dict_mut() {
+                                p_dict.set("Kids".as_bytes().to_vec(), lopdf::Object::Array(kids));
+                                p_dict.set("Count".as_bytes().to_vec(), lopdf::Object::Integer(reordered.len() as i64));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn rotate_page(&mut self, page_num: u32, degrees: i32) -> Result<(), JsValue> {
+        let pages = self.doc.get_pages();
+        let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        if let Ok(page_obj) = self.doc.get_object_mut(page_id) {
+            if let Ok(dict) = page_obj.as_dict_mut() {
+                let current = dict.get(b"Rotate")
+                    .map(|o| match o { lopdf::Object::Integer(n) => *n, _ => 0 })
+                    .unwrap_or(0);
+                dict.set("Rotate".as_bytes().to_vec(), lopdf::Object::Integer(current + degrees as i64));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn get_images(&self, page_num: u32) -> Result<JsValue, JsValue> {
+        let pages = self.doc.get_pages();
+        let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        let page_obj = self.doc.get_object(page_id)
+            .map_err(|_| JsValue::from_str("cannot get page"))?;
+        let dict = page_obj.as_dict()
+            .map_err(|_| JsValue::from_str("page not a dict"))?;
+
+        let resources = match dict.get(b"Resources").ok() {
+            Some(lopdf::Object::Reference(id)) => self.doc.get_object(*id).ok(),
+            Some(other) => Some(other),
+            None => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let xobjects = match resources.and_then(|o| o.as_dict().ok()) {
+            Some(d) => d.get(b"XObject").ok(),
+            None => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let xobj_dict = match xobjects {
+            Some(lopdf::Object::Dictionary(d)) => d,
+            Some(lopdf::Object::Reference(id)) => {
+                match self.doc.get_object(*id).ok().and_then(|o| o.as_dict().ok()) {
+                    Some(d) => d,
+                    None => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+                }
+            }
+            _ => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
+        };
+        let mut results = Vec::new();
+        for (k, v) in xobj_dict.iter() {
+            let obj = match v {
+                lopdf::Object::Reference(id) => self.doc.get_object(*id).ok(),
+                other => Some(other),
+            };
+            if let Some(lopdf::Object::Stream(stream)) = obj {
+                if stream.dict.get(b"Subtype").ok().map_or(false, |o| matches!(o, lopdf::Object::Name(n) if n == b"Image")) {
+                    results.push(serde_json::json!({
+                        "name": String::from_utf8_lossy(k),
+                        "width": stream.dict.get(b"Width").ok().and_then(|o| obj_f64(o).into()),
+                        "height": stream.dict.get(b"Height").ok().and_then(|o| obj_f64(o).into()),
+                        "data": BASE64_STANDARD.encode(&stream.content),
+                    }));
+                }
+            }
+        }
+        serde_wasm_bindgen::to_value(&results)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    // ── Phase 6: Incremental save ──────────────────────────────────────────
+
+    pub fn serialize_incremental(&mut self, original: &[u8]) -> Result<Vec<u8>, JsValue> {
+        // Full serialization for now; incremental save can be optimized later
+        let mut buf = Vec::new();
+        self.doc.save_to(&mut buf)
+            .map_err(|e| JsValue::from_str(&format!("save failed: {e}")))?;
+        Ok(buf)
+    }
 }
 
 #[wasm_bindgen]
