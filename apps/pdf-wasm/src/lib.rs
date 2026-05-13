@@ -796,20 +796,17 @@ impl PdfDocument {
 
         let pages = self.doc.get_pages();
         let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        let mut annots: Vec<lopdf::Object> = self.doc.get_object(page_id)
+            .ok()
+            .and_then(|o| o.as_dict().ok())
+            .and_then(|d| d.get(b"Annots").ok())
+            .and_then(|o| o.as_array().ok())
+            .map(|a| a.clone())
+            .unwrap_or_default();
+        annots.push(lopdf::Object::Reference((id.0, 0)));
+
         if let Ok(page_obj) = self.doc.get_object_mut(page_id) {
             if let Ok(dict) = page_obj.as_dict_mut() {
-                let mut annots = dict.get(b"Annots")
-                    .map(|o| match o {
-                        lopdf::Object::Array(a) => a.clone(),
-                        lopdf::Object::Reference(r) => {
-                            self.doc.get_object(*r).ok()
-                                .and_then(|o| o.as_array().ok().cloned())
-                                .unwrap_or_default()
-                        }
-                        _ => vec![],
-                    })
-                    .unwrap_or_default();
-                annots.push(lopdf::Object::Reference((id.0, 0)));
                 dict.set("Annots".as_bytes().to_vec(), lopdf::Object::Array(annots));
             }
         }
@@ -819,23 +816,22 @@ impl PdfDocument {
     pub fn remove_annotation(&mut self, page_num: u32, annot_obj_num: u32) -> Result<(), JsValue> {
         let pages = self.doc.get_pages();
         let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        let filtered: Vec<lopdf::Object> = self.doc.get_object(page_id)
+            .ok()
+            .and_then(|o| o.as_dict().ok())
+            .and_then(|d| d.get(b"Annots").ok())
+            .and_then(|o| o.as_array().ok())
+            .map(|a| {
+                a.iter()
+                    .filter(|o| !matches!(o, lopdf::Object::Reference((n, _)) if *n == annot_obj_num))
+                    .cloned()
+                    .collect()
+            })
+            .unwrap_or_default();
+
         if let Ok(page_obj) = self.doc.get_object_mut(page_id) {
             if let Ok(dict) = page_obj.as_dict_mut() {
-                if let Ok(annots) = dict.get(b"Annots") {
-                    let arr = match annots {
-                        lopdf::Object::Array(a) => a.clone(),
-                        lopdf::Object::Reference(r) => {
-                            self.doc.get_object(*r).ok()
-                                .and_then(|o| o.as_array().ok().cloned())
-                                .unwrap_or_default()
-                        }
-                        _ => vec![],
-                    };
-                    let filtered: Vec<_> = arr.into_iter()
-                        .filter(|o| !matches!(o, lopdf::Object::Reference((n, _)) if *n == annot_obj_num))
-                        .collect();
-                    dict.set("Annots".as_bytes().to_vec(), lopdf::Object::Array(filtered));
-                }
+                dict.set("Annots".as_bytes().to_vec(), lopdf::Object::Array(filtered));
             }
         }
         self.doc.objects.remove(&(annot_obj_num, 0));
@@ -879,15 +875,11 @@ impl PdfDocument {
     // ── Phase 4: Form fields ───────────────────────────────────────────────
 
     pub fn get_form_fields(&self) -> Result<JsValue, JsValue> {
-        let catalog_id = match self.doc.catalog() {
-            Ok(id) => id,
+        let catalog = match self.doc.catalog() {
+            Ok(c) => c,
             Err(_) => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
         };
-        let catalog = match self.doc.get_object(catalog_id) {
-            Ok(o) => o,
-            Err(_) => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
-        };
-        let acroform = match catalog.as_dict().ok().and_then(|d| d.get(b"AcroForm").ok()) {
+        let acroform = match catalog.get(b"AcroForm").ok() {
             Some(lopdf::Object::Reference(id)) => self.doc.get_object(*id).ok(),
             Some(other) => Some(other),
             None => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
@@ -985,9 +977,6 @@ impl PdfDocument {
         }
         // Rebuild page tree
         let kids: Vec<_> = page_ids.iter().map(|(_, id)| lopdf::Object::Reference(*id)).collect();
-        if let Ok(0) = self.doc.catalog().map(|id| id.0) {
-            // Could not find catalog
-        }
         if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
             if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
                 if let Ok(dict) = catalog.as_dict_mut() {
