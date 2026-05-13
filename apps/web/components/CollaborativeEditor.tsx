@@ -120,6 +120,7 @@ export default function CollaborativeEditor({
   const [showNavigationTools, setShowNavigationTools] = useState(false);
   const [commentDraft, setCommentDraft] = useState<{ visible: boolean; top: number; left: number; selectedText: string } | null>(null);
   const hasHydratedRef = useRef(false);
+  const serverHydratedRef = useRef(false);
   const documentQuery = useDocumentQuery(documentId);
 
   const version1Query = useQuery<DocumentModel>({
@@ -167,6 +168,17 @@ export default function CollaborativeEditor({
       }
     }, 1000)
   );
+
+  // Force server content into the editor once it loads, overwriting any stale
+  // IndexedDB Yjs state (which may contain old "HTML" node types pre-normalization).
+  useEffect(() => {
+    if (!editor || !documentQuery.data?.document_model || serverHydratedRef.current) return;
+    serverHydratedRef.current = true;
+    const normalized = normalizeDocumentModel(documentQuery.data.document_model, documentId);
+    const tiptap = documentModelToTiptap(normalized);
+    editor.commands.setContent(tiptap, false); // false = suppress onUpdate event
+    hasHydratedRef.current = false; // allow next change event to be treated as first edit
+  }, [editor, documentQuery.data, documentId]);
 
   useEffect(() => {
     const local = new IndexeddbPersistence(`olpdf-doc-${documentId}`, ydoc);

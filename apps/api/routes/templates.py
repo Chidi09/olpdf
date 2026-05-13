@@ -492,14 +492,22 @@ async def apply_template(
     title = "Untitled"
     document_model = None
 
-    # Try DB first
-    template = supabase.table("templates").select("*").eq("id", template_id).single().execute()
-    if template.data:
-        document_model = template.data.get("document_model")
-        title = f"New from {template.data['title']}"
-        supabase.table("templates").update({
-            "uses_count": template.data.get("uses_count", 0) + 1
-        }).eq("id", template_id).execute()
+    # Try DB first — use .limit(1) not .single() so 0 rows doesn't raise an error
+    try:
+        template_res = supabase.table("templates").select("*").eq("id", template_id).limit(1).execute()
+        template_data = template_res.data[0] if template_res.data else None
+    except Exception:
+        template_data = None
+
+    if template_data:
+        document_model = template_data.get("document_model")
+        title = f"New from {template_data['title']}"
+        try:
+            supabase.table("templates").update({
+                "uses_count": template_data.get("uses_count", 0) + 1
+            }).eq("id", template_id).execute()
+        except Exception:
+            pass
     else:
         # Fallback to built-in template
         fallback = _build_template_model(template_id)

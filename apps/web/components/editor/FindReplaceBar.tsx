@@ -46,7 +46,10 @@ export function FindReplaceBar({ model, onModelChange }: FindReplaceBarProps) {
       useRegex: store.useRegex,
     });
     store.setMatches(matches);
-  }, [model, store, store.matchCase, store.open, store.query, store.useRegex]);
+    // Intentionally exclude `store` itself — including the whole store object causes
+    // an infinite loop because setMatches triggers a re-render with a new store ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, store.open, store.query, store.matchCase, store.useRegex]);
 
   if (!store.open) return null;
 
