@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
@@ -16,6 +16,7 @@ import { ImportStatusToast } from "@/components/ui/ImportStatusToast";
 
 export default function EditorDocsPage() {
   const router = useRouter();
+  useEffect(() => { router.replace("/dashboard"); }, [router]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadProgress, setUploadProgress] = useState(0);

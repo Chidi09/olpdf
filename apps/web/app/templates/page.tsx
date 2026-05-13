@@ -44,6 +44,7 @@ const categoryMap = [
 export default function TemplatesPage() {
   const router = useRouter();
   const [isSearching, setIsSearching] = useState(false);
+  const [deployError, setDeployError] = useState<string | null>(null);
   const { activeCategory, searchQuery, applyingId, setActiveCategory, setSearchQuery, setApplyingId } = useTemplatesStore();
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function TemplatesPage() {
   const [deployLabel, setDeployLabel] = useState("");
   const applyTemplate = async (templateId: string) => {
     setApplyingId(templateId);
+    setDeployError(null);
     setDeployLabel("Creating document…");
     await new Promise((r) => setTimeout(r, 200));
     try {
@@ -93,24 +95,28 @@ export default function TemplatesPage() {
         body: JSON.stringify({}),
       });
 
-      if (!response.ok) throw new Error("Failed to apply template");
-      
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.detail || data?.message || `Server error ${response.status}`);
+      }
+
       setDeployLabel("Applying content…");
       await new Promise((r) => setTimeout(r, 300));
 
-      const data = await response.json();
       const targetDocumentId = data.document_id;
-      
+
       setDeployLabel("Opening editor…");
       await new Promise((r) => setTimeout(r, 200));
-      
+
       if (targetDocumentId) {
         router.push(`/editor/${targetDocumentId}`);
       } else {
         throw new Error("API did not return a document ID");
       }
     } catch (e) {
-      console.error("Template application failed:", e);
+      const msg = e instanceof Error ? e.message : "Template deploy failed";
+      setDeployError(msg);
+      setTimeout(() => setDeployError(null), 6000);
     } finally {
       setApplyingId(null);
     }
@@ -140,6 +146,13 @@ export default function TemplatesPage() {
     >
       <section className="space-y-6">
         <p className="text-sm text-[var(--text-secondary)]">Jumpstart document modeling with structural blueprints.</p>
+
+        {deployError && (
+          <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs text-red-300">
+            <ExclamationCircleIcon className="h-4 w-4 shrink-0" />
+            <span><span className="font-semibold">Deploy failed:</span> {deployError}</span>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           {categoryMap.map((cat) => (

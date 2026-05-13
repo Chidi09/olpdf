@@ -65,11 +65,11 @@ export default function BookInspector({
             </div>
             <div className="flex justify-between text-sm">
                 <span className="text-[var(--text-secondary)]">Word Count</span>
-                <span className="text-[var(--text-primary)] font-mono">{activeChapter.word_count.toLocaleString()}</span>
+                <span className="text-[var(--text-primary)] font-mono">{(activeChapter.word_count ?? 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
                 <span className="text-[var(--text-secondary)]">Read Time</span>
-                <span className="text-[var(--text-primary)]">~{Math.ceil(activeChapter.word_count / 200)} min</span>
+                <span className="text-[var(--text-primary)]">~{Math.ceil((activeChapter.word_count ?? 0) / 200)} min</span>
             </div>
           </div>
         </div>

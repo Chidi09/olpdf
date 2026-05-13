@@ -79,9 +79,10 @@ export default function ToolkitPage() {
   useEffect(() => {
     fetch("/api/bff/documents")
       .then((r) => (r.ok ? r.json() : []))
-      .then((rows: Array<{ id: string; title?: string }>) => {
-        setDocuments(rows || []);
-        if (!selectedDocumentId && rows?.length) setSelectedDocumentId(rows[0].id);
+      .then((raw: unknown) => {
+        const rows = Array.isArray(raw) ? raw as Array<{ id: string; title?: string }> : [];
+        setDocuments(rows);
+        if (!selectedDocumentId && rows.length) setSelectedDocumentId(rows[0].id);
       })
       .catch(() => setDocuments([]));
   }, [selectedDocumentId]);
