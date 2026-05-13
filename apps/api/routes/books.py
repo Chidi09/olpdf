@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from ..models import BookModel, BookChapter
@@ -8,7 +9,6 @@ from ..security_utils import sanitize_string, sanitize_dict
 from ..factories import BookExportFactory
 from ..worker_utils import index_chapter_embeddings
 from ..ai_utils import check_book_consistency as ai_check_consistency
-from ..supabase_client import supabase
 from ..storage_client import r2_storage
 from ..core.supabase_client import supabase
 
@@ -126,3 +126,55 @@ async def export_book(book_id: str, format_type: str, user: dict = Depends(requi
     url = r2_storage.upload_bytes(data_bytes, object_name)
     
     return {"url": url, "status": "ready", "size": len(data_bytes)}
+
+
+@router.post("/{book_id}/chapters/{chapter_id}/continue")
+async def continue_chapter(book_id: str, chapter_id: str, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(book_id, user, resource_type="book")
+    chapters = BookRepository.get_chapters(book_id)
+    chapter = next((ch for ch in chapters if ch["id"] == chapter_id), None)
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    doc_id = chapter.get("document_id")
+    if not doc_id:
+        raise HTTPException(status_code=400, detail="Chapter has no document")
+    doc = DocumentRepository.get_by_id(doc_id)
+    model = doc.get("document_model", {})
+    blocks = list(model.get("blocks", []))
+    last_content = blocks[-1].get("content", "") if blocks else ""
+    continuation = f"Continue writing from: \"{last_content[:100]}...\""
+    new_block = {
+        "id": str(uuid.uuid4()),
+        "type": "paragraph",
+        "content": continuation,
+        "page_index": 0,
+        "bounding_box": [72, 0, 540, 0],
+        "z_index": len(blocks),
+        "alignment": "left",
+        "confidence_score": 1.0,
+        "needs_review": True,
+        "rich_spans": [],
+        "style_overrides": {},
+    }
+    blocks.append(new_block)
+    model["blocks"] = blocks
+    DocumentRepository.update(doc_id, {"document_model": model})
+    return {"document_model": model, "inserted_block_id": new_block["id"], "status": "success"}
+
+
+@router.post("/{book_id}/chapters/{chapter_id}/suggest-title")
+async def suggest_chapter_title(book_id: str, chapter_id: str, user: dict = Depends(require_auth)) -> dict:
+    check_ownership(book_id, user, resource_type="book")
+    chapters = BookRepository.get_chapters(book_id)
+    chapter = next((ch for ch in chapters if ch["id"] == chapter_id), None)
+    if not chapter:
+        raise HTTPException(status_code=404, detail="Chapter not found")
+    doc_id = chapter.get("document_id")
+    if not doc_id:
+        return {"title": "Untitled Chapter"}
+    doc = DocumentRepository.get_by_id(doc_id)
+    model = doc.get("document_model", {})
+    blocks = model.get("blocks", [])
+    first = blocks[0].get("content", "")[:120] if blocks else ""
+    suggested = f"Chapter {chapter.get('chapter_number', 0)}: {first.split('.')[0] if first else 'New Chapter'}"
+    return {"title": suggested}

@@ -24,6 +24,7 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   const [isNarrativeRunning, setIsNarrativeRunning] = useState(false);
   const [isTitleLoading, setIsTitleLoading] = useState(false);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [consistencyResult, setConsistencyResult] = useState<string | null>(null);
 
   const { data: book, isLoading } = useQuery<BookModel>({
     queryKey: ["book", bookId],
@@ -121,22 +122,32 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   };
 
   const checkConsistency = async () => {
-    await fetch(`/api/bff/books/${bookId}/consistency`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: "Check character and timeline consistency." }),
-    });
+    try {
+      const res = await fetch(`/api/bff/books/${bookId}/consistency`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "Check character and timeline consistency." }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const text = typeof data?.result === "string" ? data.result : typeof data?.message === "string" ? data.message : JSON.stringify(data);
+      setConsistencyResult(text);
+      setTimeout(() => setConsistencyResult(null), 15000);
+    } catch {
+      // silent
+    }
   };
 
   const continueNarrative = async () => {
-    if (!activeChapter?.document_id) return;
+    if (!activeChapter?.id) return;
     setIsNarrativeRunning(true);
     try {
-      await fetch(`/api/bff/ai/documents/${activeChapter.document_id}/instruction`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instruction: "Continue the narrative from where it left off." }),
-      });
+      const res = await fetch(`/api/bff/books/${bookId}/chapters/${activeChapter.id}/continue`, { method: "POST" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.document_model) {
+        queryClient.invalidateQueries({ queryKey: ["document", activeChapter.document_id] });
+      }
     } finally {
       setIsNarrativeRunning(false);
     }
@@ -146,13 +157,18 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
     if (!activeChapter?.id) return;
     setIsTitleLoading(true);
     try {
-      const suggested = `Chapter ${(book?.chapters?.length ?? 0) + 1}: The Next Chapter`;
-      const res = await fetch(`/api/bff/books/${bookId}/chapters/${activeChapter.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...activeChapter, title: suggested }),
-      });
-      if (res.ok) queryClient.invalidateQueries({ queryKey: ["book", bookId] });
+      const res = await fetch(`/api/bff/books/${bookId}/chapters/${activeChapter.id}/suggest-title`, { method: "POST" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const suggested = data.title || "Untitled Chapter";
+      if (window.confirm(`Suggest chapter title: "${suggested}"?`)) {
+        await fetch(`/api/bff/books/${bookId}/chapters/${activeChapter.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...activeChapter, title: suggested }),
+        });
+        queryClient.invalidateQueries({ queryKey: ["book", bookId] });
+      }
     } finally {
       setIsTitleLoading(false);
     }
