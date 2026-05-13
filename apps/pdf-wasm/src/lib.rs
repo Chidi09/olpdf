@@ -220,7 +220,6 @@ fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str) -> Option<
     Some(PageFontInfo { unicode_map, widths, first_char, default_width })
 }
 
-static EMPTY: std::collections::HashMap<u16, char> = std::collections::HashMap::new();
 
 fn decode_with_map(bytes: &[u8], unicode_map: &HashMap<u16, char>) -> String {
     if bytes.len() >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
@@ -499,7 +498,9 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
             "T*" if in_bt => { flush!(); set_pos!(tlm_e, tlm_f - leading); }
             "Tj" if in_bt => {
                 if let Some(Object::String(b, _)) = op.operands.first() {
-                    let decoded = decode_with_map(b, match font_info.as_ref() { Some(f) => &f.unicode_map, None => &EMPTY });
+                    let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
+                    let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
+                    let decoded = decode_with_map(b, _uref);
                     if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
                     cur_text.push_str(&decoded);
                     cur_seg_text.push_str(&decoded);
@@ -511,7 +512,9 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     for item in items {
                         match item {
                             Object::String(b, _) => {
-                                let decoded = decode_with_map(b, match font_info.as_ref() { Some(f) => &f.unicode_map, None => &EMPTY });
+                                let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
+                                let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
+                                let decoded = decode_with_map(b, _uref);
                                 cur_text.push_str(&decoded);
                                 cur_seg_text.push_str(&decoded);
                             }
@@ -526,7 +529,9 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                 flush!();
                 set_pos!(tlm_e, tlm_f - leading);
                 if let Some(Object::String(b, _)) = op.operands.first() {
-                    let decoded = decode_with_map(b, match font_info.as_ref() { Some(f) => &f.unicode_map, None => &EMPTY });
+                    let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
+                    let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
+                    let decoded = decode_with_map(b, _uref);
                     cur_text.push_str(&decoded);
                     cur_seg_text.push_str(&decoded);
                 }
@@ -536,7 +541,9 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     flush!();
                     set_pos!(tlm_e, tlm_f - leading);
                     if let Object::String(b, _) = &op.operands[2] {
-                        let decoded = decode_with_map(b, match font_info.as_ref() { Some(f) => &f.unicode_map, None => &EMPTY });
+                        let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
+                        let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
+                        let decoded = decode_with_map(b, _uref);
                         cur_text.push_str(&decoded);
                         cur_seg_text.push_str(&decoded);
                     }
