@@ -29,6 +29,7 @@ export function normalizeWasmResult(result: WasmParseResult, documentId: string,
     color: block.font_meta?.color,
     zIndex: block.z_index,
     sourceRef: block.source_ref,
+    rich_spans: block.rich_spans,
   }));
 
   const pages = result.page_dimensions.map((p) => ({

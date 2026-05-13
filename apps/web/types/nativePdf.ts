@@ -3,6 +3,15 @@ export type PdfNativeObjectType = "text" | "image" | "path" | "shape" | "annotat
 /** 4-element tuple: [left, top, width, height] in PDF coordinate space */
 export type PdfRect = [number, number, number, number];
 
+export type WasmRichSpan = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  font_family?: string;
+  font_size?: number;
+  color?: string;
+};
+
 export type PdfNativeObject = {
   id: string;
   pageIndex: number;
@@ -14,6 +23,7 @@ export type PdfNativeObject = {
   color?: string;
   zIndex?: number;
   sourceRef?: string;
+  rich_spans?: WasmRichSpan[];
 };
 
 export type PdfEditOperationType = "replace_text" | "move_object" | "resize_object" | "delete_object" | "insert_text" | "insert_shape";

@@ -54,13 +54,21 @@ export function usePdfWasm() {
   }, []);
 
   const send = useCallback((arrayBuffer: ArrayBuffer, type?: string): Promise<unknown> => {
+    const TIMEOUT_MS = 10_000;
     return new Promise<unknown>((resolve, reject) => {
       if (!workerRef.current) {
         reject(new Error("PDF WASM worker not ready"));
         return;
       }
       const id = crypto.randomUUID();
-      pending.current.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        pending.current.delete(id);
+        reject(new Error("PDF WASM worker timed out after 10s"));
+      }, TIMEOUT_MS);
+      pending.current.set(id, {
+        resolve: (r) => { clearTimeout(timer); resolve(r); },
+        reject: (e) => { clearTimeout(timer); reject(e); },
+      });
       const msg: Record<string, unknown> = { id, buffer: arrayBuffer };
       if (type) msg.type = type;
       workerRef.current.postMessage(msg, [arrayBuffer]);

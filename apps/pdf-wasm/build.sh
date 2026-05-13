@@ -10,6 +10,11 @@ echo "→ Building pdf-wasm (release)..."
 cd "$SCRIPT_DIR"
 wasm-pack build --target web --out-dir pkg --release
 
+echo "→ Optimizing with wasm-opt..."
+wasm-opt -Oz --strip-debug \
+  pkg/pdf_wasm_bg.wasm \
+  -o pkg/pdf_wasm_bg.wasm 2>/dev/null || echo "(wasm-opt not installed, skipping)"
+
 echo "→ Copying to $WEB_PUBLIC..."
 mkdir -p "$WEB_PUBLIC"
 cp pkg/pdf_wasm_bg.wasm "$WEB_PUBLIC/pdf_wasm_bg.wasm"
