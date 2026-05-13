@@ -9,6 +9,7 @@ from ..factories import ExportEngineFactory
 from ..export_utils import run_preflight
 from ..core.storage_client import r2_storage
 from ..worker_utils import route_pdf_import
+from ..engine.normalizer import normalize_document_model as normalize_model
 from ..core.supabase_client import supabase
 from ..workers.tasks.export_tasks import EXPORT_SERVICE_URL, WORKER_SECRET
 
@@ -85,10 +86,12 @@ async def get_import_status(job_id: str, user: dict = Depends(require_auth)) -> 
     }
 
 @router.get("")
-async def list_documents(user: dict = Depends(require_auth)) -> List[dict]:
-    return DocumentRepository.list_for_user(user["sub"])
+async def list_documents(page: int = 0, limit: int = 50, user: dict = Depends(require_auth)) -> dict:
+    docs = DocumentRepository.list_for_user(user["sub"], offset=page * limit, limit=limit)
+    return {"documents": docs, "page": page, "limit": limit}
 
-from ..repositories import DocumentRepository, AuditLogRepository
+from ..repositories.document_repo import DocumentRepository as DocumentRepo
+from ..repositories import AuditLogRepository
 
 @router.post("/create")
 @limiter.limit("10/minute")
@@ -115,9 +118,12 @@ async def create_document(request: Request, doc: DocumentModel, user: dict = Dep
 @router.get("/{doc_id}")
 async def get_document(doc_id: str, user: dict = Depends(require_auth)) -> dict:
     doc = check_ownership(doc_id, user)
+    model = doc.get("document_model", {})
+    if isinstance(model, dict):
+        model = normalize_model(model)
     return {
         "id": doc_id, 
-        "document_model": doc["document_model"],
+        "document_model": model,
         "workspace_id": str(doc.get("workspace_id")) if doc.get("workspace_id") else None
     }
 

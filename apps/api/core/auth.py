@@ -117,9 +117,6 @@ def check_ownership(
     if not resource:
         raise HTTPException(status_code=404, detail=f"{resource_type.capitalize()} not found")
 
-    if user.get("sub") == "dev-user":
-        return resource
-
     owner_id = resource.get("user_id")
     if not owner_id and resource.get("document_model") and isinstance(resource.get("document_model"), dict):
         owner_id = resource["document_model"].get("owner_id")

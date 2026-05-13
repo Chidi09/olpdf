@@ -13,13 +13,15 @@ class DocumentRepository:
         )
 
     @staticmethod
-    def list_for_user(user_id: str) -> List[Dict[str, Any]]:
+    def list_for_user(user_id: str, offset: int = 0, limit: int = 50) -> List[Dict[str, Any]]:
         try:
             return (
                 supabase.table("documents")
                 .select("id, title, status, created_at, updated_at, document_model")
                 .or_(f"user_id.eq.{user_id},document_model->>owner_id.eq.{user_id}")
+                .neq("status", "deleted")
                 .order("updated_at", desc=True)
+                .range(offset, offset + limit - 1)
                 .execute()
                 .data
             )
@@ -49,6 +51,10 @@ class DocumentRepository:
 
     @staticmethod
     def delete(doc_id: str) -> None:
+        DocumentRepository.update(doc_id, {"status": "deleted"})
+
+    @staticmethod
+    def hard_delete(doc_id: str) -> None:
         supabase.table("documents").delete().eq("id", doc_id).execute()
 
     @staticmethod
@@ -70,5 +76,5 @@ class DocumentRepository:
 
 
 def _get_doc_by_id(doc_id: str) -> Optional[Dict[str, Any]]:
-    res = supabase.table("documents").select("*").eq("id", doc_id).single().execute()
+    res = supabase.table("documents").select("*").eq("id", doc_id).neq("status", "deleted").single().execute()
     return res.data
