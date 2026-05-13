@@ -88,9 +88,11 @@ type DocumentModel struct {
 }
 
 type ExportRequest struct {
-	DocumentModel DocumentModel              `json:"document_model"`
-	ColorSpace    string                     `json:"color_space"`
-	FontMetrics   map[string]map[string]float64 `json:"font_metrics,omitempty"`
+	DocumentModel     DocumentModel              `json:"document_model"`
+	ColorSpace        string                     `json:"color_space"`
+	FontMetrics       map[string]map[string]float64 `json:"font_metrics,omitempty"`
+	Operations        []EditOperation            `json:"operations,omitempty"`
+	OriginalObjectKey string                     `json:"original_object_key,omitempty"`
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -742,7 +744,7 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	model, _, _, err := parseRequest(r)
+	model, _, _, _, err := parseRequest(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -783,20 +785,20 @@ func authorized(r *http.Request) bool {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-func parseRequest(r *http.Request) (DocumentModel, string, map[string]map[string]float64, error) {
+func parseRequest(r *http.Request) (DocumentModel, string, map[string]map[string]float64, []EditOperation, error) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 32<<20)) // 32 MB limit
 	if err != nil {
-		return DocumentModel{}, "", nil, fmt.Errorf("read body: %w", err)
+		return DocumentModel{}, "", nil, nil, fmt.Errorf("read body: %w", err)
 	}
 	var req ExportRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		return DocumentModel{}, "", nil, fmt.Errorf("parse JSON: %w", err)
+		return DocumentModel{}, "", nil, nil, fmt.Errorf("parse JSON: %w", err)
 	}
 	cs := req.ColorSpace
 	if cs == "" {
 		cs = "rgb"
 	}
-	return req.DocumentModel, cs, req.FontMetrics, nil
+	return req.DocumentModel, cs, req.FontMetrics, req.Operations, nil
 }
 
 func writeError(w http.ResponseWriter, code int, msg string) {
@@ -816,11 +818,13 @@ func makePDFHandler(mode string) http.HandlerFunc {
 			return
 		}
 
-		model, _, metrics, err := parseRequest(r)
+		model, _, metrics, ops, err := parseRequest(r)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
+
+		applyOperations(&model, ops)
 
 		var pdfBytes []byte
 		switch mode {
