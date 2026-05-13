@@ -27,6 +27,7 @@ import { useAiTools } from "@/hooks/useAiTools";
 import { useEditorToolbarActions } from "@/hooks/useEditorToolbarActions";
 import { useModelSyncAndReflow } from "@/hooks/useModelSyncAndReflow";
 import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TableData } from "@/types/editor";
+import { usePdfEditOperationsStore } from "@/store/usePdfEditOperationsStore";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -238,6 +239,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
   const { activeTool, setActiveTool, selectedBlock, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode, formMode, toggleFormMode } = useFidelityCanvasStore();
+  const opStore = usePdfEditOperationsStore();
   const suggestModeRef = useRef(suggestMode);
   const { matches, currentMatchIndex } = useFindReplaceStore();
   const { ydocRef, providerRef } = useCollaboration(documentId, model);
@@ -668,6 +670,31 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
       } else {
         const syncedModel = syncCanvasToModel(pageIndex, fcanvas);
         if (syncedModel) currentModelRef.current = syncedModel;
+        if (e.target && e.target.type === "textbox") {
+          const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
+          const beforeBlock = blockId ? (model.blocks ?? []).find((b) => b.id === blockId) : null;
+          if (blockId && beforeBlock) {
+            const tb = e.target as Textbox;
+            const beforeText = beforeBlock.content ?? "";
+            const afterText = tb.text ?? "";
+            if (beforeText !== afterText) {
+              opStore.applyOperation({
+                id: crypto.randomUUID(),
+                type: "replace_text",
+                pageIndex,
+                targetObjectId: blockId,
+                before: { text: beforeText, bbox: beforeBlock.bounding_box },
+                after: { text: afterText, bbox: [
+                  (tb.left ?? 0) / scale,
+                  (tb.top ?? 0) / scale,
+                  ((tb.left ?? 0) + (tb.width ?? 0) * (tb.scaleX ?? 1)) / scale,
+                  ((tb.top ?? 0) + (tb.height ?? 0) * (tb.scaleY ?? 1)) / scale,
+                ]},
+                createdAt: new Date().toISOString(),
+              });
+            }
+          }
+        }
       }
       // In suggest mode changes are captured, not committed — skip Yjs and reflow.
       if (suggestModeRef.current) return;
