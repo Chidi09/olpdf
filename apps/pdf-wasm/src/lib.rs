@@ -261,7 +261,7 @@ fn text_width(text: &str, info: &Option<PageFontInfo>, font_size: f64) -> f64 {
 
 fn obj_f64(obj: &Object) -> f64 {
     match obj {
-        Object::lopdf::Object::Real(f) => *f as f64,
+        Object::Real(f) => *f as f64,
         Object::Integer(i) => *i as f64,
         _ => 0.0,
     }
@@ -616,7 +616,7 @@ pub struct PdfDocument {
 fn dict_entries(dict: &lopdf::Dictionary) -> serde_json::Value {
     let mut map = serde_json::Map::new();
     for (k, v) in dict.iter() {
-        let key = StdString::from_utf8_lossy(k).to_string();
+        let key = String::from_utf8_lossy(k).to_string();
         map.insert(key, object_to_json_value(v));
     }
     serde_json::Value::Object(map)
@@ -628,8 +628,8 @@ fn object_to_json_value(obj: &lopdf::Object) -> serde_json::Value {
         lopdf::Object::Boolean(b) => serde_json::json!({"type":"bool","value":b}),
         lopdf::Object::Integer(n) => serde_json::json!({"type":"integer","value":n}),
         lopdf::Object::Real(f) => serde_json::json!({"type":"real","value":f}),
-        lopdf::Object::Name(n) => serde_json::json!({"type":"name","value":StdString::from_utf8_lossy(n)}),
-        lopdf::Object::String(bytes, _) => serde_json::json!({"type":"string","value":StdString::from_utf8_lossy(bytes)}),
+        lopdf::Object::Name(n) => serde_json::json!({"type":"name","value":String::from_utf8_lossy(n)}),
+        lopdf::Object::String(bytes, _) => serde_json::json!({"type":"string","value":String::from_utf8_lossy(bytes)}),
         lopdf::Object::Array(items) => {
             let arr: Vec<serde_json::Value> = items.iter().map(object_to_json_value).collect();
             serde_json::json!({"type":"array","items":arr})
