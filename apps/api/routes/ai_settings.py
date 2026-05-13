@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from ..auth_utils import require_auth
 from ..core.auth import ensure_profile_row
 from ..core.supabase_client import supabase
+from ..core.cache import cache_get, cache_set, cache_del
+from ..core.cache_keys import ai_settings as ai_settings_key
 from ..services.ai_providers import PROVIDER_CONFIGS, encrypt_key
 
 router = APIRouter(prefix="/api/ai-settings", tags=["ai-settings"])
@@ -19,6 +21,11 @@ class AiSettingsPayload(BaseModel):
 @router.get("")
 async def get_ai_settings(user: dict = Depends(require_auth)):
     user_id = user["sub"]
+    key = ai_settings_key(user_id)
+    cached = await cache_get(key)
+    if cached:
+        cached["providers"] = PROVIDER_CONFIGS
+        return cached
     try:
         row = (
             supabase.table("user_ai_settings")
@@ -30,12 +37,14 @@ async def get_ai_settings(user: dict = Depends(require_auth)):
         data = row.data or {}
     except Exception:
         data = {}
-    return {
+    result = {
         "provider": data.get("provider", "gemini_free"),
         "model": data.get("model"),
         "key_set": bool(data.get("encrypted_api_key")),
         "providers": PROVIDER_CONFIGS,
     }
+    await cache_set(key, result, ttl=300)
+    return result
 
 
 @router.put("")
@@ -85,6 +94,7 @@ async def save_ai_settings(payload: AiSettingsPayload, user: dict = Depends(requ
                 raise HTTPException(status_code=500, detail=f"Failed to save AI settings: {inner_exc}")
         else:
             raise HTTPException(status_code=500, detail=f"Failed to save AI settings: {exc}")
+    await cache_del(ai_settings_key(user_id))
     return {"status": "saved", "provider": payload.provider}
 
 
@@ -109,4 +119,5 @@ async def clear_api_key(user: dict = Depends(require_auth)):
                 return {"status": "cleared", "warning": "Cleared in memory"}
         else:
             raise
+    await cache_del(ai_settings_key(user_id))
     return {"status": "cleared"}

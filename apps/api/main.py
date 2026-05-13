@@ -255,6 +255,29 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(pdf_edits.router)
 
+    @app.on_event("startup")
+    async def warm_redis():
+        try:
+            from .core.cache import get_redis
+            r = await get_redis()
+            if r:
+                await r.ping()
+                logger.info("Redis connected — caching enabled")
+            else:
+                logger.info("Redis not configured — caching disabled")
+        except Exception as e:
+            logger.warning("Redis unavailable — caching disabled: %s", e)
+
+    @app.on_event("shutdown")
+    async def close_redis():
+        try:
+            from .core.cache import get_redis
+            r = await get_redis()
+            if r:
+                await r.aclose()
+        except Exception:
+            pass
+
     return app
 
 app = create_app()
