@@ -5,8 +5,6 @@ export function init_hooks() {
 }
 
 /**
- * Parse a PDF byte slice and return a DocumentModel-compatible JSON value.
- * Runs entirely in the browser — no network, no server.
  * @param {Uint8Array} data
  * @returns {any}
  */
