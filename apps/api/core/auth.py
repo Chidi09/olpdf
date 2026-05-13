@@ -22,8 +22,6 @@ def verify_jwt_token(token: str) -> dict:
 
     jwt_secret = os.environ.get("API_JWT_SECRET") or os.environ.get("SUPABASE_JWT_SECRET")
     if not jwt_secret:
-        if os.environ.get("OLPDF_DEV_MODE") == "true":
-            return {"sub": "dev-user", "email": "dev@olpdf.io"}
         raise HTTPException(status_code=500, detail="SUPABASE_JWT_SECRET not configured")
 
     try:
@@ -67,9 +65,6 @@ async def get_current_user(
             "api_key_id": str(key_data["id"]),
             "auth_type": "api_key",
         }
-
-    if os.environ.get("OLPDF_DEV_MODE") == "true":
-        return {"sub": "dev-user", "email": "dev@olpdf.io", "auth_type": "dev"}
 
     raise HTTPException(status_code=401, detail="Authentication required")
 

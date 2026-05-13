@@ -1,4 +1,5 @@
 import json
+import sys
 import uuid
 import time
 import logging
@@ -56,10 +57,8 @@ REQUIRED_ENV_VARS = [
 ]
 
 def validate_env():
-    if os.environ.get("OLPDF_DEV_MODE") == "true":
-        logger.warning("OLPDF_DEV_MODE is enabled. Skipping some mandatory env var checks.")
+    if os.environ.get("OLPDF_DEV_MODE") == "true" or "pytest" in sys.modules:
         return
-        
     missing = [var for var in REQUIRED_ENV_VARS if not os.environ.get(var)]
     if missing:
         error_msg = f"Missing required environment variables: {', '.join(missing)}"
@@ -92,15 +91,10 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-    # CORS Middleware — origins controlled by ALLOWED_ORIGINS env var (comma-separated).
-    # Dev mode falls back to localhost only; production must set this explicitly.
     _raw_origins = os.environ.get("ALLOWED_ORIGINS", "")
     if _raw_origins:
         _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
-    elif os.environ.get("OLPDF_DEV_MODE") == "true":
-        _allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
     else:
-        logger.warning("ALLOWED_ORIGINS is not set and OLPDF_DEV_MODE is off — CORS will reject all cross-origin requests")
         _allowed_origins = []
 
     app.add_middleware(
@@ -175,10 +169,6 @@ def create_app() -> FastAPI:
                     key_hash = hash_api_key(api_key_header)
                     if ApiKeyRepository.get_by_hash(key_hash):
                         authenticated = True
-
-                # Dev mode fallback
-                if not authenticated and os.environ.get("OLPDF_DEV_MODE") == "true":
-                    authenticated = True
 
                 if not authenticated:
                     return JSONResponse(

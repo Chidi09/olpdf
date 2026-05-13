@@ -23,7 +23,7 @@ from ..export_utils import (
     protect_pdf,
     extract_images_from_pdf,
 )
-from ..storage_client import r2_storage
+from ..core.storage_client import r2_storage
 from ..repositories import DocumentRepository
 from ..repositories import AuditLogRepository
 

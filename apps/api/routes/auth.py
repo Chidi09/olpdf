@@ -271,10 +271,7 @@ async def magic_link_start(payload: MagicStartInput):
     _save_magic_token(email, token)
     await _send_magic_link_email(email, payload.callbackURL or "/dashboard", token)
 
-    response = {"ok": True}
-    if os.environ.get("OLPDF_DEV_MODE") == "true":
-        response["debugLink"] = f"{payload.callbackURL or '/dashboard'}?magicToken={token}"
-    return response
+    return {"ok": True}
 
 
 @router.post("/magic-link/verify")

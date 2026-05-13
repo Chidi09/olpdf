@@ -4,7 +4,7 @@ from ..auth_utils import require_auth, check_ownership, require_scopes
 from ..repositories import DocumentRepository
 from ..repositories import AuditLogRepository
 from ..export_utils import detect_form_fields, fill_form_fields
-from ..storage_client import r2_storage
+from ..core.storage_client import r2_storage
 from ..webhook_utils import dispatch_webhook
 import asyncio
 

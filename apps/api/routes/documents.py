@@ -7,7 +7,7 @@ from ..core.auth import ensure_profile_row
 from ..security_utils import sanitize_document_model
 from ..factories import ExportEngineFactory
 from ..export_utils import run_preflight
-from ..storage_client import r2_storage
+from ..core.storage_client import r2_storage
 from ..worker_utils import route_pdf_import
 from ..core.supabase_client import supabase
 from ..workers.tasks.export_tasks import EXPORT_SERVICE_URL, WORKER_SECRET

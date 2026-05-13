@@ -9,7 +9,7 @@ from ..security_utils import sanitize_string, sanitize_dict
 from ..factories import BookExportFactory
 from ..worker_utils import index_chapter_embeddings
 from ..ai_utils import check_book_consistency as ai_check_consistency
-from ..storage_client import r2_storage
+from ..core.storage_client import r2_storage
 from ..core.supabase_client import supabase
 
 router = APIRouter(prefix="/api/books", tags=["books"])
