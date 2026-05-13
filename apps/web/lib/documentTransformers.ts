@@ -93,6 +93,7 @@ function nodeTypeToBlockType(node: TiptapNode): BlockTypeValue {
 }
 
 function blockTypeToNodeType(type: string): TiptapNode {
+  if (type === "heading") return { type: "heading", attrs: { level: 1 }, content: [] };
   if (type === "heading1") return { type: "heading", attrs: { level: 1 }, content: [] };
   if (type === "heading2") return { type: "heading", attrs: { level: 2 }, content: [] };
   if (type === "heading3") return { type: "heading", attrs: { level: 3 }, content: [] };
@@ -147,13 +148,18 @@ export function tiptapToDocumentModel(tiptapDoc: unknown, documentId: string): E
 export function documentModelToTiptap(model: EditorDocumentModel): TiptapDoc {
   const content = (model.blocks || []).map((block) => {
     const node = blockTypeToNodeType(block.type);
+    const rawContent = block.content as unknown;
+    const text = String(
+      rawContent && typeof rawContent === "object" && "text" in rawContent
+        ? (rawContent as { text?: unknown }).text || ""
+        : rawContent || "",
+    );
 
     if (node.type === "horizontalRule") {
       return { ...node, attrs: { id: block.id, type: block.type } };
     }
 
     if (node.type === "bulletList") {
-      const text = block.content || "";
       return {
         ...node,
         attrs: { id: block.id, type: block.type },
@@ -169,7 +175,7 @@ export function documentModelToTiptap(model: EditorDocumentModel): TiptapDoc {
     return {
       ...node,
       attrs: { ...(node.attrs || {}), id: block.id, type: block.type },
-      content: block.content ? [{ type: "text", text: block.content }] : [],
+      content: text ? [{ type: "text", text }] : [],
     };
   });
 

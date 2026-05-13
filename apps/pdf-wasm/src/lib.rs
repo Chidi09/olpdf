@@ -6,7 +6,7 @@
 //! exact font metadata, color, and column layout.
 
 use std::collections::HashMap;
-use lopdf::{content::Content, Document, Object};
+use lopdf::{Document, Object};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -298,11 +298,7 @@ fn get_page_size(doc: &Document, page_id: (u32, u16)) -> (f64, f64) {
 // ── Content stream parser ─────────────────────────────────────────────────────
 
 fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_height: f64, page_width: f64) -> Vec<WasmBlock> {
-    let bytes = match doc.get_and_decode_page_content(page_id) {
-        Ok(b) => b,
-        Err(_) => return vec![],
-    };
-    let content = match Content::decode(&bytes) {
+    let content = match doc.get_and_decode_page_content(page_id) {
         Ok(c) => c,
         Err(_) => return vec![],
     };

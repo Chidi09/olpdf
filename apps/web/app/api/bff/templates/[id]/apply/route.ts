@@ -12,11 +12,11 @@ export async function POST(request: Request, { params }: Params) {
     const wsBody = await wsRes.json().catch(() => [] as Array<{ id: string }>);
     workspaceId = Array.isArray(wsBody) && wsBody[0]?.id ? String(wsBody[0].id) : "";
   }
-  if (!workspaceId) {
-    return Response.json({ error: "workspace_not_found" }, { status: 400 });
-  }
+  const path = workspaceId
+    ? `/templates/${id}/apply?workspace_id=${encodeURIComponent(workspaceId)}`
+    : `/templates/${id}/apply`;
 
-  return forwardJson(`/templates/${id}/apply?workspace_id=${encodeURIComponent(workspaceId)}`, {
+  return forwardJson(path, {
     method: "POST",
   });
 }

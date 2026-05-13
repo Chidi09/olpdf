@@ -22,7 +22,8 @@ def test_toolkit_compress_downloads_document_and_uploads_result(mock_get, mock_r
     }
     mock_r2.download_bytes.return_value = b"%PDF-1.7\noriginal"
     mock_compress.return_value = b"%PDF-1.7\ncompressed"
-    mock_r2.upload_bytes.return_value = "https://storage.example/doc-123_compressed.pdf"
+    mock_r2.upload_bytes.return_value = "https://storage.example/private/doc-123_compressed.pdf"
+    mock_r2.generate_presigned_url.return_value = "https://storage.example/signed/doc-123_compressed.pdf"
 
     response = client.post(
         "/api/pdf/compress?doc_id=doc-123",
@@ -30,6 +31,7 @@ def test_toolkit_compress_downloads_document_and_uploads_result(mock_get, mock_r
     )
 
     assert response.status_code == 200
-    assert response.json()["url"] == "https://storage.example/doc-123_compressed.pdf"
+    assert response.json()["url"] == "https://storage.example/signed/doc-123_compressed.pdf"
     mock_r2.download_bytes.assert_called_once_with("documents/doc-123.pdf")
     mock_r2.upload_bytes.assert_called_once()
+    mock_r2.generate_presigned_url.assert_called_once_with("toolkit/doc-123_compressed.pdf", expiration=86400)

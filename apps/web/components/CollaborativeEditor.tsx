@@ -443,59 +443,6 @@ export default function CollaborativeEditor({
         </aside>
 
         <main className="min-w-0 flex-1 flex flex-col relative overflow-hidden bg-[var(--bg-base)]">
-            <header className="h-12 shrink-0 border-b border-[var(--border-subtle)] bg-[var(--bg-glass)] backdrop-blur-md flex items-center justify-between px-4 z-10">
-                <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium">{hydratedModel.meta.title}</span>
-                    <div className="flex items-center gap-2">
-                        {saveMutation.isPending ? (
-                          <span className="text-[10px] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-0.5 rounded-full font-mono animate-pulse">SAVING...</span>
-                        ) : isDirty ? (
-                          <span className="text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full font-mono">UNSAVED</span>
-                        ) : (
-                          <span className="text-[10px] text-[var(--text-tertiary)] font-mono flex items-center gap-1.5">
-                            <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                            SAVED
-                          </span>
-                        )}
-                    </div>
-                    {isOffline && <span className="text-[10px] bg-[var(--status-review)]/20 text-[var(--status-review)] px-2 py-0.5 rounded-full font-mono">OFFLINE</span>}
-                    {saveError && <span title={saveError} className="text-[10px] bg-[var(--status-error)]/20 text-[var(--status-error)] px-2 py-0.5 rounded-full font-mono">SAVE FAILED</span>}
-                    <button 
-                      onClick={handleSaveVersion}
-                      className="text-xs bg-[var(--accent)] text-[var(--text-on-accent)] px-3 py-1 rounded hover:opacity-90 transition-opacity ml-2"
-                    >
-                      Save Version
-                    </button>
-                </div>
-                <div className="flex items-center gap-3">
-                   <button
-                     onClick={() => setShowNavigationTools((show) => !show)}
-                     className={`rounded border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                       showNavigationTools
-                         ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                         : "border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-                     }`}
-                   >
-                     Pages
-                   </button>
-                   {connectedUsers.slice(0, 2).map((user, index) => (
-                     <div
-                       key={index}
-                       className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                       style={{ backgroundColor: user.color, color: "var(--text-on-accent)" }}
-                       title={user.name}
-                     >
-                       {user.name.charAt(0)}
-                     </div>
-                   ))}
-                   {connectedUsers.length > 2 && (
-                     <div className="w-8 h-8 rounded-full bg-[var(--bg-glass)] text-[var(--text-secondary)] flex items-center justify-center text-xs font-bold border border-[var(--bg-glass-border)]" title={`${connectedUsers.length - 2} more users`}>
-                       +{connectedUsers.length - 2}
-                     </div>
-                   )}
-                </div>
-            </header>
-
             <div className="min-h-0 flex-1 overflow-auto p-4 editor-canvas-container scrollbar-hide md:p-8 xl:p-10">
                 <div className="mx-auto min-w-[760px] max-w-[850px] paper-sheet min-h-[1100px] rounded-sm relative group transition-all duration-500">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

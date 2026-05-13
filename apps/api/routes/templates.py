@@ -4,6 +4,7 @@ from ..core.supabase_client import get_supabase
 from ..core.auth import get_current_user
 from ..models import TemplateResponse
 from ..models.requests import PublishTemplatePayload
+from ..repositories import DocumentRepository
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -413,6 +414,26 @@ def _build_template_model(template_id: str) -> Optional[dict]:
         "styles": {"font": "Inter", "body_size": 11, "heading_font": "Inter", "primary_color": "#000000"},
     }
 
+
+def _normalize_template_model(model: dict) -> dict:
+    normalized = {**model, "blocks": []}
+    for block in model.get("blocks", []):
+        next_block = {**block}
+        content = next_block.get("content")
+        if isinstance(content, dict):
+            next_block["content"] = str(content.get("text") or "")
+            level = content.get("level")
+            if next_block.get("type") == "heading":
+                next_block["type"] = f"heading{level}" if level in (1, 2, 3) else "heading1"
+        elif content is None:
+            next_block["content"] = ""
+        else:
+            next_block["content"] = str(content)
+        normalized["blocks"].append(next_block)
+    normalized.setdefault("page_dimensions", [])
+    normalized.setdefault("styles", {})
+    return normalized
+
 @router.get("/{template_id}/preview")
 async def preview_template(template_id: str):
     fallback = next((t for t in FALLBACK_TEMPLATES if t["id"] == template_id), None)
@@ -434,7 +455,7 @@ async def preview_template(template_id: str):
 @router.post("/{template_id}/apply")
 async def apply_template(
     template_id: str,
-    workspace_id: str,
+    workspace_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     supabase = get_supabase()
@@ -464,14 +485,10 @@ async def apply_template(
     if not document_model:
         raise HTTPException(status_code=500, detail="Template has no document model")
 
-    new_doc = supabase.table("documents").insert({
-        "workspace_id": workspace_id,
-        "user_id": user_id,
-        "document_model": document_model,
-        "title": title,
-    }).execute()
+    document_model = _normalize_template_model(document_model)
+    new_doc = DocumentRepository.create(title, document_model, user_id=user_id, workspace_id=workspace_id)
 
-    if not new_doc.data:
+    if not new_doc:
         raise HTTPException(status_code=500, detail="Failed to create document from template")
 
-    return {"document_id": new_doc.data[0]["id"]}
+    return {"document_id": new_doc["id"]}

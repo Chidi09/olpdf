@@ -181,7 +181,13 @@ export default function SettingsPage() {
               <div className="grid flex-1 gap-4 p-5 sm:grid-cols-1">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 overflow-hidden rounded-full border border-white/20">
-                    <img src={editorProfile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                    {editorProfile.avatarUrl ? (
+                      <img src={editorProfile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-white/10 text-xs font-semibold uppercase text-white/70">
+                        {editorProfile.alias.slice(0, 2)}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-[var(--text-primary)]">@{editorProfile.alias}</p>

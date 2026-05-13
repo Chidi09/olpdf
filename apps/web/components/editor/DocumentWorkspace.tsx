@@ -64,6 +64,28 @@ interface DocumentWorkspaceProps {
   documentId: string;
 }
 
+function normalizeModelForEditor(model: DocumentModel, documentId: string): DocumentModel {
+  return {
+    ...model,
+    id: model.id || documentId,
+    blocks: (model.blocks || []).map((block) => {
+      const content = block.content as unknown;
+      if (content && typeof content === "object" && "text" in content) {
+        const textContent = content as { text?: unknown; level?: unknown };
+        const level = Number(textContent.level || 1);
+        return {
+          ...block,
+          type: String(block.type) === "heading" ? (`heading${Math.min(Math.max(level, 1), 3)}` as DocumentBlock["type"]) : block.type,
+          content: String(textContent.text || ""),
+        };
+      }
+      return { ...block, content: typeof content === "string" ? content : String(content || "") };
+    }),
+    page_dimensions: Array.isArray(model.page_dimensions) ? model.page_dimensions : [],
+    styles: model.styles || {},
+  };
+}
+
 export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps) {
   const documentQuery = useDocumentQuery(documentId);
   const {
@@ -85,10 +107,10 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
   // Update store model when data arrives
   useEffect(() => {
-    if (documentQuery.data?.document_model && !currentModel) {
-      setCurrentModel(documentQuery.data.document_model);
+    if (documentQuery.data?.document_model && (!currentModel || currentModel.id !== documentId)) {
+      setCurrentModel(normalizeModelForEditor(documentQuery.data.document_model, documentId));
     }
-  }, [documentQuery.data, currentModel, setCurrentModel]);
+  }, [documentQuery.data, currentModel, documentId, setCurrentModel]);
 
   const canRunAi = instruction.trim().length > 0 && !isRunningAi;
 
@@ -123,7 +145,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     try {
       const response = await fetch(`/api/bff/ai/logs/${activeAiLog.id}/accept`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
-      if (data.document_model) setCurrentModel(data.document_model);
+      if (data.document_model) setCurrentModel(normalizeModelForEditor(data.document_model, documentId));
       setActiveAiLog(null);
       toast("AI suggestion inserted", "success");
     } catch {
@@ -169,7 +191,12 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const outlineItems = useMemo(() => {
     const blocks = currentModel?.blocks || [];
     return blocks.slice(0, 24).map((b, index) => {
-      const text = String((b as { content?: { text?: string } }).content?.text || "").trim();
+      const rawContent = b.content as unknown;
+      const text = String(
+        rawContent && typeof rawContent === "object" && "text" in rawContent
+          ? (rawContent as { text?: unknown }).text || ""
+          : rawContent || "",
+      ).trim();
       const label = text || `Block ${index + 1}`;
       const type = String((b as { type?: string }).type || "p").toUpperCase().slice(0, 2);
       return { id: b.id, label, type };
@@ -297,12 +324,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           <Link href="/dashboard" className="mr-2 rounded-md p-1.5 text-[#888] transition-colors hover:bg-white/[0.05] hover:text-white">
             <ChevronLeftIcon className="h-4 w-4" />
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 overflow-hidden rounded-full border border-white/20">
-              <img src={editorProfile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-            </div>
-            <span className="text-xs font-medium tracking-wide text-[#aaa]">{editorProfile.alias}</span>
-          </div>
+          <span className="text-xs font-medium tracking-wide text-[#aaa]">Outline</span>
           <button
             onClick={() => setIsOutlineOpen(false)}
             className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.06] hover:text-white"

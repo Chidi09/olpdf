@@ -51,7 +51,10 @@ def _upload_result(data: bytes, file_name: str) -> str:
     url = r2_storage.upload_bytes(data, object_name)
     if not url:
         raise HTTPException(status_code=500, detail="Failed to upload toolkit result")
-    return url
+    signed_url = r2_storage.generate_presigned_url(object_name, expiration=86400)
+    if not signed_url:
+        raise HTTPException(status_code=500, detail="Failed to generate toolkit download URL")
+    return signed_url
 
 @router.post("/redact")
 @limiter.limit("5/minute")

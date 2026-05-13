@@ -185,11 +185,16 @@ export default function ToolkitPage() {
       reader.readAsDataURL(file);
     });
 
-    await fetch("/api/bff/import/start", {
+    const importRes = await fetch("/api/bff/import/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
     }).catch(() => null);
+    if (!importRes?.ok) {
+      setUploadStatus({ state: "error", label: "Upload failed", detail: "The PDF could not be stored for toolkit operations." });
+      toast("Upload failed. Try another PDF or refresh and try again.", "error");
+      return;
+    }
 
     setDocuments((prev) => [{ id: created.id, title: file.name }, ...prev]);
     setSelectedDocumentId(created.id);
