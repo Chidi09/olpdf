@@ -114,6 +114,7 @@ export default function CollaborativeEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showNavigationTools, setShowNavigationTools] = useState(false);
+  const hasHydratedRef = useRef(false);
   const documentQuery = useDocumentQuery(documentId);
 
   const version1Query = useQuery<DocumentModel>({
@@ -228,6 +229,10 @@ export default function CollaborativeEditor({
     ],
     content: documentModelToTiptap(hydratedModel),
     onUpdate: ({ editor }) => {
+        if (!hasHydratedRef.current) {
+          hasHydratedRef.current = true;
+          return;
+        }
         const baseModel = hydratedModelRef.current;
         const newModel = {
           ...baseModel,
@@ -405,7 +410,7 @@ export default function CollaborativeEditor({
                         )}
                     </div>
                     {isOffline && <span className="text-[10px] bg-[var(--status-review)]/20 text-[var(--status-review)] px-2 py-0.5 rounded-full font-mono">OFFLINE</span>}
-                    {saveError && <span className="text-[10px] bg-[var(--status-error)]/20 text-[var(--status-error)] px-2 py-0.5 rounded-full font-mono">SAVE FAILED</span>}
+                    {saveError && <span title={saveError} className="text-[10px] bg-[var(--status-error)]/20 text-[var(--status-error)] px-2 py-0.5 rounded-full font-mono">SAVE FAILED</span>}
                     <button 
                       onClick={handleSaveVersion}
                       className="text-xs bg-[var(--accent)] text-[var(--text-on-accent)] px-3 py-1 rounded hover:opacity-90 transition-opacity ml-2"
