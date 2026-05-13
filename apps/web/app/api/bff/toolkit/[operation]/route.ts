@@ -29,12 +29,15 @@ function preparePythonBody(operation: string, body: Record<string, unknown>): Re
   return Object.keys(rest).length > 0 ? rest : null;
 }
 
-async function tryGoService(operation: string, body: Record<string, unknown>): Promise<Response | null> {
+async function tryGoService(operation: string, body: Record<string, unknown>, token: string | null): Promise<Response | null> {
   if (!GO_SERVICE_URL || !GO_TOOLKIT_OPS.has(operation)) return null;
   try {
     const goRes = await fetch(`${GO_SERVICE_URL}/toolkit/${operation}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(10000),
     });
@@ -70,12 +73,12 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "doc_id_required" }, { status: 422 });
   }
 
+  const token = await getAccessToken();
   // Try Go service first for supported operations
-  const goResult = await tryGoService(operation, body);
+  const goResult = await tryGoService(operation, body, token);
   if (goResult) return goResult;
 
   // Fall back to Python API
-  const token = await getAccessToken();
   const path = buildPythonPath(operation, apiOp, docId);
   const pythonBody = preparePythonBody(operation, body);
 
