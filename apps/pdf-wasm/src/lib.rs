@@ -498,9 +498,8 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
             "T*" if in_bt => { flush!(); set_pos!(tlm_e, tlm_f - leading); }
             "Tj" if in_bt => {
                 if let Some(Object::String(b, _)) = op.operands.first() {
-                    let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
-                    let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
-                    let decoded = decode_with_map(b, _uref);
+                    let empty = std::collections::HashMap::new();
+                    let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
                     if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
                     cur_text.push_str(&decoded);
                     cur_seg_text.push_str(&decoded);
@@ -529,9 +528,8 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                 flush!();
                 set_pos!(tlm_e, tlm_f - leading);
                 if let Some(Object::String(b, _)) = op.operands.first() {
-                    let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
-                    let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
-                    let decoded = decode_with_map(b, _uref);
+                    let empty = std::collections::HashMap::new();
+                    let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
                     cur_text.push_str(&decoded);
                     cur_seg_text.push_str(&decoded);
                 }
@@ -541,9 +539,8 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     flush!();
                     set_pos!(tlm_e, tlm_f - leading);
                     if let Object::String(b, _) = &op.operands[2] {
-                        let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
-                        let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
-                        let decoded = decode_with_map(b, _uref);
+                        let empty = std::collections::HashMap::new();
+                        let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
                         cur_text.push_str(&decoded);
                         cur_seg_text.push_str(&decoded);
                     }
