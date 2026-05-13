@@ -69,12 +69,47 @@ function extractNodeText(node: TiptapNode): string {
   if (typeof node.text === "string") {
     return node.text;
   }
-
   if (!node.content?.length) {
     return "";
   }
-
   return node.content.map(extractNodeText).join("");
+}
+
+function safeExtractBlockContent(content: unknown): string {
+  if (content === null || content === undefined) return "";
+  if (typeof content === "string") return content;
+  if (typeof content === "number" || typeof content === "boolean") return String(content);
+  if (Array.isArray(content)) return content.map((c) => safeExtractBlockContent(c)).join(" ");
+  if (typeof content === "object") {
+    const obj = content as Record<string, unknown>;
+    if (typeof obj.text === "string") return obj.text;
+    if (typeof obj.content === "string") return obj.content;
+    return "";
+  }
+  return String(content);
+}
+
+function normalizeBlockType(type: string, content: unknown): string {
+  const t = String(type || "paragraph");
+  if (t === "heading") {
+    if (content && typeof content === "object" && "level" in (content as Record<string, unknown>)) {
+      const level = Number((content as Record<string, unknown>).level) || 1;
+      return `heading${Math.min(Math.max(level, 1), 3)}`;
+    }
+    return "heading1";
+  }
+  if (["heading1", "heading2", "heading3", "paragraph", "callout", "table", "list", "divider", "page_break", "image", "shape", "bullet_list", "ordered_list", "field"].includes(t)) {
+    return t;
+  }
+  return "paragraph";
+}
+
+export function normalizeDocumentBlocks(blocks: Array<Record<string, unknown>> | undefined): Array<Record<string, unknown>> {
+  return (blocks || []).map((block) => ({
+    ...block,
+    type: normalizeBlockType(String(block.type || "paragraph"), block.content),
+    content: safeExtractBlockContent(block.content),
+  }));
 }
 
 function nodeTypeToBlockType(node: TiptapNode): BlockTypeValue {
@@ -84,7 +119,6 @@ function nodeTypeToBlockType(node: TiptapNode): BlockTypeValue {
     if (level === 3) return "heading3";
     return "heading1";
   }
-
   if (node.type === "paragraph") return "paragraph";
   if (node.type === "bulletList" || node.type === "orderedList") return "list";
   if (node.type === "table") return "table";
@@ -93,8 +127,7 @@ function nodeTypeToBlockType(node: TiptapNode): BlockTypeValue {
 }
 
 function blockTypeToNodeType(type: string): TiptapNode {
-  if (type === "heading") return { type: "heading", attrs: { level: 1 }, content: [] };
-  if (type === "heading1") return { type: "heading", attrs: { level: 1 }, content: [] };
+  if (type === "heading" || type === "heading1") return { type: "heading", attrs: { level: 1 }, content: [] };
   if (type === "heading2") return { type: "heading", attrs: { level: 2 }, content: [] };
   if (type === "heading3") return { type: "heading", attrs: { level: 3 }, content: [] };
   if (type === "divider") return { type: "horizontalRule" };
@@ -146,14 +179,11 @@ export function tiptapToDocumentModel(tiptapDoc: unknown, documentId: string): E
 }
 
 export function documentModelToTiptap(model: EditorDocumentModel): TiptapDoc {
-  const content = (model.blocks || []).map((block) => {
-    const node = blockTypeToNodeType(block.type);
-    const rawContent = block.content as unknown;
-    const text = String(
-      rawContent && typeof rawContent === "object" && "text" in rawContent
-        ? (rawContent as { text?: unknown }).text || ""
-        : rawContent || "",
-    );
+  const normalizedBlocks = normalizeDocumentBlocks(model.blocks as unknown as Array<Record<string, unknown>>);
+
+  const content = normalizedBlocks.map((block) => {
+    const node = blockTypeToNodeType(String(block.type));
+    const text = safeExtractBlockContent(block.content);
 
     if (node.type === "horizontalRule") {
       return { ...node, attrs: { id: block.id, type: block.type } };

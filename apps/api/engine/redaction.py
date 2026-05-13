@@ -20,7 +20,8 @@ def apply_true_redaction(pdf_bytes: bytes, areas: List[Dict[str, Any]]) -> bytes
         if page_idx < len(doc) and bbox and len(bbox) == 4:
             doc[page_idx].add_redact_annot(bbox, fill=(0, 0, 0))
 
-    doc.apply_redactions()
+    for page in doc:
+        page.apply_redactions()
     buf = io.BytesIO()
     doc.save(buf, garbage=4, deflate=True)
     doc.close()

@@ -67,6 +67,7 @@ import {
   createEmptyDocumentModel,
   documentModelToTiptap,
   tiptapToDocumentModel,
+  normalizeDocumentBlocks,
 } from "../lib/documentTransformers";
 import { useDocumentQuery, useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 
@@ -91,7 +92,7 @@ function normalizeDocumentModel(model: DocumentModel | undefined, documentId: st
       title: model.meta?.title || fallback.meta.title,
     },
     styles: model.styles || {},
-    blocks: Array.isArray(model.blocks) ? model.blocks : [],
+    blocks: normalizeDocumentBlocks(model.blocks as unknown as Array<Record<string, unknown>>) as unknown as DocumentModel["blocks"],
     page_dimensions: Array.isArray(model.page_dimensions) ? model.page_dimensions : [],
   };
 }

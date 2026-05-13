@@ -20,6 +20,7 @@ import { useToolkitStore } from "@/store/useToolkitStore";
 import { useToastStore } from "@/store/useToastStore";
 import { InlineSpinner, HelperText } from "@/components/ui/MicroUI";
 import { ToolkitResultCard } from "@/components/toolkit/ToolkitResultCard";
+import { usePdfWasm } from "@/hooks/usePdfWasm";
 
 type MicroStatus = {
   state: "idle" | "working" | "success" | "error";
@@ -54,6 +55,7 @@ const operations: OperationForm[] = [
 export default function ToolkitPage() {
   const { activeOperationId, inputValue, running, result, setActiveOperationId, setInputValue, setRunning, setResult } = useToolkitStore();
   const toast = useToastStore((s) => s.toast);
+  const { preflightPdf, ready: wasmReady } = usePdfWasm();
   const [documents, setDocuments] = useState<Array<{ id: string; title?: string }>>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
   const [mergeDocIds, setMergeDocIds] = useState<string[]>([]);
@@ -69,6 +71,7 @@ export default function ToolkitPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<MicroStatus>({ state: "idle", label: "No upload running" });
   const [operationStatus, setOperationStatus] = useState<MicroStatus>({ state: "idle", label: "Ready" });
+  const [preflightInfo, setPreflightInfo] = useState<{ page_count: number; dimensions: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const active = operations.find((o) => o.id === activeOperationId) ?? operations[0];
@@ -174,6 +177,16 @@ export default function ToolkitPage() {
 
     setUploadStatus({ state: "working", label: "Reading PDF" });
     const arrayBuffer = await file.arrayBuffer();
+
+    if (wasmReady) {
+      try {
+        const preflight = await preflightPdf(arrayBuffer);
+        const firstDims = preflight.page_dimensions?.[0];
+        const dimStr = firstDims ? `${Math.round(firstDims.width)}×${Math.round(firstDims.height)} pt` : "";
+        setPreflightInfo({ page_count: preflight.page_count, dimensions: dimStr });
+      } catch { }
+    }
+
     setUploadStatus({ state: "working", label: "Uploading PDF" });
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -226,6 +239,12 @@ export default function ToolkitPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <StatusPill status={uploadStatus} />
             <StatusPill status={operationStatus} />
+            {preflightInfo && (
+              <div className="flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-300">
+                <span className="font-semibold">{preflightInfo.page_count} page{preflightInfo.page_count !== 1 ? "s" : ""}</span>
+                {preflightInfo.dimensions && <span className="text-emerald-400/70">{preflightInfo.dimensions}</span>}
+              </div>
+            )}
           </div>
         </div>
 

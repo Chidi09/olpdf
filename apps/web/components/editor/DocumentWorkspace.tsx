@@ -12,6 +12,7 @@ import { useInstalledPlugins } from "@/hooks/usePlugins";
 import { PluginHost } from "./PluginHost";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useToastStore } from "@/store/useToastStore";
+import { normalizeDocumentBlocks } from "@/lib/documentTransformers";
 import { useEditorProfile } from "@/hooks/useEditorProfile";
 import {
   Bars3BottomLeftIcon,
@@ -68,19 +69,7 @@ function normalizeModelForEditor(model: DocumentModel, documentId: string): Docu
   return {
     ...model,
     id: model.id || documentId,
-    blocks: (model.blocks || []).map((block) => {
-      const content = block.content as unknown;
-      if (content && typeof content === "object" && "text" in content) {
-        const textContent = content as { text?: unknown; level?: unknown };
-        const level = Number(textContent.level || 1);
-        return {
-          ...block,
-          type: String(block.type) === "heading" ? (`heading${Math.min(Math.max(level, 1), 3)}` as DocumentBlock["type"]) : block.type,
-          content: String(textContent.text || ""),
-        };
-      }
-      return { ...block, content: typeof content === "string" ? content : String(content || "") };
-    }),
+    blocks: normalizeDocumentBlocks(model.blocks as unknown as Array<Record<string, unknown>>) as unknown as DocumentBlock[],
     page_dimensions: Array.isArray(model.page_dimensions) ? model.page_dimensions : [],
     styles: model.styles || {},
   };

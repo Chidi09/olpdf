@@ -81,8 +81,11 @@ export default function TemplatesPage() {
     return result;
   }, [activeCategory, searchQuery, query.data]);
 
+  const [deployLabel, setDeployLabel] = useState("");
   const applyTemplate = async (templateId: string) => {
     setApplyingId(templateId);
+    setDeployLabel("Creating document…");
+    await new Promise((r) => setTimeout(r, 200));
     try {
       const response = await fetch(`/api/bff/templates/${templateId}/apply`, {
         method: "POST",
@@ -92,8 +95,14 @@ export default function TemplatesPage() {
 
       if (!response.ok) throw new Error("Failed to apply template");
       
+      setDeployLabel("Applying content…");
+      await new Promise((r) => setTimeout(r, 300));
+
       const data = await response.json();
       const targetDocumentId = data.document_id;
+      
+      setDeployLabel("Opening editor…");
+      await new Promise((r) => setTimeout(r, 200));
       
       if (targetDocumentId) {
         router.push(`/editor/${targetDocumentId}`);
@@ -225,7 +234,7 @@ export default function TemplatesPage() {
                     >
                       {applyingId === template.id ? (
                         <>
-                          <InlineSpinner className="w-3 h-3 text-[var(--accent)]" /> Initializing...
+                          <InlineSpinner className="w-3 h-3 text-[var(--accent)]" /> {deployLabel || "Initializing..."}
                         </>
                       ) : (
                         <>
