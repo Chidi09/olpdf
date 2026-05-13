@@ -604,6 +604,162 @@ pub fn preflight_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
         .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
 }
 
+// ── PdfDocument: stateful object graph API ────────────────────────────────
+
+#[wasm_bindgen]
+pub struct PdfDocument {
+    doc: lopdf::Document,
+}
+
+fn object_to_json_value(obj: &lopdf::Object) -> serde_json::Value {
+    use lopdf::Object::*;
+    match obj {
+        Null => serde_json::Value::Null,
+        Boolean(b) => serde_json::json!({"type":"bool","value":b}),
+        Integer(n) => serde_json::json!({"type":"integer","value":n}),
+        Real(f) => serde_json::json!({"type":"real","value":f}),
+        Name(n) => serde_json::json!({"type":"name","value":String::from_utf8_lossy(n)}),
+        String(bytes, _) => serde_json::json!({"type":"string","value":String::from_utf8_lossy(bytes)}),
+        Array(items) => {
+            let arr: Vec<serde_json::Value> = items.iter().map(object_to_json_value).collect();
+            serde_json::json!({"type":"array","items":arr})
+        }
+        Dict(d) => {
+            let mut map = serde_json::Map::new();
+            for (k, v) in &d.0 {
+                let key = String::from_utf8_lossy(k).to_string();
+                map.insert(key, object_to_json_value(v));
+            }
+            serde_json::json!({"type":"dict","entries":serde_json::Value::Object(map)})
+        }
+        Stream(stream) => {
+            let mut stream_map = serde_json::Map::new();
+            let mut dict_map = serde_json::Map::new();
+            for (k, v) in &stream.dict.0 {
+                let key = String::from_utf8_lossy(k).to_string();
+                dict_map.insert(key, object_to_json_value(v));
+            }
+            stream_map.insert("dict".to_string(), serde_json::Value::Object(dict_map));
+            stream_map.insert("decoded".to_string(), serde_json::Value::String(
+                BASE64_STANDARD.encode(&stream.content)
+            ));
+            serde_json::json!({"type":"stream","stream":serde_json::Value::Object(stream_map)})
+        }
+        Reference((n, g)) => serde_json::json!({"type":"ref","obj":n,"gen":g}),
+    }
+}
+
+use lopdf::Object as LObject;
+
+fn json_value_to_object(val: &serde_json::Value) -> Result<lopdf::Object, String> {
+    let obj_type = val.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    match obj_type {
+        "null" => Ok(LObject::Null),
+        "bool" => Ok(LObject::Boolean(val.get("value").and_then(|v| v.as_bool()).unwrap_or(false))),
+        "integer" => Ok(LObject::Integer(val.get("value").and_then(|v| v.as_i64()).unwrap_or(0) as i32)),
+        "real" => Ok(LObject::Real(val.get("value").and_then(|v| v.as_f64()).unwrap_or(0.0))),
+        "name" => {
+            let s = val.get("value").and_then(|v| v.as_str()).unwrap_or("");
+            Ok(LObject::Name(s.as_bytes().to_vec()))
+        }
+        "string" => {
+            let s = val.get("value").and_then(|v| v.as_str()).unwrap_or("");
+            Ok(LObject::String(s.as_bytes().to_vec(), lopdf::StringFormat::Literal))
+        }
+        "array" => {
+            let items = val.get("items").and_then(|v| v.as_array()).ok_or("array missing items")?;
+            let mut objs = Vec::new();
+            for item in items {
+                objs.push(json_value_to_object(item)?);
+            }
+            Ok(LObject::Array(objs))
+        }
+        "dict" => {
+            let entries = val.get("entries").and_then(|v| v.as_object()).ok_or("dict missing entries")?;
+            let mut dict = lopdf::Dictionary::new();
+            for (k, v) in entries {
+                dict.set(k.as_bytes().to_vec(), json_value_to_object(v)?);
+            }
+            Ok(LObject::Dict(dict))
+        }
+        "ref" => {
+            let obj = val.get("obj").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let gen = val.get("gen").and_then(|v| v.as_u64()).unwrap_or(0) as u16;
+            Ok(LObject::Reference((obj, gen)))
+        }
+        "stream" => {
+            let stream_val = val.get("stream").ok_or("stream missing stream field")?;
+            let dict_val = stream_val.get("dict").ok_or("stream missing dict")?;
+            let dict_obj = json_value_to_object(dict_val)?;
+            let dict = dict_obj.as_dict().map_err(|_| "stream dict is not a dict")?.clone();
+            let decoded = stream_val.get("decoded").and_then(|v| v.as_str()).unwrap_or("");
+            let content = BASE64_STANDARD.decode(decoded).map_err(|e| format!("base64: {e}"))?;
+            Ok(LObject::Stream(lopdf::Stream::new(dict, content)))
+        }
+        _ => Err(format!("unknown object type: {obj_type}")),
+    }
+}
+
+lazy_static::lazy_static! {
+    static ref BASE64_STANDARD: base64::engine::GeneralPurpose =
+        base64::engine::GeneralPurpose::new(&base64::alphabet::STANDARD, base64::engine::general_purpose::NO_PAD);
+}
+
+#[wasm_bindgen]
+impl PdfDocument {
+    #[wasm_bindgen(constructor)]
+    pub fn load(data: &[u8]) -> Result<PdfDocument, JsValue> {
+        let doc = lopdf::Document::load_mem(data)
+            .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
+        Ok(PdfDocument { doc })
+    }
+
+    pub fn page_count(&self) -> usize {
+        self.doc.get_pages().len()
+    }
+
+    pub fn page_size(&self, page_num: u32) -> Result<JsValue, JsValue> {
+        let pages = self.doc.get_pages();
+        let page_id = *pages.get(&page_num).ok_or_else(|| JsValue::from_str("page not found"))?;
+        let (w, h) = get_page_size(&self.doc, page_id);
+        serde_wasm_bindgen::to_value(&serde_json::json!({"width":w,"height":h}))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    pub fn get_object(&self, obj_num: u32, gen_num: u16) -> Result<JsValue, JsValue> {
+        let obj = self.doc.get_object((obj_num, gen_num))
+            .map_err(|e| JsValue::from_str(&format!("get_object failed: {e}")))?;
+        let json = object_to_json_value(obj);
+        serde_wasm_bindgen::to_value(&json)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    pub fn set_object(&mut self, obj_num: u32, gen_num: u16, value: JsValue) -> Result<(), JsValue> {
+        let json: serde_json::Value = serde_wasm_bindgen::from_value(value)
+            .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
+        let obj = json_value_to_object(&json)
+            .map_err(|e| JsValue::from_str(&e))?;
+        self.doc.objects.insert((obj_num, gen_num), obj);
+        Ok(())
+    }
+
+    pub fn add_object(&mut self, value: JsValue) -> Result<u32, JsValue> {
+        let json: serde_json::Value = serde_wasm_bindgen::from_value(value)
+            .map_err(|e| JsValue::from_str(&format!("invalid JSON: {e}")))?;
+        let obj = json_value_to_object(&json)
+            .map_err(|e| JsValue::from_str(&e))?;
+        let id = self.doc.add_object(obj);
+        Ok(id.0)
+    }
+
+    pub fn serialize(&self) -> Result<Vec<u8>, JsValue> {
+        let mut buf = Vec::new();
+        self.doc.save_to(&mut buf)
+            .map_err(|e| JsValue::from_str(&format!("serialize failed: {e}")))?;
+        Ok(buf)
+    }
+}
+
 #[wasm_bindgen]
 pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
     let doc = Document::load_mem(data).map_err(|e| JsValue::from_str(&format!("PDF parse error: {e}")))?;
