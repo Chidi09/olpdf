@@ -169,17 +169,6 @@ export default function CollaborativeEditor({
     }, 1000)
   );
 
-  // Force server content into the editor once it loads, overwriting any stale
-  // IndexedDB Yjs state (which may contain old "HTML" node types pre-normalization).
-  useEffect(() => {
-    if (!editor || !documentQuery.data?.document_model || serverHydratedRef.current) return;
-    serverHydratedRef.current = true;
-    const normalized = normalizeDocumentModel(documentQuery.data.document_model, documentId);
-    const tiptap = documentModelToTiptap(normalized);
-    editor.commands.setContent(tiptap, false); // false = suppress onUpdate event
-    hasHydratedRef.current = false; // allow next change event to be treated as first edit
-  }, [editor, documentQuery.data, documentId]);
-
   useEffect(() => {
     const local = new IndexeddbPersistence(`olpdf-doc-${documentId}`, ydoc);
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -297,6 +286,17 @@ export default function CollaborativeEditor({
       },
     },
   }, [documentId]);
+
+  // Force server content into the editor once it loads, overwriting any stale
+  // IndexedDB Yjs state (which may contain old "HTML" node types pre-normalization).
+  useEffect(() => {
+    if (!editor || !documentQuery.data?.document_model || serverHydratedRef.current) return;
+    serverHydratedRef.current = true;
+    const normalized = normalizeDocumentModel(documentQuery.data.document_model, documentId);
+    const tiptap = documentModelToTiptap(normalized);
+    editor.commands.setContent(tiptap, false); // false = suppress onUpdate event
+    hasHydratedRef.current = false; // allow next change event to be treated as first edit
+  }, [editor, documentQuery.data, documentId]);
 
   const insertBlock = (type: string) => {
     if (!editor) return;
