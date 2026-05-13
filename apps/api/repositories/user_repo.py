@@ -61,6 +61,13 @@ class ApiKeyRepository:
             return None
 
     @staticmethod
+    def get_by_hash(key_hash: str) -> Optional[Dict[str, Any]]:
+        try:
+            return supabase.table("api_keys").select("*").eq("key_hash", key_hash).eq("is_active", True).single().execute().data
+        except Exception:
+            return None
+
+    @staticmethod
     def delete(key_id: str, user_id: str) -> None:
         supabase.table("api_keys").update({"is_active": False}).eq("id", key_id).eq("user_id", user_id).execute()
 

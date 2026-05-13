@@ -34,6 +34,16 @@ async def create_api_key(payload: ApiKeyCreatePayload, user: dict = Depends(requ
     
     return {
         "key": raw_key,
+        "api_key": {
+            "id": key["id"],
+            "name": payload.name,
+            "prefix": prefix,
+            "scopes": payload.scopes,
+            "is_active": key.get("is_active", True),
+            "expires_at": payload.expires_at,
+            "last_used_at": key.get("last_used_at"),
+            "created_at": key.get("created_at"),
+        },
         "prefix": prefix,
         "name": payload.name,
         "scopes": payload.scopes,

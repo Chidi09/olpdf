@@ -7,6 +7,7 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/hooks/useAuth";
+import { useEditorProfile } from "@/hooks/useEditorProfile";
 import { PageShell } from "@/components/layout/PageShell";
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { Button } from "@heroui/react";
@@ -91,6 +92,7 @@ type ProviderId = typeof PROVIDERS[number]["id"];
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const editorProfile = useEditorProfile();
   const [provider, setProvider] = useState<ProviderId>("gemini_free");
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -177,6 +179,15 @@ export default function SettingsPage() {
           <div className="md:col-span-2">
             <GlassPanel className="flex flex-col">
               <div className="grid flex-1 gap-4 p-5 sm:grid-cols-1">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 overflow-hidden rounded-full border border-white/20">
+                    <img src={editorProfile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">@{editorProfile.alias}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Editor alias — shown to collaborators</p>
+                  </div>
+                </div>
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Email Address</label>
                   <div className="flex h-9 items-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm text-[var(--text-primary)]">

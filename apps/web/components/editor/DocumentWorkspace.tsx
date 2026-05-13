@@ -11,6 +11,8 @@ import { useDocumentQuery, useSaveDocumentMutation } from "@/hooks/useDocumentQu
 import { useInstalledPlugins } from "@/hooks/usePlugins";
 import { PluginHost } from "./PluginHost";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useToastStore } from "@/store/useToastStore";
+import { useEditorProfile } from "@/hooks/useEditorProfile";
 import {
   Bars3BottomLeftIcon,
   Squares2X2Icon,
@@ -24,7 +26,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -111,7 +112,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         diff_snapshot: data.diff_snapshot,
       });
       setInstruction("");
-      showNotice("AI suggestion ready — review and insert below.");
+      toast("AI suggestion ready — review and insert below.", "info");
     } finally {
       setIsRunningAi(false);
     }
@@ -124,9 +125,9 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       const data = await response.json().catch(() => ({}));
       if (data.document_model) setCurrentModel(data.document_model);
       setActiveAiLog(null);
-      showNotice("AI suggestion inserted");
+      toast("AI suggestion inserted", "success");
     } catch {
-      showNotice("Failed to apply AI suggestion");
+      toast("Failed to apply AI suggestion", "error");
     }
   };
 
@@ -135,7 +136,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     try {
       await fetch(`/api/bff/ai/logs/${activeAiLog.id}/reject`, { method: "POST" });
       setActiveAiLog(null);
-      showNotice("AI suggestion rejected");
+      toast("AI suggestion rejected", "info");
     } catch {
       setActiveAiLog(null);
     }
@@ -154,27 +155,16 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const [leftTab, setLeftTab] = useState<"outline" | "blocks">("outline");
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [editorNotice, setEditorNotice] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
-  const [viewerName, setViewerName] = useState("You");
-  const [viewerColor] = useState("#e6a449");
   const [titleDraft, setTitleDraft] = useState("");
   const editorContentRef = useRef<HTMLDivElement>(null);
+  const toast = useToastStore((s) => s.toast);
+  const editorProfile = useEditorProfile();
 
   useEffect(() => {
     setTitleDraft(currentModel?.meta?.title || "Untitled Document");
   }, [currentModel?.meta?.title]);
-
-  useEffect(() => {
-    let mounted = true;
-    createSupabaseBrowserClient().auth.getUser().then(({ data }) => {
-      if (!mounted || !data.user) return;
-      const meta = data.user.user_metadata ?? {};
-      setViewerName(String(meta.full_name || meta.name || data.user.email || "You"));
-    }).catch(() => null);
-    return () => { mounted = false; };
-  }, []);
 
   const outlineItems = useMemo(() => {
     const blocks = currentModel?.blocks || [];
@@ -272,14 +262,9 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     await saveMutation.mutateAsync(nextModel);
   };
 
-  const showNotice = (message: string) => {
-    setEditorNotice(message);
-    window.setTimeout(() => setEditorNotice(null), 2400);
-  };
-
   const shareEditor = async () => {
     await navigator.clipboard?.writeText(window.location.href);
-    showNotice("Editor link copied");
+    toast("Editor link copied", "success");
   };
 
   const exportPdf = async () => {
@@ -297,9 +282,9 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       a.href = data.url;
       a.download = `${currentModel.meta?.title || "document"}.pdf`;
       a.click();
-      showNotice("PDF export started");
+      toast("PDF export started", "success");
     } catch {
-      showNotice("Export failed. Try again after saving.");
+      toast("Export failed. Try again after saving.", "error");
     } finally {
       setIsExporting(false);
     }
@@ -313,10 +298,10 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             <ChevronLeftIcon className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2">
-            <div className="flex h-5 w-5 items-center justify-center rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-700 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)]">
-              <span className="text-[10px] font-black text-white">O</span>
+            <div className="h-5 w-5 overflow-hidden rounded-full border border-white/20">
+              <img src={editorProfile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
             </div>
-            <span className="text-xs font-semibold tracking-wide">Editor</span>
+            <span className="text-xs font-medium tracking-wide text-[#aaa]">{editorProfile.alias}</span>
           </div>
           <button
             onClick={() => setIsOutlineOpen(false)}
@@ -429,11 +414,6 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           </div>
 
           <div className="flex items-center gap-2">
-            {editorNotice && (
-              <div className="hidden rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-[#aaa] md:block">
-                {editorNotice}
-              </div>
-            )}
             <GlassTooltip label={isAssistantOpen ? "Hide assistant" : "Show assistant"}>
               <button
                 onClick={() => setIsAssistantOpen((open) => !open)}
@@ -457,7 +437,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               </button>
             </GlassTooltip>
             <GlassTooltip label="Publish to web">
-              <button onClick={() => showNotice("Publish is not enabled yet")} className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
+              <button onClick={() => toast("Publish is not enabled yet", "info")} className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
                 <PlayIcon className="h-3.5 w-3.5" /> Publish
               </button>
             </GlassTooltip>
@@ -474,8 +454,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           ) : (
             <CollaborativeEditor
               documentId={documentId}
-              userName={viewerName}
-              userColor={viewerColor}
+              userName={editorProfile.alias}
+              userColor={editorProfile.color}
               initialModel={currentModel ?? undefined}
               onModelChange={setCurrentModel}
             />
@@ -523,7 +503,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
                 </button>
                 <button
                   onClick={() => {
-                    if (!canUseFidelity) { showNotice("Fidelity view is available after PDF import finishes."); return; }
+                    if (!canUseFidelity) { toast("Fidelity view is available after PDF import finishes.", "info"); return; }
                     void setLayoutMode("fidelity");
                   }}
                   className={`rounded px-2 py-1 text-[10px] font-medium uppercase transition-colors ${

@@ -50,6 +50,8 @@ export default function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [titleOverrides, setTitleOverrides] = useState<Record<string, string>>({});
   const [pendingDelete, setPendingDelete] = useState<{ project: Project; timeoutId: number } | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showNewMenu, setShowNewMenu] = useState(false);
   const [wasmSession, setWasmSession] = useState<PdfEditSession | null>(null);
   const { activeTab, searchQuery, setActiveTab, setSearchQuery } = useDashboardStore();
   const { parsePdf } = usePdfWasm();
@@ -247,19 +249,29 @@ export default function Dashboard() {
           <span className="text-sm font-semibold tracking-tight">Dashboard</span>
           <div className="h-5 w-px bg-[var(--border-subtle)]" />
           <div className="flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1">
-            {(["recent", "documents", "books"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
-                  activeTab === tab
-                    ? "bg-[var(--accent)] text-[var(--text-on-accent)]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+            {(["recent", "documents", "books"] as const).map((tab) => {
+              const count = tab === "recent" ? projects.length : tab === "documents" ? projects.filter(p => p.type === "Document").length : projects.filter(p => p.type === "Book").length;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
+                    activeTab === tab
+                      ? "bg-[var(--accent)] text-[var(--text-on-accent)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  {tab}
+                  {!isLoading && count > 0 && (
+                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                      activeTab === tab ? "bg-white/20 text-white" : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)]"
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       }
@@ -281,15 +293,30 @@ export default function Dashboard() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button onClick={onImportClick} className="h-8 rounded-md bg-[var(--accent)] px-3 text-xs font-semibold text-[var(--text-on-accent)]">
-            <Upload className="h-3.5 w-3.5" /> Import PDF
-          </Button>
-          <Link
-            href="/editor/new"
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 text-xs text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-elevated)]"
-          >
-            <Plus className="h-3.5 w-3.5" /> New
-          </Link>
+          <div className="relative" onMouseLeave={() => setShowNewMenu(false)}>
+            <button
+              onClick={() => setShowNewMenu((v) => !v)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 text-xs font-semibold text-[var(--text-on-accent)] transition-colors hover:bg-[var(--accent-hover)]"
+            >
+              <Plus className="h-3.5 w-3.5" /> New
+            </button>
+            {showNewMenu && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] py-1 shadow-xl">
+                <Link href="/editor/new" className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]" onClick={() => setShowNewMenu(false)}>
+                  <DocumentTextIcon className="h-4 w-4 text-[var(--text-tertiary)]" /> Blank Document
+                </Link>
+                <button onClick={() => { setShowNewMenu(false); onImportClick(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]">
+                  <Upload className="h-4 w-4 text-[var(--text-tertiary)]" /> Import PDF
+                </button>
+                <Link href="/books/new" className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]" onClick={() => setShowNewMenu(false)}>
+                  <BookOpenIcon className="h-4 w-4 text-[var(--text-tertiary)]" /> New Book
+                </Link>
+                <Link href="/templates" className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]" onClick={() => setShowNewMenu(false)}>
+                  <Squares2X2Icon className="h-4 w-4 text-[var(--text-tertiary)]" /> Use Template
+                </Link>
+              </div>
+            )}
+          </div>
         </>
       }
     >
@@ -393,21 +420,55 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
-                      <span>{updated}</span>
-                      {project.type === "Document" ? (
-                        <InlineConfirmButton idleLabel="Delete" confirmLabel="Click to confirm" onConfirm={() => queueDelete(project)} />
-                      ) : (
+                      <span className="group-hover:hidden">{updated}</span>
+                      <div
+                        className="relative hidden group-hover:flex items-center gap-1"
+                        onMouseEnter={() => setOpenMenuId(project.id)}
+                        onMouseLeave={() => setOpenMenuId(null)}
+                      >
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          className="rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(href); }}
+                          className="rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          Open
                         </button>
-                      )}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          className="rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                        {openMenuId === project.id && (
+                          <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] py-1 shadow-xl">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                            >
+                              Rename
+                            </button>
+                            {project.type === "Document" && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                              >
+                                Export PDF
+                              </button>
+                            )}
+                            <div className="my-1 border-t border-[var(--border-subtle)]" />
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); queueDelete(project); }}
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

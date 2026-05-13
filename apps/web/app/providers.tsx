@@ -5,6 +5,7 @@ import { ReactNode, useEffect } from "react";
 import { TenantProvider } from "@/components/providers/TenantProvider";
 import { reportError } from "@/lib/errorReporting";
 import { ThemeProvider } from "next-themes";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 
 // Module-level singleton — QueryClient config never changes at runtime
 const queryClient = new QueryClient({
@@ -99,6 +100,7 @@ export default function Providers({ children }: ProvidersProps) {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <TenantProvider>
           {children}
+          <ToastProvider />
         </TenantProvider>
       </ThemeProvider>
     </QueryClientProvider>

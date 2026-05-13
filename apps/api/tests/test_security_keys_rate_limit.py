@@ -14,14 +14,14 @@ def reset_limiter():
     yield
 
 def test_api_key_authentication_failure():
-    with patch("apps.api.core.auth.ApiKeyRepository.get_by_hash") as mock_get:
+    with patch("apps.api.repositories.user_repo.ApiKeyRepository.get_by_hash") as mock_get:
         mock_get.return_value = None
         response = client.get("/api/documents/some-id", headers={"X-API-Key": "invalid-key"})
         assert response.status_code == 401
         assert response.json()["message"] == "Invalid API key"
 
 def test_api_key_authentication_success():
-    with patch("apps.api.core.auth.ApiKeyRepository.get_by_hash") as mock_get:
+    with patch("apps.api.repositories.user_repo.ApiKeyRepository.get_by_hash") as mock_get:
         mock_get.return_value = {
             "id": "key-123",
             "user_id": "user-456",
@@ -29,7 +29,7 @@ def test_api_key_authentication_success():
             "expires_at": None,
             "scopes": None,
         }
-        with patch("apps.api.core.auth.ApiKeyRepository.update_last_used"):
+        with patch("apps.api.repositories.user_repo.ApiKeyRepository.update_last_used"):
             with patch("apps.api.repositories.document_repo.DocumentRepository.get_by_id") as mock_doc:
                 mock_doc.return_value = {"id": "doc-1", "user_id": "user-456", "document_model": {}}
                 
@@ -43,22 +43,23 @@ def test_rate_limiting():
         mock_verify.return_value = _MOCK_USER
         with patch("apps.api.repositories.document_repo.DocumentRepository.create") as mock_create:
             mock_create.return_value = {"id": "new-doc", "status": "created"}
-            with patch("apps.api.repositories.workspace_repo.AuditLogRepository.create"):
+            with patch("apps.api.routes.documents.ensure_profile_row"):
+                with patch("apps.api.repositories.workspace_repo.AuditLogRepository.create"):
                 
-                for _ in range(10):
+                    for _ in range(10):
+                        response = client.post(
+                            "/api/documents/create", 
+                            json={"meta": {"title": "Test", "layout_mode": "editable"}, "blocks": [], "styles": {}},
+                            headers={"Authorization": "Bearer rate-test-token"}
+                        )
+                        assert response.status_code == 200
+                    
                     response = client.post(
                         "/api/documents/create", 
                         json={"meta": {"title": "Test", "layout_mode": "editable"}, "blocks": [], "styles": {}},
                         headers={"Authorization": "Bearer rate-test-token"}
                     )
-                    assert response.status_code == 200
-                
-                response = client.post(
-                    "/api/documents/create", 
-                    json={"meta": {"title": "Test", "layout_mode": "editable"}, "blocks": [], "styles": {}},
-                    headers={"Authorization": "Bearer rate-test-token"}
-                )
-                assert response.status_code == 429
+                    assert response.status_code == 429
 
 def test_api_key_management_flow():
     with patch("apps.api.auth_utils.verify_jwt_token") as mock_verify:
@@ -90,6 +91,9 @@ def test_api_key_management_flow():
                     assert response.status_code == 200
                     assert "key" in response.json()
                     assert response.json()["name"] == "Production"
+                    assert response.json()["api_key"]["name"] == "Production"
+                    assert response.json()["api_key"]["prefix"] == response.json()["prefix"]
+                    assert "key_hash" not in response.json()["api_key"]
                     
                     response = client.get(
                         "/api/keys",

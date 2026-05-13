@@ -20,6 +20,19 @@ import { InlineConfirmButton } from "@/components/ui/InlineConfirmButton";
 type ApiKey = { id: string; name: string; prefix: string; created_at: string; last_used_at: string | null };
 type WebhookModel = { id: string; url: string; events: string[]; is_active: boolean; created_at: string };
 
+function normalizeApiKey(value: unknown): ApiKey | null {
+  if (!value || typeof value !== "object") return null;
+  const key = value as Partial<ApiKey>;
+  if (!key.id || !key.name || !key.prefix) return null;
+  return {
+    id: String(key.id),
+    name: String(key.name),
+    prefix: String(key.prefix),
+    created_at: key.created_at ? String(key.created_at) : new Date().toISOString(),
+    last_used_at: key.last_used_at ? String(key.last_used_at) : null,
+  };
+}
+
 export default function DeveloperSettingsPage() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookModel[]>([]);
@@ -30,13 +43,14 @@ export default function DeveloperSettingsPage() {
 
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [revealGenerated, setRevealGenerated] = useState(false);
+  const [integrationTab, setIntegrationTab] = useState<"curl" | "javascript" | "python" | "go">("curl");
 
   useEffect(() => {
     Promise.all([
       fetch("/api/bff/api-keys").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/bff/webhooks").then((r) => (r.ok ? r.json() : [])),
     ]).then(([k, w]) => {
-      setKeys(k);
+      setKeys(Array.isArray(k) ? k.map(normalizeApiKey).filter((key): key is ApiKey => Boolean(key)) : []);
       setWebhooks(w);
       setLoading(false);
     });
@@ -52,7 +66,8 @@ export default function DeveloperSettingsPage() {
     if (res.ok) {
       const data = await res.json();
       setGeneratedKey(data.key);
-      setKeys([data.api_key, ...keys]);
+      const createdKey = normalizeApiKey(data.api_key ?? data);
+      if (createdKey) setKeys([createdKey, ...keys]);
       setNewKeyName("");
     }
   };
@@ -270,14 +285,53 @@ export default function DeveloperSettingsPage() {
           <div className="md:col-span-2">
             <div className="group relative overflow-hidden rounded-lg border border-[#222] bg-black">
               <div className="flex items-center justify-between border-b border-[#222] bg-[#0A0A0A] px-3 py-2">
-                <span className="text-xs font-medium text-[#888]">cURL Example</span>
-                <CopyButton textToCopy={'curl -X POST "https://api.olpdf.xyz/api/documents/create" \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"title": "My Document"}\''} />
+                <div className="flex gap-1">
+                  {(["curl", "javascript", "python", "go"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setIntegrationTab(tab)}
+                      className={`rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                        integrationTab === tab ? "bg-white/10 text-white" : "text-[#666] hover:text-[#888]"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <CopyButton textToCopy={integrationTab === "curl" ? `curl -X POST "https://api.olpdf.xyz/api/documents/create" \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"title": "My Document"}'` : integrationTab === "javascript" ? `const response = await fetch("https://api.olpdf.xyz/api/documents/create", {\n  method: "POST",\n  headers: {\n    Authorization: "Bearer YOUR_API_KEY",\n    "Content-Type": "application/json",\n  },\n  body: JSON.stringify({ title: "My Document" }),\n});` : integrationTab === "python" ? `import requests\n\nresponse = requests.post(\n    "https://api.olpdf.xyz/api/documents/create",\n    headers={"Authorization": "Bearer YOUR_API_KEY"},\n    json={"title": "My Document"},\n)` : `package main\n\nimport (\n    "bytes"\n    "encoding/json"\n    "net/http"\n)\n\nfunc main() {\n    body, _ := json.Marshal(map[string]string{"title": "My Document"})\n    req, _ := http.NewRequest("POST", "https://api.olpdf.xyz/api/documents/create", bytes.NewBuffer(body))\n    req.Header.Set("Authorization", "Bearer YOUR_API_KEY")\n    req.Header.Set("Content-Type", "application/json")\n    http.DefaultClient.Do(req)\n}`} />
               </div>
               <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-relaxed text-[#ededed]">
-<span className="text-purple-400">curl</span> -X POST <span className="text-amber-300">"https://api.olpdf.xyz/api/documents/create"</span> \
-  -H <span className="text-amber-300">"Authorization: Bearer YOUR_API_KEY"</span> \
-  -H <span className="text-amber-300">"Content-Type: application/json"</span> \
-  -d <span className="text-emerald-400">'&#123;"title": "My Document"&#125;'</span>
+{integrationTab === "curl" ? `<span className="text-purple-400">curl</span> -X POST <span className="text-amber-300">"https://api.olpdf.xyz/api/documents/create"</span> \\
+  -H <span className="text-amber-300">"Authorization: Bearer YOUR_API_KEY"</span> \\
+  -H <span className="text-amber-300">"Content-Type: application/json"</span> \\
+  -d <span className="text-emerald-400">'{"title": "My Document"}'</span>` : integrationTab === "javascript" ? `<span className="text-blue-400">const</span> response <span className="text-purple-400">=</span> <span className="text-amber-300">await</span> fetch(<span className="text-emerald-400">"https://api.olpdf.xyz/api/documents/create"</span>, {
+  <span className="text-blue-400">method</span>: <span className="text-emerald-400">"POST"</span>,
+  <span className="text-blue-400">headers</span>: {
+    <span className="text-purple-400">Authorization</span>: <span className="text-emerald-400">"Bearer YOUR_API_KEY"</span>,
+    <span className="text-purple-400">"Content-Type"</span>: <span className="text-emerald-400">"application/json"</span>,
+  },
+  <span className="text-blue-400">body</span>: <span className="text-purple-400">JSON</span>.<span className="text-amber-300">stringify</span>({ <span className="text-blue-400">title</span>: <span className="text-emerald-400">"My Document"</span> }),
+});` : integrationTab === "python" ? `<span className="text-blue-400">import</span> <span className="text-amber-300">requests</span>
+
+response <span className="text-purple-400">=</span> <span className="text-amber-300">requests</span>.<span className="text-blue-400">post</span>(
+    <span className="text-emerald-400">"https://api.olpdf.xyz/api/documents/create"</span>,
+    <span className="text-blue-400">headers</span>={<span className="text-emerald-400">"Authorization"</span>: <span className="text-emerald-400">"Bearer YOUR_API_KEY"</span>},
+    <span className="text-blue-400">json</span>={<span className="text-emerald-400">"title"</span>: <span className="text-emerald-400">"My Document"</span>},
+)` : `<span className="text-blue-400">package</span> <span className="text-amber-300">main</span>
+
+<span className="text-blue-400">import</span> (
+    <span className="text-emerald-400">"bytes"</span>
+    <span className="text-emerald-400">"encoding/json"</span>
+    <span className="text-emerald-400">"net/http"</span>
+)
+
+<span className="text-blue-400">func</span> <span className="text-purple-400">main</span>() {
+    body, _ <span className="text-purple-400">:=</span> <span className="text-amber-300">json</span>.<span className="text-blue-400">Marshal</span>(<span className="text-blue-400">map</span>[<span className="text-blue-400">string</span>]<span className="text-blue-400">string</span>{<span className="text-emerald-400">"title"</span>: <span className="text-emerald-400">"My Document"</span>})
+    req, _ <span className="text-purple-400">:=</span> <span className="text-amber-300">http</span>.<span className="text-blue-400">NewRequest</span>(<span className="text-emerald-400">"POST"</span>, <span className="text-emerald-400">"https://api.olpdf.xyz/api/documents/create"</span>, <span className="text-amber-300">bytes</span>.<span className="text-blue-400">NewBuffer</span>(body))
+    req.<span className="text-blue-400">Header</span>.<span className="text-amber-300">Set</span>(<span className="text-emerald-400">"Authorization"</span>, <span className="text-emerald-400">"Bearer YOUR_API_KEY"</span>)
+    req.<span className="text-blue-400">Header</span>.<span className="text-amber-300">Set</span>(<span className="text-emerald-400">"Content-Type"</span>, <span className="text-emerald-400">"application/json"</span>)
+    <span className="text-amber-300">http</span>.<span className="text-blue-400">DefaultClient</span>.<span className="text-purple-400">Do</span>(req)
+}`}
               </pre>
             </div>
           </div>

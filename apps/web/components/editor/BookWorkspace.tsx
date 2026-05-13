@@ -250,7 +250,7 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
           onSuggestChapterTitle={suggestChapterTitle}
           isNarrativeRunning={isNarrativeRunning}
           isTitleLoading={isTitleLoading}
-          exportStatus={exportStatus}
+          exportStatus={exportStatus ?? undefined}
           onUpdateBookMeta={(updates) => updateBookMetaMutation.mutate(updates)}
         />
       </div>
