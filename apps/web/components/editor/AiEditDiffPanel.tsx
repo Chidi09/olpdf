@@ -82,7 +82,7 @@ export default function AiEditDiffPanel({
               onClick={onAccept}
               className="px-4 py-1.5 rounded bg-[var(--accent)] hover:opacity-90 text-[var(--text-on-accent)] text-xs font-bold transition-all"
             >
-              Accept & Apply
+              Insert suggestion
             </button>
           </div>
         </div>

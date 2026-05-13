@@ -110,8 +110,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         tool_calls: data.tool_calls || [],
         diff_snapshot: data.diff_snapshot,
       });
-      if (data.updated_model) setCurrentModel(data.updated_model);
       setInstruction("");
+      showNotice("AI suggestion ready — review and insert below.");
     } finally {
       setIsRunningAi(false);
     }
@@ -119,14 +119,26 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
   const acceptAi = async () => {
     if (!activeAiLog) return;
-    await fetch(`/api/bff/ai/logs/${activeAiLog.id}/accept`, { method: "POST" });
-    setActiveAiLog(null);
+    try {
+      const response = await fetch(`/api/bff/ai/logs/${activeAiLog.id}/accept`, { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      if (data.document_model) setCurrentModel(data.document_model);
+      setActiveAiLog(null);
+      showNotice("AI suggestion inserted");
+    } catch {
+      showNotice("Failed to apply AI suggestion");
+    }
   };
 
   const rejectAi = async () => {
     if (!activeAiLog) return;
-    await fetch(`/api/bff/ai/logs/${activeAiLog.id}/reject`, { method: "POST" });
-    setActiveAiLog(null);
+    try {
+      await fetch(`/api/bff/ai/logs/${activeAiLog.id}/reject`, { method: "POST" });
+      setActiveAiLog(null);
+      showNotice("AI suggestion rejected");
+    } catch {
+      setActiveAiLog(null);
+    }
   };
 
   const aiDiff = useMemo(() => {

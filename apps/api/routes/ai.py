@@ -125,7 +125,7 @@ async def accept_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dic
     model["blocks"] = log["diff_snapshot"]["after"]
     DocumentRepository.update(log["document_id"], {"document_model": model})
     DocumentRepository.update_log(log_id, {"status": "accepted"})
-    return {"status": "success"}
+    return {"status": "success", "document_model": model}
 
 @router.post("/logs/{log_id}/reject")
 async def reject_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dict:
