@@ -38,13 +38,21 @@ Rules:
 """
 
 
-def _render_page_png(pdf_bytes: bytes, page_index: int, scale: float = 2.0) -> bytes:
+def _render_page_png(pdf_bytes_or_path: bytes | str, page_index: int, scale: float = 2.0) -> bytes:
     """Render a single PDF page to PNG bytes at 2× resolution for better OCR."""
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    page = doc[page_index]
-    mat = fitz.Matrix(scale, scale)
-    pix = page.get_pixmap(matrix=mat, alpha=False)
-    return pix.tobytes("png")
+    kwargs = {"filetype": "pdf"}
+    if isinstance(pdf_bytes_or_path, str):
+        kwargs["filename"] = pdf_bytes_or_path
+    else:
+        kwargs["stream"] = pdf_bytes_or_path
+    doc = fitz.open(**kwargs)
+    try:
+        page = doc[page_index]
+        mat = fitz.Matrix(scale, scale)
+        pix = page.get_pixmap(matrix=mat, alpha=False)
+        return pix.tobytes("png")
+    finally:
+        doc.close()
 
 
 def _raw_blocks_to_document_blocks(
@@ -127,11 +135,9 @@ async def ocr_pages_with_gemini(
     max_concurrency: int = 8,
 ) -> List[Dict[str, Any]]:
     """
-    OCR all given page indices concurrently via Gemini Vision.
-
-    google-generativeai is a sync SDK so each call runs in a thread pool.
-    A semaphore caps concurrency at max_concurrency to respect API rate limits.
-    Results are re-sorted by page_index so order is always preserved.
+    OCR given page indices via Gemini Vision. Uses a temp file for large PDFs
+    so PyMuPDF lazy-loads from disk instead of holding the full blob in memory.
+    Each page is rendered, sent to Gemini, released — never holding all pages at once.
     """
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -142,13 +148,26 @@ async def ocr_pages_with_gemini(
     model = genai.GenerativeModel(model_name)
     sem = asyncio.Semaphore(max_concurrency)
 
+    source: bytes | str = pdf_bytes
+    need_cleanup = False
+    if len(pdf_bytes) > 50_000_000:
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+        tmp.write(pdf_bytes)
+        tmp.close()
+        source = tmp.name
+        need_cleanup = True
+
     async def _bounded(page_idx: int) -> List[Dict[str, Any]]:
         async with sem:
-            return await asyncio.to_thread(_ocr_single_page_sync, pdf_bytes, page_idx, model)
+            return await asyncio.to_thread(_ocr_single_page_sync, source, page_idx, model)
 
     results = await asyncio.gather(*[_bounded(idx) for idx in page_indices])
 
-    # Flatten and sort by page_index so merge order is deterministic
+    if need_cleanup:
+        import os as _os
+        _os.unlink(source)
+
     all_blocks = [block for page_blocks in results for block in page_blocks]
     all_blocks.sort(key=lambda b: (b.get("page_index", 0), b.get("id", "")))
     return all_blocks

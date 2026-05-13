@@ -145,6 +145,129 @@ func handleWatermark(w http.ResponseWriter, r *http.Request) {
 	proxyToolkitCall(w, r, path, payload)
 }
 
+// ── Redact Handler ─────────────────────────────────────────────────────────
+
+type redactRequest struct {
+	DocID string `json:"doc_id"`
+	Areas []struct {
+		PageNumber int     `json:"page_number"`
+		BBox       []float64 `json:"bbox"`
+	} `json:"areas"`
+}
+
+func handleRedact(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req redactRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.DocID == "" {
+		http.Error(w, "doc_id required", http.StatusUnprocessableEntity)
+		return
+	}
+	path := "/api/pdf/redact?doc_id=" + url.QueryEscape(req.DocID)
+	proxyToolkitCall(w, r, path, map[string]any{"areas": req.Areas})
+}
+
+// ── Protect Handler ────────────────────────────────────────────────────────
+
+type protectRequest struct {
+	DocID         string `json:"doc_id"`
+	UserPassword  string `json:"user_password"`
+	OwnerPassword string `json:"owner_password"`
+}
+
+func handleProtect(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req protectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.DocID == "" {
+		http.Error(w, "doc_id required", http.StatusUnprocessableEntity)
+		return
+	}
+	path := "/api/pdf/protect?doc_id=" + url.QueryEscape(req.DocID)
+	proxyToolkitCall(w, r, path, map[string]any{"user_password": req.UserPassword, "owner_password": req.OwnerPassword})
+}
+
+// ── Forms Detect Handler ───────────────────────────────────────────────────
+
+func handleFormsDetect(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		DocID string `json:"doc_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.DocID == "" {
+		http.Error(w, "doc_id required", http.StatusUnprocessableEntity)
+		return
+	}
+	path := "/api/pdf/forms-detect?doc_id=" + url.QueryEscape(req.DocID)
+	proxyToolkitCall(w, r, path, nil)
+}
+
+// ── Forms Fill Handler ─────────────────────────────────────────────────────
+
+type formsFillRequest struct {
+	DocID   string            `json:"doc_id"`
+	Payload map[string]string `json:"payload"`
+}
+
+func handleFormsFill(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req formsFillRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.DocID == "" {
+		http.Error(w, "doc_id required", http.StatusUnprocessableEntity)
+		return
+	}
+	path := "/api/pdf/forms-fill?doc_id=" + url.QueryEscape(req.DocID)
+	proxyToolkitCall(w, r, path, map[string]any{"payload": req.Payload})
+}
+
+// ── Extract Images Handler ─────────────────────────────────────────────────
+
+func handleExtractImages(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		DocID string `json:"doc_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.DocID == "" {
+		http.Error(w, "doc_id required", http.StatusUnprocessableEntity)
+		return
+	}
+	path := "/api/pdf/extract-images?doc_id=" + url.QueryEscape(req.DocID)
+	proxyToolkitCall(w, r, path, nil)
+}
+
 func proxyToolkitCall(w http.ResponseWriter, r *http.Request, path string, payload any) {
 	apiBase := os.Getenv("API_BASE_URL")
 	if apiBase == "" {

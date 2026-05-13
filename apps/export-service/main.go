@@ -901,6 +901,11 @@ func main() {
 	mux.HandleFunc("/toolkit/compress",       handleCompress)
 	mux.HandleFunc("/toolkit/rotate",         handleRotate)
 	mux.HandleFunc("/toolkit/watermark",      handleWatermark)
+	mux.HandleFunc("/toolkit/redact",         handleRedact)
+	mux.HandleFunc("/toolkit/protect",        handleProtect)
+	mux.HandleFunc("/toolkit/forms-detect",   handleFormsDetect)
+	mux.HandleFunc("/toolkit/forms-fill",     handleFormsFill)
+	mux.HandleFunc("/toolkit/extract-images", handleExtractImages)
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
