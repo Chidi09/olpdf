@@ -114,6 +114,7 @@ export default function CollaborativeEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showNavigationTools, setShowNavigationTools] = useState(false);
+  const [commentDraft, setCommentDraft] = useState<{ visible: boolean; top: number; left: number; selectedText: string } | null>(null);
   const hasHydratedRef = useRef(false);
   const documentQuery = useDocumentQuery(documentId);
 
@@ -294,7 +295,40 @@ export default function CollaborativeEditor({
 
   return (
     <div className="flex h-full min-h-0 bg-[var(--bg-base)] text-[var(--text-primary)] font-[var(--font-ui)] overflow-hidden">
-        <FloatingToolbar onAction={(action, _selectedText) => {
+        {commentDraft?.visible && (
+          <div
+            className="fixed z-50 animate-in fade-in zoom-in-95 duration-200"
+            style={{ top: commentDraft.top, left: Math.max(16, commentDraft.left) }}
+          >
+            <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl shadow-2xl p-3 w-72">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Add Comment</p>
+              <textarea
+                autoFocus
+                placeholder="Write a comment..."
+                className="w-full min-h-20 rounded border border-[var(--border-subtle)] bg-[var(--bg-base)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") { setCommentDraft(null); return; }
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    const body = (e.target as HTMLTextAreaElement).value.trim();
+                    if (body) {
+                      void fetch(`/api/bff/documents/${documentId}/comments`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ block_id: null, page_index: 0, anchor: null, position: { x: 0, y: 0, width: 0, height: 0 }, body }),
+                      }).catch(() => null);
+                    }
+                    setCommentDraft(null);
+                  }
+                }}
+              />
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-[10px] text-[var(--text-tertiary)]">⌘⏎ to post</span>
+                <button onClick={() => setCommentDraft(null)} className="rounded bg-[var(--bg-panel)] border border-[var(--border-subtle)] px-2 py-1 text-[10px] text-[var(--text-secondary)]">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+        <FloatingToolbar onAction={(action, selectedText) => {
           if (!editor) return;
           if (action === "bold") { editor.chain().focus().toggleBold().run(); }
           if (action === "italic") { editor.chain().focus().toggleItalic().run(); }
@@ -306,10 +340,25 @@ export default function CollaborativeEditor({
             }
           }
           if (action === "comment") {
-            alert("Use the comment sidebar to add comments.");
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+              const rect = sel.getRangeAt(0).getBoundingClientRect();
+              setCommentDraft({ visible: true, top: rect.bottom + 8, left: rect.left, selectedText: selectedText });
+            }
           }
           if (action === "aiRewrite") {
-            alert("Select text and use the AI panel on the right for rewrite.");
+            if (selectedText) {
+              const url = window.prompt("AI rewrite instruction (improve, shorten, formal, casual):", "improve");
+              if (url) {
+                fetch(`/api/bff/ai/documents/${documentId}/instruction`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ instruction: `${url}: ${selectedText}` }),
+                }).catch(() => null);
+              }
+            } else {
+              alert("Select some text first for AI rewrite.");
+            }
           }
         }} />
         {showNavigationTools && (
