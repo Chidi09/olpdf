@@ -5,6 +5,9 @@ from ..core.auth import get_current_user
 from ..models import TemplateResponse
 from ..models.requests import PublishTemplatePayload
 from ..repositories import DocumentRepository
+from ..core.cache import cache_get, cache_set, cache_del_pattern
+from ..core.cache_keys import templates_published
+
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -129,6 +132,28 @@ async def list_templates(category: Optional[str] = None):
     except Exception:
         pass
 
+    # Cache DB results for 1 hour
+    cache_key = templates_published()
+    db_results = await cache_get(cache_key)
+    if db_results:
+        data = db_results
+    else:
+        try:
+            query = supabase.table("templates").select("*").eq("is_public", True)
+            if category:
+                query = query.eq("category", category)
+            response = query.execute()
+            if response.data:
+                data = response.data
+                await cache_set(cache_key, data, ttl=3600)
+            else:
+                data = None
+        except Exception:
+            data = None
+
+    if data:
+        return data
+
     if category and category != "All":
         filtered = [t for t in FALLBACK_TEMPLATES if t["category"] == category]
         return filtered
@@ -165,6 +190,7 @@ async def publish_template(
     if not new_template.data:
         raise HTTPException(status_code=500, detail="Failed to publish template")
         
+    await cache_del_pattern("olpdf:templates:*")
     return {"status": "success", "template_id": new_template.data[0]["id"]}
 
 def _build_template_model(template_id: str) -> Optional[dict]:

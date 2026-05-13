@@ -92,6 +92,8 @@ async def list_documents(page: int = 0, limit: int = 50, user: dict = Depends(re
 
 from ..repositories.document_repo import DocumentRepository as DocumentRepo
 from ..repositories import AuditLogRepository
+from ..core.cache import cache_get
+from ..core.cache_keys import export_status as export_status_key
 
 @router.post("/create")
 @limiter.limit("10/minute")
@@ -238,6 +240,31 @@ async def export_document(request: Request, doc_id: str, format_type: str, expor
 async def document_preflight(doc_id: str, doc: DocumentModel, user: dict = Depends(require_auth)) -> List[dict]:
     check_ownership(doc_id, user)
     return run_preflight(doc.model_dump())
+
+@router.post("/{document_id}/snapshot")
+@router.get("/export/stream/{job_id}")
+async def stream_export_status(job_id: str):
+    """SSE endpoint — Redis pub/sub replaces polling for async exports."""
+    from fastapi.responses import StreamingResponse
+    import json
+
+    async def event_generator():
+        done = await cache_get(export_status_key(job_id))
+        if done:
+            yield f"data: {json.dumps(done)}\n\n"
+            return
+        from ..core.cache import get_redis
+        r = await get_redis()
+        if r:
+            async with r.pubsub() as pubsub:
+                await pubsub.subscribe(f"olpdf:export_done:{job_id}")
+                async for message in pubsub.listen():
+                    if message["type"] == "message":
+                        yield f"data: {message['data']}\n\n"
+                        break
+        yield f"data: {json.dumps({'status': 'timeout'})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/{document_id}/snapshot")
 async def create_document_snapshot(document_id: str, payload: DocumentSnapshotPayload, user: dict = Depends(require_auth)) -> dict:
