@@ -12,6 +12,18 @@ export class PdfDocument {
         wasm.__wbg_pdfdocument_free(ptr, 0);
     }
     /**
+     * @param {number} page_num
+     * @param {any} annotation
+     * @returns {number}
+     */
+    add_annotation(page_num, annotation) {
+        const ret = wasm.pdfdocument_add_annotation(this.__wbg_ptr, page_num, annotation);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] >>> 0;
+    }
+    /**
      * @param {any} value
      * @returns {number}
      */
@@ -21,6 +33,63 @@ export class PdfDocument {
             throw takeFromExternrefTable0(ret[1]);
         }
         return ret[0] >>> 0;
+    }
+    /**
+     * @param {number} page_num
+     */
+    delete_page(page_num) {
+        const ret = wasm.pdfdocument_delete_page(this.__wbg_ptr, page_num);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    flatten_form() {
+        const ret = wasm.pdfdocument_flatten_form(this.__wbg_ptr);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * @param {number} page_num
+     * @returns {any}
+     */
+    get_annotations(page_num) {
+        const ret = wasm.pdfdocument_get_annotations(this.__wbg_ptr, page_num);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * @returns {any}
+     */
+    get_form_fields() {
+        const ret = wasm.pdfdocument_get_form_fields(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * @param {number} page_num
+     * @returns {any}
+     */
+    get_images(page_num) {
+        const ret = wasm.pdfdocument_get_images(this.__wbg_ptr, page_num);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * @returns {any}
+     */
+    get_metadata() {
+        const ret = wasm.pdfdocument_get_metadata(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
     }
     /**
      * @param {number} obj_num
@@ -33,6 +102,17 @@ export class PdfDocument {
             throw takeFromExternrefTable0(ret[1]);
         }
         return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * @param {number} after_page
+     * @param {number} width
+     * @param {number} height
+     */
+    insert_blank_page(after_page, width, height) {
+        const ret = wasm.pdfdocument_insert_blank_page(this.__wbg_ptr, after_page, width, height);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
     }
     /**
      * @param {Uint8Array} data
@@ -67,6 +147,37 @@ export class PdfDocument {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * @param {number} page_num
+     * @param {number} annot_obj_num
+     */
+    remove_annotation(page_num, annot_obj_num) {
+        const ret = wasm.pdfdocument_remove_annotation(this.__wbg_ptr, page_num, annot_obj_num);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * @param {Uint32Array} new_order
+     */
+    reorder_pages(new_order) {
+        const ptr0 = passArray32ToWasm0(new_order, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.pdfdocument_reorder_pages(this.__wbg_ptr, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * @param {number} page_num
+     * @param {number} degrees
+     */
+    rotate_page(page_num, degrees) {
+        const ret = wasm.pdfdocument_rotate_page(this.__wbg_ptr, page_num, degrees);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
      * @returns {Uint8Array}
      */
     serialize() {
@@ -77,6 +188,42 @@ export class PdfDocument {
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
+    }
+    /**
+     * @param {Uint8Array} _original
+     * @returns {Uint8Array}
+     */
+    serialize_incremental(_original) {
+        const ptr0 = passArray8ToWasm0(_original, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.pdfdocument_serialize_incremental(this.__wbg_ptr, ptr0, len0);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v2;
+    }
+    /**
+     * @param {number} field_obj_num
+     * @param {string} value
+     */
+    set_field_value(field_obj_num, value) {
+        const ptr0 = passStringToWasm0(value, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.pdfdocument_set_field_value(this.__wbg_ptr, field_obj_num, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * @param {any} meta
+     */
+    set_metadata(meta) {
+        const ret = wasm.pdfdocument_set_metadata(this.__wbg_ptr, meta);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
     }
     /**
      * @param {number} obj_num
@@ -469,6 +616,14 @@ function getStringFromWasm0(ptr, len) {
     return decodeText(ptr >>> 0, len);
 }
 
+let cachedUint32ArrayMemory0 = null;
+function getUint32ArrayMemory0() {
+    if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.byteLength === 0) {
+        cachedUint32ArrayMemory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32ArrayMemory0;
+}
+
 let cachedUint8ArrayMemory0 = null;
 function getUint8ArrayMemory0() {
     if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
@@ -488,6 +643,13 @@ function handleError(f, args) {
 
 function isLikeNone(x) {
     return x === undefined || x === null;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
 }
 
 function passArray8ToWasm0(arg, malloc) {
@@ -575,6 +737,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     wasmModule = module;
     cachedDataViewMemory0 = null;
+    cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();
     return wasm;
