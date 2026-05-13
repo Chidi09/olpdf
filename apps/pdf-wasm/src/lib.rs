@@ -417,6 +417,7 @@ fn make_block(
         column_index: 0,
         style_overrides: HashMap::new(),
         bullet: None,
+        is_invisible: false,
     })
 }
 
@@ -573,7 +574,10 @@ fn parse_page(
 
     for op in &content.operations {
         match op.operator.as_str() {
-            "q" => { stack.push(state!().clone()); }
+            "q" => {
+                let new_state = stack.last().unwrap().clone();
+                stack.push(new_state);
+            }
             "Q" => { if stack.len() > 1 { stack.pop(); } }
             "cm" => {
                 if op.operands.len() >= 6 {
@@ -961,6 +965,7 @@ fn merge_line_group(group: &[WasmBlock], left_margin: f64, right_margin: f64) ->
         column_index: first.column_index,
         style_overrides: HashMap::new(),
         bullet,
+        is_invisible: first.is_invisible,
     })
 }
 
