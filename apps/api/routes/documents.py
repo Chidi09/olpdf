@@ -1,6 +1,14 @@
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 
 from ..auth_utils import check_ownership, require_auth
 from ..core.auth import ensure_profile_row
