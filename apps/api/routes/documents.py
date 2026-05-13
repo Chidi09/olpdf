@@ -10,6 +10,7 @@ from ..export_utils import run_preflight
 from ..storage_client import r2_storage
 from ..worker_utils import route_pdf_import
 from ..core.supabase_client import supabase
+from ..workers.tasks.export_tasks import EXPORT_SERVICE_URL, WORKER_SECRET
 
 # Import limiter from limiter module
 from ..limiter import limiter
@@ -145,6 +146,33 @@ async def delete_document(doc_id: str, user: dict = Depends(require_auth)) -> di
     DocumentRepository.delete(doc_id)
     return {"id": doc_id, "status": "deleted"}
 
+async def _export_via_go(doc_dict: dict, format_type: str) -> bytes | None:
+    """Try Go export service first. Returns None if unavailable or fails."""
+    if not EXPORT_SERVICE_URL:
+        return None
+    try:
+        import httpx
+        headers = {
+            "Content-Type": "application/json",
+            "X-Worker-Secret": WORKER_SECRET,
+        }
+        payload = {
+            "document_model": doc_dict,
+            "color_space": doc_dict.get("meta", {}).get("color_space", "rgb"),
+        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                f"{EXPORT_SERVICE_URL}/export/{format_type}",
+                headers=headers,
+                json=payload,
+            )
+        if resp.status_code != 200:
+            return None
+        return resp.content
+    except Exception:
+        return None
+
+
 @router.post("/{doc_id}/export/{format_type}")
 @limiter.limit("5/minute")
 async def export_document(request: Request, doc_id: str, format_type: str, export_req: ExportRequest, user: dict = Depends(require_auth)) -> dict:
@@ -159,6 +187,15 @@ async def export_document(request: Request, doc_id: str, format_type: str, expor
         doc = export_req.document_model
         font_metrics = export_req.font_metrics or {}
         doc_dict = doc.model_dump()
+
+        # Try Go export service first
+        go_bytes = await _export_via_go(doc_dict, normalized_format)
+        if go_bytes:
+            object_name = f"exports/{doc_id}.{normalized_format}"
+            url = r2_storage.upload_bytes(go_bytes, object_name)
+            return {"id": doc_id, "url": url, "size": len(go_bytes), "format": normalized_format, "engine": "go"}
+
+        # Fallback to Python export
         if normalized_format == "fidelity" or doc.meta.layout_mode == "fidelity":
             from ..reflow_engine import reflow_document
 
