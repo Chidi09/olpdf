@@ -149,6 +149,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const hasAbsolutePdfLayout = Boolean(
     currentModel?.page_dimensions?.length || currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)),
   );
+  const canUseFidelity = Boolean(currentModel?.page_dimensions?.length && currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)));
   const layoutMode = currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable");
   const [leftTab, setLeftTab] = useState<"outline" | "blocks">("outline");
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
@@ -521,8 +522,17 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
                   Editable
                 </button>
                 <button
-                  onClick={() => void setLayoutMode("fidelity")}
-                  className={`rounded px-2 py-1 text-[10px] font-medium uppercase ${layoutMode === "fidelity" ? "bg-white text-black" : "text-[#777] hover:text-white"}`}
+                  onClick={() => {
+                    if (!canUseFidelity) { showNotice("Fidelity view is available after PDF import finishes."); return; }
+                    void setLayoutMode("fidelity");
+                  }}
+                  className={`rounded px-2 py-1 text-[10px] font-medium uppercase transition-colors ${
+                    layoutMode === "fidelity"
+                      ? "bg-white text-black"
+                      : canUseFidelity
+                        ? "text-[#777] hover:text-white"
+                        : "text-[#555] cursor-not-allowed"
+                  }`}
                 >
                   Fidelity
                 </button>

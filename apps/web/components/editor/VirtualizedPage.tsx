@@ -63,23 +63,10 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry) return;
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && stateRef.current !== "live") {
           setState("live");
           return;
         }
-
-        if (stateRef.current === "live" && canvasRef.current) {
-          captureThumbnail(canvasRef.current, (url) => {
-            thumbnailCacheRef.current.set(dim.page_index, url);
-            setThumbnailUrl(url);
-            void cacheThumbnail(dim.page_index, url);
-            onCanvasDestroy(dim.page_index);
-            setState("thumbnail");
-          });
-          return;
-        }
-
-        setState("thumbnail");
       },
       {
         rootMargin: "200% 0px",
