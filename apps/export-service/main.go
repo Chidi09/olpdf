@@ -872,6 +872,14 @@ func main() {
 	mux.HandleFunc("/export/pdfa",     makePDFHandler("pdfa"))
 	mux.HandleFunc("/export/tagged",   makePDFHandler("tagged"))
 	mux.HandleFunc("/export/images",   handleImages)
+
+	// Toolkit operations (routed from BFF when Go service is available)
+	mux.HandleFunc("/toolkit/merge",          handleMerge)
+	mux.HandleFunc("/toolkit/split",          handleSplit)
+	mux.HandleFunc("/toolkit/compress",       handleCompress)
+	mux.HandleFunc("/toolkit/rotate",         handleRotate)
+	mux.HandleFunc("/toolkit/watermark",      handleWatermark)
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"status":"ok"}`)
