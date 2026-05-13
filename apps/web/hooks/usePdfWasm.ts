@@ -53,7 +53,7 @@ export function usePdfWasm() {
     };
   }, []);
 
-  const parsePdf = useCallback((arrayBuffer: ArrayBuffer): Promise<unknown> => {
+  const send = useCallback((arrayBuffer: ArrayBuffer, type?: string): Promise<unknown> => {
     return new Promise<unknown>((resolve, reject) => {
       if (!workerRef.current) {
         reject(new Error("PDF WASM worker not ready"));
@@ -61,10 +61,19 @@ export function usePdfWasm() {
       }
       const id = crypto.randomUUID();
       pending.current.set(id, { resolve, reject });
-      // Transfer ownership of the buffer to the worker (zero-copy)
-      workerRef.current.postMessage({ id, buffer: arrayBuffer }, [arrayBuffer]);
+      const msg: Record<string, unknown> = { id, buffer: arrayBuffer };
+      if (type) msg.type = type;
+      workerRef.current.postMessage(msg, [arrayBuffer]);
     });
   }, []);
 
-  return { parsePdf, ready };
+  const parsePdf = useCallback((arrayBuffer: ArrayBuffer): Promise<unknown> => {
+    return send(arrayBuffer);
+  }, [send]);
+
+  const preflightPdf = useCallback((arrayBuffer: ArrayBuffer): Promise<{ page_count: number; page_dimensions: Array<{ page_index: number; width: number; height: number }> }> => {
+    return send(arrayBuffer, "preflight") as Promise<{ page_count: number; page_dimensions: Array<{ page_index: number; width: number; height: number }> }>;
+  }, [send]);
+
+  return { parsePdf, preflightPdf, ready };
 }

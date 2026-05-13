@@ -504,6 +504,38 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
 
 // ── Public export ─────────────────────────────────────────────────────────────
 
+/// Lightweight PDF preflight — returns page count, dimensions, and basic metadata.
+/// Much faster than full parse_pdf() since it skips content stream parsing.
+/// Use this for toolkit operations (split, rotate) to show page info before execution.
+#[derive(Serialize)]
+struct PreflightResult {
+    page_count: usize,
+    page_dimensions: Vec<WasmPageDimension>,
+}
+
+#[wasm_bindgen]
+pub fn preflight_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
+    let doc = Document::load_mem(data)
+        .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
+
+    let pages = doc.get_pages();
+    let mut dims: Vec<WasmPageDimension> = Vec::new();
+
+    for (page_num, &page_id) in &pages {
+        let page_index = (*page_num as usize).saturating_sub(1);
+        let (width, height) = get_page_size(&doc, page_id);
+        dims.push(WasmPageDimension { page_index, width, height });
+    }
+
+    dims.sort_by_key(|p| p.page_index);
+
+    serde_wasm_bindgen::to_value(&PreflightResult {
+        page_count: dims.len(),
+        page_dimensions: dims,
+    })
+    .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
+}
+
 /// Parse a PDF byte slice and return a DocumentModel-compatible JSON value.
 /// Runs entirely in the browser — no network, no server.
 #[wasm_bindgen]
