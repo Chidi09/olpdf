@@ -84,7 +84,7 @@ struct PageFontInfo {
     default_width: f64,
 }
 
-fn resolve_object<'a>(doc: &'a Document, obj: &Object) -> Option<&'a Object> {
+fn resolve_object<'a>(doc: &'a Document, obj: &'a Object) -> Option<&'a Object> {
     match obj {
         Object::Reference(id) => doc.get_object(*id).ok(),
         other => Some(other),
@@ -101,21 +101,18 @@ fn parse_cmap(data: &[u8]) -> HashMap<u16, char> {
     let mut map = HashMap::new();
     let mut in_bfchar = false;
     let mut in_bfrange = false;
-    let mut count: usize = 0;
 
     for line in s.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("beginbfchar") {
             in_bfchar = true;
             in_bfrange = false;
-            count = 0;
             continue;
         }
         if trimmed.starts_with("endbfchar") { in_bfchar = false; continue; }
         if trimmed.starts_with("beginbfrange") {
             in_bfrange = true;
             in_bfchar = false;
-            count = 0;
             continue;
         }
         if trimmed.starts_with("endbfrange") { in_bfrange = false; continue; }
@@ -174,8 +171,10 @@ fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str) -> Option<
     let page_obj = doc.get_object(page_id).ok()?;
     let page_dict = page_obj.as_dict().ok()?;
 
-    let resources = get_dict(doc, &page_dict.get(b"Resources").ok()?)?;
-    let fonts_dict = get_dict(doc, &resources.get(b"Font").ok()?)?;
+    let res_obj = page_dict.get(b"Resources").ok()?;
+    let resources = get_dict(doc, res_obj)?;
+    let font_obj = resources.get(b"Font").ok()?;
+    let fonts_dict = get_dict(doc, font_obj)?;
 
     let font_ref = fonts_dict.get(font_name.as_bytes()).ok()?;
     let font_dict = get_dict(doc, font_ref)?;
@@ -183,7 +182,7 @@ fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str) -> Option<
     // ToUnicode CMap
     let unicode_map = if let Ok(tu) = font_dict.get(b"ToUnicode") {
         match resolve_object(doc, tu) {
-            Some(Object::Stream(stream, _)) => parse_cmap(&stream.content),
+            Some(Object::Stream(stream)) => parse_cmap(&stream.content),
             _ => HashMap::new(),
         }
     } else {
@@ -220,6 +219,8 @@ fn load_font_info(doc: &Document, page_id: ObjectId, font_name: &str) -> Option<
 
     Some(PageFontInfo { unicode_map, widths, first_char, default_width })
 }
+
+fn empty_map() -> HashMap<u16, char> { HashMap::new() }
 
 fn decode_with_map(bytes: &[u8], unicode_map: &HashMap<u16, char>) -> String {
     if bytes.len() >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
@@ -498,7 +499,7 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
             "T*" if in_bt => { flush!(); set_pos!(tlm_e, tlm_f - leading); }
             "Tj" if in_bt => {
                 if let Some(Object::String(b, _)) = op.operands.first() {
-                    let decoded = decode_with_map(b, &font_info.as_ref().map_or(&HashMap::new(), |f| &f.unicode_map));
+                    let decoded = decode_with_map(b, font_info.as_ref().map_or(empty_map(), |f| f.unicode_map.clone()));
                     if cur_text.is_empty() { start_x = tlm_e; start_y = tlm_f; }
                     cur_text.push_str(&decoded);
                     cur_seg_text.push_str(&decoded);
@@ -510,7 +511,7 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     for item in items {
                         match item {
                             Object::String(b, _) => {
-                                let decoded = decode_with_map(b, &font_info.as_ref().map_or(&HashMap::new(), |f| &f.unicode_map));
+                                let decoded = decode_with_map(b, font_info.as_ref().map_or(empty_map(), |f| f.unicode_map.clone()));
                                 cur_text.push_str(&decoded);
                                 cur_seg_text.push_str(&decoded);
                             }
@@ -525,7 +526,7 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                 flush!();
                 set_pos!(tlm_e, tlm_f - leading);
                 if let Some(Object::String(b, _)) = op.operands.first() {
-                    let decoded = decode_with_map(b, &font_info.as_ref().map_or(&HashMap::new(), |f| &f.unicode_map));
+                    let decoded = decode_with_map(b, font_info.as_ref().map_or(empty_map(), |f| f.unicode_map.clone()));
                     cur_text.push_str(&decoded);
                     cur_seg_text.push_str(&decoded);
                 }
@@ -535,7 +536,7 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     flush!();
                     set_pos!(tlm_e, tlm_f - leading);
                     if let Object::String(b, _) = &op.operands[2] {
-                        let decoded = decode_with_map(b, &font_info.as_ref().map_or(&HashMap::new(), |f| &f.unicode_map));
+                        let decoded = decode_with_map(b, font_info.as_ref().map_or(empty_map(), |f| f.unicode_map.clone()));
                         cur_text.push_str(&decoded);
                         cur_seg_text.push_str(&decoded);
                     }
