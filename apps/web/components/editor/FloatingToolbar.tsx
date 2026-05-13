@@ -10,15 +10,26 @@ import {
 } from "@heroicons/react/24/outline";
 import { GlassPanel } from "@/components/ui/Glass";
 
+export type FloatingToolbarAction = "bold" | "italic" | "link" | "comment" | "aiRewrite";
+
 type Position = { top: number; left: number };
 
-export default function FloatingToolbar() {
+interface FloatingToolbarProps {
+  onAction: (action: FloatingToolbarAction, selectionText: string) => void;
+}
+
+export default function FloatingToolbar({ onAction }: FloatingToolbarProps) {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState<Position>({ top: 0, left: 0 });
 
-  const exec = useCallback((command: string, value?: string) => {
-    document.execCommand(command, false, value);
+  const getSelectionText = useCallback(() => {
+    return window.getSelection()?.toString() || "";
   }, []);
+
+  const handleAction = useCallback((action: FloatingToolbarAction) => {
+    onAction(action, getSelectionText());
+    setVisible(false);
+  }, [onAction, getSelectionText]);
 
   useEffect(() => {
     const onMouseUp = () => {
@@ -53,36 +64,33 @@ export default function FloatingToolbar() {
     >
       <GlassPanel className="flex items-center gap-1 p-1 shadow-2xl">
         <button
-          onClick={() => exec("bold")}
+          onClick={() => handleAction("bold")}
           className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
         >
           <BoldIcon className="w-4 h-4" />
         </button>
         <button
-          onClick={() => exec("italic")}
+          onClick={() => handleAction("italic")}
           className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
         >
           <ItalicIcon className="w-4 h-4" />
         </button>
         <button
-          onClick={() => {
-            const url = prompt("Enter link URL:");
-            if (url) exec("createLink", url);
-          }}
+          onClick={() => handleAction("link")}
           className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
         >
           <LinkIcon className="w-4 h-4" />
         </button>
         <div className="w-px h-4 bg-white/10 mx-1" />
         <button
-          onClick={() => exec("bold")}
+          onClick={() => handleAction("aiRewrite")}
           className="p-1.5 text-orange-500 hover:bg-orange-500/10 rounded transition-colors active:scale-[0.95]"
           title="AI Rewrite"
         >
           <SparklesIcon className="w-4 h-4" />
         </button>
         <button
-          onClick={() => exec("bold")}
+          onClick={() => handleAction("comment")}
           className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-white/10 rounded transition-colors active:scale-[0.95]"
           title="Comment"
         >

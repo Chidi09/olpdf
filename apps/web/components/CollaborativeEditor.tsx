@@ -12,6 +12,7 @@ import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
+import LinkExtension from "@tiptap/extension-link";
 
 // Custom extension for block metadata and interactions
 const BlockMetadata = Extension.create({
@@ -220,7 +221,9 @@ export default function CollaborativeEditor({
     extensions: [
       StarterKit.configure({ history: false }),
       Collaboration.configure({ document: ydoc }),
-      DragHandle, TextStyle, Color, Table.configure({ resizable: true }), TableRow, TableCell, TableHeader,
+      DragHandle, TextStyle, Color,
+      LinkExtension.configure({ openOnClick: true }),
+      Table.configure({ resizable: true }), TableRow, TableCell, TableHeader,
       BlockMetadata, RenderDataAttributes,
     ],
     content: documentModelToTiptap(hydratedModel),
@@ -286,7 +289,24 @@ export default function CollaborativeEditor({
 
   return (
     <div className="flex h-full min-h-0 bg-[var(--bg-base)] text-[var(--text-primary)] font-[var(--font-ui)] overflow-hidden">
-        <FloatingToolbar />
+        <FloatingToolbar onAction={(action, _selectedText) => {
+          if (!editor) return;
+          if (action === "bold") { editor.chain().focus().toggleBold().run(); }
+          if (action === "italic") { editor.chain().focus().toggleItalic().run(); }
+          if (action === "link") {
+            const url = window.prompt("Enter link URL:");
+            if (url) {
+              try { new URL(url); editor.chain().focus().setLink({ href: url }).run(); }
+              catch { editor.chain().focus().setLink({ href: `https://${url}` }).run(); }
+            }
+          }
+          if (action === "comment") {
+            alert("Use the comment sidebar to add comments.");
+          }
+          if (action === "aiRewrite") {
+            alert("Select text and use the AI panel on the right for rewrite.");
+          }
+        }} />
         {showNavigationTools && (
           <>
             <PageMinimap pageCount={Math.max(model?.page_dimensions?.length || 0, 1)} />
