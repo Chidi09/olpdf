@@ -771,9 +771,9 @@ impl PdfDocument {
                         .map_err(|_| JsValue::from_str("cannot resolve annots ref"))?;
                     resolved.as_array().map_err(|_| JsValue::from_str("annots not array"))?.clone()
                 }
-                _ => return Ok(serde_wasm_bindgen::to_value(&[]).unwrap()),
+                _ => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
             },
-            Err(_) => return Ok(serde_wasm_bindgen::to_value(&[]).unwrap()),
+            Err(_) => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
         };
         let mut results = Vec::new();
         for annot_ref in &annots {
@@ -896,8 +896,8 @@ impl PdfDocument {
             Some(d) => d.get(b"Fields").ok(),
             None => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
         };
-        let fields = match fields_array {
-            lopdf::Object::Array(a) => a.clone(),
+        let fields: Vec<lopdf::Object> = match fields_array {
+            Some(lopdf::Object::Array(a)) => a.clone(),
             _ => return Ok(serde_wasm_bindgen::to_value::<Vec<serde_json::Value>>(&vec![]).unwrap()),
         };
         let mut results = Vec::new();
@@ -917,10 +917,10 @@ impl PdfDocument {
             if let Ok(dict) = field.as_dict_mut() {
                 dict.set("V".as_bytes().to_vec(), lopdf::Object::string_literal(value));
                 // Set NeedAppearances in AcroForm so viewer regenerates appearance
-                if let Ok(catalog_id) = self.doc.catalog() {
-                    if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+                if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
+                    if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
                         if let Ok(cat_dict) = catalog.as_dict_mut() {
-                            if let Ok(af_ref) = cat_dict.get(b"AcroForm").ok().cloned() {
+                            if let Some(af_ref) = cat_dict.get(b"AcroForm").ok().cloned() {
                                 let af_id = match af_ref {
                                     lopdf::Object::Reference(id) => id,
                                     _ => return Ok(()),
@@ -941,8 +941,8 @@ impl PdfDocument {
 
     pub fn flatten_form(&mut self) -> Result<(), JsValue> {
         // Remove AcroForm from catalog
-        if let Ok(catalog_id) = self.doc.catalog() {
-            if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+        if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
+            if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
                 if let Ok(dict) = catalog.as_dict_mut() {
                     dict.remove(b"AcroForm");
                 }
@@ -954,7 +954,7 @@ impl PdfDocument {
     // ── Phase 5: Page operations ───────────────────────────────────────────
 
     pub fn delete_page(&mut self, page_num: u32) -> Result<(), JsValue> {
-        self.doc.delete_pages(page_num as u32..=page_num as u32);
+        self.doc.delete_pages(&[page_num]);
         Ok(())
     }
 
@@ -968,7 +968,7 @@ impl PdfDocument {
             lopdf::Object::Real(width as f32),
             lopdf::Object::Real(height as f32),
         ]));
-        page_dict.set("Contents".as_bytes().to_vec(), lopdf::Object::Stream(lopdf::Stream::default()));
+        page_dict.set("Contents".as_bytes().to_vec(), lopdf::Object::Stream(lopdf::Stream::new(lopdf::Dictionary::new(), vec![])));
         let page_obj = lopdf::Object::Dictionary(page_dict);
         let page_ref = lopdf::Object::Reference(self.doc.add_object(page_obj));
 
@@ -988,8 +988,8 @@ impl PdfDocument {
         if let Ok(0) = self.doc.catalog().map(|id| id.0) {
             // Could not find catalog
         }
-        if let Ok(catalog_id) = self.doc.catalog() {
-            if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+        if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
+            if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
                 if let Ok(dict) = catalog.as_dict_mut() {
                     let old_pages_ref = dict.get(b"Pages").ok().cloned();
                     if let Some(lopdf::Object::Reference(pages_id)) = old_pages_ref {
@@ -1019,8 +1019,8 @@ impl PdfDocument {
         }
 
         let kids: Vec<_> = reordered.iter().map(|id| lopdf::Object::Reference(*id)).collect();
-        if let Ok(catalog_id) = self.doc.catalog() {
-            if let Ok(catalog) = self.doc.get_object_mut(catalog_id) {
+        if let Some(lopdf::Object::Reference(cat_ref)) = self.doc.trailer.get(b"Root").ok() {
+            if let Ok(catalog) = self.doc.get_object_mut(*cat_ref) {
                 if let Ok(dict) = catalog.as_dict_mut() {
                     let old_ref = dict.get(b"Pages").ok().cloned();
                     if let Some(lopdf::Object::Reference(pages_id)) = old_ref {
@@ -1101,7 +1101,7 @@ impl PdfDocument {
 
     // ── Phase 6: Incremental save ──────────────────────────────────────────
 
-    pub fn serialize_incremental(&mut self, original: &[u8]) -> Result<Vec<u8>, JsValue> {
+    pub fn serialize_incremental(&mut self, _original: &[u8]) -> Result<Vec<u8>, JsValue> {
         // Full serialization for now; incremental save can be optimized later
         let mut buf = Vec::new();
         self.doc.save_to(&mut buf)
