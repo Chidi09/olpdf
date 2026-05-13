@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import BookSidebar from "./BookSidebar";
+import BookSidebar, { type BookMatterKey } from "./BookSidebar";
 import BookInspector from "./BookInspector";
 import CollaborativeEditor from "../CollaborativeEditor";
 import CoverBuilder from "./CoverBuilder";
@@ -12,14 +12,15 @@ import { useBookStore } from "@/store/useBookStore";
 
 interface BookWorkspaceProps {
   bookId: string;
-  userName: string;
-  userColor: string;
+  userName?: string;
+  userColor?: string;
 }
 
-export default function BookWorkspace({ bookId, userName, userColor }: BookWorkspaceProps) {
+export default function BookWorkspace({ bookId, userName = "You", userColor = "#e6a449" }: BookWorkspaceProps) {
   const queryClient = useQueryClient();
   const { activeDocumentId, isSidebarOpen, setActiveDocumentId, toggleSidebar } = useBookStore();
   const [isCoverBuilderOpen, setIsCoverBuilderOpen] = useState(false);
+  const [activeMatterKey, setActiveMatterKey] = useState<BookMatterKey | null>(null);
 
   const { data: book, isLoading } = useQuery<BookModel>({
     queryKey: ["book", bookId],
@@ -36,9 +37,24 @@ export default function BookWorkspace({ bookId, userName, userColor }: BookWorks
     return first?.document_id ?? null;
   }, [activeDocumentId, book?.chapters]);
 
+  const handleSelectMatter = async (key: BookMatterKey) => {
+    setActiveMatterKey(key);
+    setActiveDocumentId(""); // clear chapter selection
+    const response = await fetch(`/api/bff/books/${bookId}/matter/${key}`, { method: "POST" });
+    if (!response.ok) return;
+    const data = await response.json().catch(() => ({}));
+    if (data?.document_id) setActiveDocumentId(data.document_id);
+  };
+
+  const handleSelectChapter = (docId: string) => {
+    setActiveMatterKey(null);
+    setActiveDocumentId(docId);
+  };
+
   const activeChapter = useMemo(() => {
+    if (activeMatterKey) return null;
     return book?.chapters?.find((chapter) => chapter.document_id === selectedDocumentId) ?? null;
-  }, [book?.chapters, selectedDocumentId]);
+  }, [book?.chapters, selectedDocumentId, activeMatterKey]);
 
   const safeBook: BookModel = book ?? { title: "Untitled Book", meta: {}, chapters: [] };
 
@@ -120,10 +136,12 @@ export default function BookWorkspace({ bookId, userName, userColor }: BookWorks
       <div className={`transition-all duration-300 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] ${isSidebarOpen ? "w-64" : "w-0 overflow-hidden"}`}>
         <BookSidebar
           book={safeBook}
-          activeChapterId={selectedDocumentId}
-          onSelectChapter={setActiveDocumentId}
+          activeChapterId={activeMatterKey ? null : selectedDocumentId}
+          onSelectChapter={handleSelectChapter}
           onAddChapter={() => addChapterMutation.mutate()}
           onOpenCoverBuilder={() => setIsCoverBuilderOpen(true)}
+          activeMatterKey={activeMatterKey}
+          onSelectMatter={handleSelectMatter}
         />
       </div>
 
@@ -134,7 +152,7 @@ export default function BookWorkspace({ bookId, userName, userColor }: BookWorks
           </button>
           <div className="ml-4 flex-1">
             <h1 className="text-sm font-bold text-[var(--text-primary)]">
-              {book?.title} <span className="mx-2 text-[var(--text-tertiary)]">/</span> {activeChapter?.title}
+              {book?.title} <span className="mx-2 text-[var(--text-tertiary)]">/</span> {activeChapter?.title || (activeMatterKey ? activeMatterKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "")}
             </h1>
           </div>
           <div className="flex gap-2">

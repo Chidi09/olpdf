@@ -86,6 +86,29 @@ async def update_chapter(book_id: str, chapter_id: str, chapter: BookChapter, ba
         background_tasks.add_task(index_chapter_embeddings, chapter_id)
     return {"status": "success"}
 
+MATTER_KEYS = {"title_page", "copyright", "toc", "about_author"}
+MATTER_TITLES = {"title_page": "Title Page", "copyright": "Copyright", "toc": "Table of Contents", "about_author": "About the Author"}
+
+@router.post("/{book_id}/matter/{matter_key}")
+async def ensure_book_matter(book_id: str, matter_key: str, user: dict = Depends(require_auth)) -> dict:
+    if matter_key not in MATTER_KEYS:
+        raise HTTPException(status_code=400, detail=f"Invalid matter key: {matter_key}")
+    book = check_ownership(book_id, user, resource_type="book")
+    current_matter = dict(book.get("meta", {}).get("matter", {}))
+    existing = current_matter.get(matter_key)
+    if existing and existing.get("document_id"):
+        return {"document_id": existing["document_id"], "matter_key": matter_key, "created": False}
+    title = MATTER_TITLES.get(matter_key, matter_key.replace("_", " ").title())
+    new_doc = DocumentRepository.create(
+        title,
+        {"meta": {"title": title, "page_size": "A4", "layout_mode": "editable"}, "blocks": [], "styles": {}, "page_dimensions": []},
+        status="ready",
+        user_id=user["sub"],
+    )
+    current_matter[matter_key] = {"document_id": new_doc["id"], "title": title}
+    BookRepository.update(book_id, {"meta": {**book.get("meta", {}), "matter": current_matter}})
+    return {"document_id": new_doc["id"], "matter_key": matter_key, "created": True}
+
 @router.post("/{book_id}/export/{format_type}")
 async def export_book(book_id: str, format_type: str, user: dict = Depends(require_auth)) -> dict:
     book_data = check_ownership(book_id, user, resource_type="book")

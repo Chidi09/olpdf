@@ -4,6 +4,8 @@ import React from "react";
 import { BookModel } from "@olpdf/document-model";
 import { BookOpen } from "lucide-react";
 
+export type BookMatterKey = "title_page" | "copyright" | "toc" | "about_author";
+
 interface BookSidebarProps {
   book: BookModel;
   activeChapterId: string | null;
@@ -11,6 +13,8 @@ interface BookSidebarProps {
   onAddChapter: () => void;
   onOpenCoverBuilder: () => void;
   onOpenAiHistory?: () => void;
+  activeMatterKey?: BookMatterKey | null;
+  onSelectMatter?: (key: BookMatterKey) => void;
 }
 
 export default function BookSidebar({
@@ -20,6 +24,8 @@ export default function BookSidebar({
   onAddChapter,
   onOpenCoverBuilder,
   onOpenAiHistory,
+  activeMatterKey,
+  onSelectMatter,
 }: BookSidebarProps) {
   return (
     <aside className="w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-y-auto flex flex-col">
@@ -51,16 +57,23 @@ export default function BookSidebar({
           <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-tertiary)] mb-3 px-2">
             Front Matter
           </h3>
-          <ul className="space-y-1">
-            <li className="px-2 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer rounded hover:bg-[var(--bg-elevated)] transition-colors">
-              Title Page
-            </li>
-            <li className="px-2 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer rounded hover:bg-[var(--bg-elevated)] transition-colors">
-              Copyright
-            </li>
-            <li className="px-2 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer rounded hover:bg-[var(--bg-elevated)] transition-colors">
-              Table of Contents
-            </li>
+            <ul className="space-y-1">
+            {(["title_page", "copyright", "toc"] as BookMatterKey[]).map((key) => {
+              const label = key === "title_page" ? "Title Page" : key === "copyright" ? "Copyright" : "Table of Contents";
+              return (
+                <li
+                  key={key}
+                  onClick={() => onSelectMatter?.(key)}
+                  className={`px-2 py-1.5 text-sm cursor-pointer rounded transition-colors ${
+                    activeMatterKey === key
+                      ? "bg-[var(--accent-subtle)] text-[var(--accent)] border-l-2 border-[var(--accent)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                  }`}
+                >
+                  {label}
+                </li>
+              );
+            })}
           </ul>
         </div>
 
@@ -109,7 +122,14 @@ export default function BookSidebar({
                 Back Matter
             </h3>
             <ul className="space-y-1">
-                <li className="px-2 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer rounded hover:bg-[var(--bg-elevated)] transition-colors">
+                <li
+                  onClick={() => onSelectMatter?.("about_author")}
+                  className={`px-2 py-1.5 text-sm cursor-pointer rounded transition-colors ${
+                    activeMatterKey === "about_author"
+                      ? "bg-[var(--accent-subtle)] text-[var(--accent)] border-l-2 border-[var(--accent)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                  }`}
+                >
                     About the Author
                 </li>
             </ul>
