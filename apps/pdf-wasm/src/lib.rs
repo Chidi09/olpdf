@@ -511,9 +511,8 @@ fn parse_page(doc: &Document, page_id: (u32, u16), page_index: usize, page_heigh
                     for item in items {
                         match item {
                             Object::String(b, _) => {
-                                let _umap = font_info.as_ref().map(|f| f.unicode_map.clone());
-                                let _uref = _umap.as_ref().unwrap_or(&std::collections::HashMap::new());
-                                let decoded = decode_with_map(b, _uref);
+                                let empty = std::collections::HashMap::new();
+                                let decoded = decode_with_map(b, font_info.as_ref().map_or(&empty, |f| &f.unicode_map));
                                 cur_text.push_str(&decoded);
                                 cur_seg_text.push_str(&decoded);
                             }
