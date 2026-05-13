@@ -21,6 +21,9 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   const { activeDocumentId, isSidebarOpen, setActiveDocumentId, toggleSidebar } = useBookStore();
   const [isCoverBuilderOpen, setIsCoverBuilderOpen] = useState(false);
   const [activeMatterKey, setActiveMatterKey] = useState<BookMatterKey | null>(null);
+  const [isNarrativeRunning, setIsNarrativeRunning] = useState(false);
+  const [isTitleLoading, setIsTitleLoading] = useState(false);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
 
   const { data: book, isLoading } = useQuery<BookModel>({
     queryKey: ["book", bookId],
@@ -103,7 +106,18 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   });
 
   const exportBook = async (format: "pdf" | "epub") => {
-    await fetch(`/api/bff/books/${bookId}/export/${format}`, { method: "POST" });
+    setExportStatus(`Exporting ${format.toUpperCase()}...`);
+    try {
+      const response = await fetch(`/api/bff/books/${bookId}/export/${format}`, { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) throw new Error(data.detail || "Export failed");
+      window.open(data.url, "_blank", "noopener,noreferrer");
+      setExportStatus(`${format.toUpperCase()} exported`);
+      setTimeout(() => setExportStatus(null), 3000);
+    } catch {
+      setExportStatus(`${format.toUpperCase()} export failed`);
+      setTimeout(() => setExportStatus(null), 5000);
+    }
   };
 
   const checkConsistency = async () => {
@@ -112,6 +126,36 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: "Check character and timeline consistency." }),
     });
+  };
+
+  const continueNarrative = async () => {
+    if (!activeChapter?.document_id) return;
+    setIsNarrativeRunning(true);
+    try {
+      await fetch(`/api/bff/ai/documents/${activeChapter.document_id}/instruction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction: "Continue the narrative from where it left off." }),
+      });
+    } finally {
+      setIsNarrativeRunning(false);
+    }
+  };
+
+  const suggestChapterTitle = async () => {
+    if (!activeChapter?.id) return;
+    setIsTitleLoading(true);
+    try {
+      const suggested = `Chapter ${(book?.chapters?.length ?? 0) + 1}: The Next Chapter`;
+      const res = await fetch(`/api/bff/books/${bookId}/chapters/${activeChapter.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...activeChapter, title: suggested }),
+      });
+      if (res.ok) queryClient.invalidateQueries({ queryKey: ["book", bookId] });
+    } finally {
+      setIsTitleLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -186,6 +230,12 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
           onUpdateChapter={(chapterId, updates) => updateChapterMutation.mutate({ chapterId, updates })}
           onExportBook={exportBook}
           onCheckConsistency={checkConsistency}
+          onContinueNarrative={continueNarrative}
+          onSuggestChapterTitle={suggestChapterTitle}
+          isNarrativeRunning={isNarrativeRunning}
+          isTitleLoading={isTitleLoading}
+          exportStatus={exportStatus}
+          onUpdateBookMeta={(updates) => updateBookMetaMutation.mutate(updates)}
         />
       </div>
     </div>
