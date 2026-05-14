@@ -152,6 +152,7 @@ export default function CollaborativeEditor({
 
   const saveMutation = useSaveDocumentMutation(documentId);
   const hydratedModel = normalizeDocumentModel(initialModel || documentQuery.data?.document_model || model, documentId);
+  const isNativePdf = (hydratedModel.meta as Record<string, unknown> | undefined)?.native_pdf === true;
   const hydratedModelRef = useRef(hydratedModel);
 
   useEffect(() => {
@@ -245,8 +246,8 @@ export default function CollaborativeEditor({
           return;
         }
         const baseModel = hydratedModelRef.current;
-        const isNativePdf = (baseModel.meta as Record<string, unknown> | undefined)?.native_pdf === true;
-        const newModel = isNativePdf
+        const baseIsNativePdf = (baseModel.meta as Record<string, unknown> | undefined)?.native_pdf === true;
+        const newModel = baseIsNativePdf
           ? mergeTiptapIntoNativePdfModel(baseModel, editor.getJSON())
           : {
               ...baseModel,
