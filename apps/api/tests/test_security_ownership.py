@@ -18,6 +18,7 @@ mock_auth = MockAuth()
 app.dependency_overrides[require_auth] = mock_auth
 
 def test_document_ownership_enforcement():
+    app.dependency_overrides[require_auth] = mock_auth
     # Mock document owned by user123
     mock_doc = {"id": "doc1", "user_id": "user123", "document_model": {"blocks": []}}
     
@@ -33,6 +34,7 @@ def test_document_ownership_enforcement():
         assert response.status_code == 403
 
 def test_book_ownership_enforcement():
+    app.dependency_overrides[require_auth] = mock_auth
     # Mock book owned by user123
     mock_book = {"id": "book1", "user_id": "user123", "title": "My Book"}
     
@@ -49,6 +51,7 @@ def test_book_ownership_enforcement():
         assert response.status_code == 403
 
 def test_not_found_resource():
+    app.dependency_overrides[require_auth] = mock_auth
     with patch("apps.api.repositories.DocumentRepository.get_by_id", return_value=None):
         mock_auth.user = {"sub": "user123"}
         response = client.get("/api/documents/nonexistent", headers={"Authorization": "Bearer token"})

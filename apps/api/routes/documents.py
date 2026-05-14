@@ -17,6 +17,7 @@ from ..core.supabase_client import supabase
 from ..engine.normalizer import normalize_document_model as normalize_model
 from ..export_utils import run_preflight
 from ..factories import ExportEngineFactory
+from ..repositories.download_link_repo import DownloadLinkRepository
 
 # Import limiter from limiter module
 from ..limiter import limiter
@@ -348,12 +349,18 @@ async def export_document(
         go_bytes = await _export_via_go(doc_dict, normalized_format)
         if go_bytes:
             object_name = f"exports/{doc_id}.{normalized_format}"
-            url = r2_storage.upload_bytes_and_presign(go_bytes, object_name)
-            if not url:
+            uploaded = r2_storage.upload_bytes(go_bytes, object_name)
+            if not uploaded:
                 raise HTTPException(status_code=500, detail="Failed to upload export")
+            link = DownloadLinkRepository.create(
+                owner_id=user["sub"],
+                object_key=object_name,
+                filename=f"{getattr(doc.meta, 'title', doc_id) or doc_id}.pdf",
+                content_type="application/pdf",
+            )
             return {
                 "id": doc_id,
-                "url": url,
+                "url": link["url"],
                 "size": len(go_bytes),
                 "format": normalized_format,
                 "engine": "go",
@@ -378,9 +385,15 @@ async def export_document(
             pdf_bytes = engine(doc_dict)
 
         object_name = f"exports/{doc_id}.{normalized_format}"
-        url = r2_storage.upload_bytes_and_presign(pdf_bytes, object_name)
-        if not url:
+        uploaded = r2_storage.upload_bytes(pdf_bytes, object_name)
+        if not uploaded:
             raise HTTPException(status_code=500, detail="Failed to upload export")
+        link = DownloadLinkRepository.create(
+            owner_id=user["sub"],
+            object_key=object_name,
+            filename=f"{getattr(doc.meta, 'title', doc_id) or doc_id}.pdf",
+            content_type="application/pdf",
+        )
 
         # Best-effort email notification
         try:
@@ -389,7 +402,7 @@ async def export_document(
             send_export_ready_notification(
                 user_id=user["sub"],
                 doc_title=doc.meta.title,
-                export_url=url,
+                export_url=link["url"],
                 format_type=normalized_format,
             )
         except Exception:
@@ -397,7 +410,7 @@ async def export_document(
 
         return {
             "id": doc_id,
-            "url": url,
+            "url": link["url"],
             "size": len(pdf_bytes),
             "format": normalized_format,
         }

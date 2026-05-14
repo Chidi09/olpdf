@@ -9,6 +9,26 @@ import (
 	"os"
 )
 
+// isAsyncRequest checks if the requester wants a job-based (async) response.
+func isAsyncRequest(r *http.Request) bool {
+	return r.URL.Query().Get("async") == "true"
+}
+
+// handleAsync dispatches an async job when ?async=true, returns false to continue sync.
+func handleAsync(operation string, w http.ResponseWriter, r *http.Request) bool {
+	if !isAsyncRequest(r) {
+		return false
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, `{"error":"read_failed"}`, http.StatusBadRequest)
+		return true
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	startAsyncToolkitJob(w, r, operation, body)
+	return true
+}
+
 type mergeRequest struct {
 	DocIDs []string `json:"doc_ids"`
 }
@@ -38,6 +58,10 @@ type watermarkRequest struct {
 func handleMerge(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if handleAsync("merge", w, r) {
 		return
 	}
 

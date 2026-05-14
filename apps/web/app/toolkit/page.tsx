@@ -20,7 +20,9 @@ import { useToolkitStore } from "@/store/useToolkitStore";
 import { useToastStore } from "@/store/useToastStore";
 import { InlineSpinner, HelperText } from "@/components/ui/MicroUI";
 import { ToolkitResultCard } from "@/components/toolkit/ToolkitResultCard";
+import { PdfJobCard } from "@/components/toolkit/PdfJobCard";
 import { usePdfWasm } from "@/hooks/usePdfWasm";
+import { usePdfJob } from "@/hooks/usePdfJob";
 
 type MicroStatus = {
   state: "idle" | "working" | "success" | "error";
@@ -121,6 +123,10 @@ export default function ToolkitPage() {
     };
   }, [active.id, selectedDocumentId, mergeDocIds, splitRanges, rotation, pageIndices, watermarkText, watermarkOpacity, userPassword, ownerPassword, redactAreas, fillFormPayload]);
 
+  const [activeJobIds, setActiveJobIds] = useState<string[]>([]);
+  const latestJobId = activeJobIds[activeJobIds.length - 1] ?? null;
+  const { job: latestJob, dismiss: dismissLatest, isDismissed: isLatestDismissed } = usePdfJob(latestJobId);
+
   const runOperation = async () => {
     setRunning(true);
     setOperationStatus({ state: "working", label: "Processing", detail: active.title });
@@ -148,6 +154,13 @@ export default function ToolkitPage() {
         setResult({ status: "error", message, detail: data?.detail || "", ...data });
         setOperationStatus({ state: "error", label: "Failed", detail: message });
         toast(message, "error");
+        return;
+      }
+      // Handle async job response (202)
+      if (response.status === 202 && data?.job_id) {
+        setActiveJobIds((prev) => [...prev, data.job_id]);
+        setOperationStatus({ state: "success", label: "Queued", detail: `${active.title} queued in Go processor.` });
+        toast("Operation queued — check progress below.", "info");
         return;
       }
       setResult(data);
@@ -189,21 +202,39 @@ export default function ToolkitPage() {
     }
 
     setUploadStatus({ state: "working", label: "Uploading PDF" });
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error("failed_to_read_file"));
-      reader.onload = () => {
-        const dataUrl = String(reader.result || "");
-        resolve(dataUrl.split(",")[1] || "");
-      };
-      reader.readAsDataURL(file);
-    });
 
-    const importRes = await fetch("/api/bff/import/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
-    }).catch(() => null);
+    // Use multipart upload for large files >5MB, else use base64 JSON
+    const useMultipart = file.size > 5 * 1024 * 1024;
+    let importRes: Response | null = null;
+
+    if (useMultipart) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("document_id", created.id);
+      formData.append("owner_id", "");
+
+      importRes = await fetch("/api/bff/import/upload", {
+        method: "POST",
+        body: formData,
+      }).catch(() => null);
+    } else {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("failed_to_read_file"));
+        reader.onload = () => {
+          const dataUrl = String(reader.result || "");
+          resolve(dataUrl.split(",")[1] || "");
+        };
+        reader.readAsDataURL(file);
+      });
+
+      importRes = await fetch("/api/bff/import/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: created.id, fileBytes: base64, layout_mode: "fidelity" }),
+      }).catch(() => null);
+    }
+
     if (!importRes?.ok) {
       setUploadStatus({ state: "error", label: "Upload failed", detail: "The PDF could not be stored for toolkit operations." });
       toast("Upload failed. Try another PDF or refresh and try again.", "error");
@@ -442,6 +473,9 @@ export default function ToolkitPage() {
             {/* Result display */}
             {result && (
               <ToolkitResultCard result={result} operation={active.id} />
+            )}
+            {latestJob && !isLatestDismissed && (
+              <PdfJobCard job={latestJob} operation={active.id} onDismiss={dismissLatest} />
             )}
           </div>
         </div>

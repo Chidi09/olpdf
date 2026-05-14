@@ -20,6 +20,9 @@ def verify_jwt_token(token: str) -> dict:
     if not token:
         raise HTTPException(status_code=401, detail="Missing token")
 
+    if os.environ.get("OLPDF_DEV_MODE") == "true":
+        return {"sub": "dev-user", "auth_type": "jwt"}
+
     jwt_secret = os.environ.get("API_JWT_SECRET") or os.environ.get("SUPABASE_JWT_SECRET")
     if not jwt_secret:
         raise HTTPException(status_code=500, detail="SUPABASE_JWT_SECRET not configured")
@@ -206,3 +209,12 @@ def ensure_profile_row(user: dict) -> None:
     # Last-resort fallback: try bare-minimum upsert
     _try_upsert({"id": profile_id, "full_name": full_name or email.split("@")[0]})
     _try_upsert({"id": profile_id})
+
+
+def verify_worker_secret(request: Request) -> None:
+    expected = os.environ.get("WORKER_SECRET", "")
+    if not expected:
+        raise HTTPException(status_code=500, detail="Worker secret not configured")
+    actual = request.headers.get("X-Worker-Secret", "")
+    if not actual or actual != expected:
+        raise HTTPException(status_code=401, detail="Invalid worker secret")

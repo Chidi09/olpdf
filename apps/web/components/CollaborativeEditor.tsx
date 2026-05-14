@@ -486,7 +486,7 @@ export default function CollaborativeEditor({
             )}
         </aside>
 
-        <main className="min-w-0 flex-1 flex flex-col relative overflow-hidden bg-[var(--bg-base)]">
+        <main className={`min-w-0 flex-1 flex flex-col relative overflow-hidden bg-[var(--bg-base)] ${isNativePdf ? 'native-pdf' : ''}`}>
             <FindReplaceBar model={model} onModelChange={setModel} />
             <div className="min-h-0 flex-1 overflow-auto p-4 editor-canvas-container scrollbar-hide md:p-8 xl:p-10">
                 <div className="mx-auto min-w-[760px] max-w-[850px] paper-sheet min-h-[1100px] rounded-sm relative group transition-all duration-500">

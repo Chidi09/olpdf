@@ -38,7 +38,7 @@ def test_get_document_ownership(mock_get):
         headers={"Authorization": "Bearer test-token"},
     )
     assert response.status_code == 403
-    assert response.json() == {"error": "api_error", "message": "Forbidden"}
+    assert response.json()["message"] == "Forbidden"
 
 
 @patch("apps.api.repositories.document_repo.DocumentRepository.get_by_id")

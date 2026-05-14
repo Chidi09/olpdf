@@ -13,8 +13,9 @@ from slowapi.errors import RateLimitExceeded
 from .limiter import limiter
 from .core.auth import verify_jwt_token
 from .core.security import hash_api_key
+from .core.supabase_client import supabase
 from .repositories.user_repo import ApiKeyRepository
-from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments, ai_settings, auth, pdf_edits, telemetry
+from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments, ai_settings, auth, pdf_edits, telemetry, downloads, pdf_jobs
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -149,6 +150,25 @@ def create_app() -> FastAPI:
     async def guard_api_requests(request: Request, call_next):
         path = request.url.path
         if path.startswith("/api/"):
+            # Enforce max payload size even when dev mode bypasses auth.
+            content_length = request.headers.get("content-length")
+            if content_length is not None:
+                try:
+                    size = int(content_length)
+                except ValueError:
+                    return JSONResponse(
+                        status_code=400,
+                        content={"error": "api_error", "message": "Invalid Content-Length header"}
+                    )
+                if size > MAX_REQUEST_BYTES:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"error": "api_error", "message": "Payload too large (max 10MB)"}
+                    )
+
+            if os.environ.get("OLPDF_DEV_MODE") == "true":
+                return await call_next(request)
+
             # Worker routes use QStash signature instead of JWT/API Key
             if not path.startswith("/api/worker/"):
                 auth_header = request.headers.get("authorization", "")
@@ -176,22 +196,6 @@ def create_app() -> FastAPI:
                         content={"error": "api_error", "message": "Authentication required (JWT or API Key)"}
                     )
 
-            # Enforce max payload size
-            content_length = request.headers.get("content-length")
-            if content_length is not None:
-                try:
-                    size = int(content_length)
-                except ValueError:
-                    return JSONResponse(
-                        status_code=400,
-                        content={"error": "api_error", "message": "Invalid Content-Length header"}
-                    )
-                if size > MAX_REQUEST_BYTES:
-                    return JSONResponse(
-                        status_code=413,
-                        content={"error": "api_error", "message": "Payload too large (max 10MB)"}
-                    )
-
         response = await call_next(request)
         return response
 
@@ -200,7 +204,7 @@ def create_app() -> FastAPI:
     async def http_exception_handler(request: Request, exc: HTTPException):
         return JSONResponse(
             status_code=exc.status_code,
-            content={"error": "api_error", "message": exc.detail},
+            content={"error": "api_error", "message": exc.detail, "detail": exc.detail},
         )
 
     @app.exception_handler(Exception)
@@ -215,7 +219,6 @@ def create_app() -> FastAPI:
     # Health Check — probes DB so load balancers / uptime monitors get accurate signal
     @app.get("/health")
     async def health_check():
-        from .core.supabase_client import supabase
         checks: dict = {}
 
         # DB probe: cheapest possible query
@@ -254,6 +257,8 @@ def create_app() -> FastAPI:
     app.include_router(ai_settings.router)
     app.include_router(auth.router)
     app.include_router(pdf_edits.router)
+    app.include_router(downloads.router)
+    app.include_router(pdf_jobs.router)
     app.include_router(telemetry.router)
 
     @app.on_event("startup")

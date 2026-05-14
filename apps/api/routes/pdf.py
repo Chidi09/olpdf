@@ -26,6 +26,7 @@ from ..export_utils import (
 from ..core.storage_client import r2_storage
 from ..repositories import DocumentRepository
 from ..repositories import AuditLogRepository
+from ..repositories.download_link_repo import DownloadLinkRepository
 
 # Import limiter from limiter module
 from ..limiter import limiter
@@ -46,11 +47,19 @@ def _download_pdf_from_storage(doc_id: str) -> bytes:
     return pdf_bytes
 
 
-def _upload_result(data: bytes, file_name: str) -> str:
+def _upload_result(data: bytes, file_name: str, user: dict | None = None) -> str:
     object_name = f"toolkit/{file_name}"
-    url = r2_storage.upload_bytes(data, object_name)
-    if not url:
+    uploaded = r2_storage.upload_bytes(data, object_name)
+    if not uploaded:
         raise HTTPException(status_code=500, detail="Failed to upload toolkit result")
+    if user:
+        link = DownloadLinkRepository.create(
+            owner_id=user.get("sub", "unknown"),
+            object_key=object_name,
+            filename=file_name,
+            content_type="application/pdf",
+        )
+        return link["url"]
     signed_url = r2_storage.generate_presigned_url(object_name, expiration=86400)
     if not signed_url:
         raise HTTPException(status_code=500, detail="Failed to generate toolkit download URL")
@@ -63,7 +72,7 @@ async def pdf_redact(request: Request, doc_id: str, payload: PdfRedactionPayload
     _check_ownership(doc_id, user)
     pdf_bytes = _download_pdf_from_storage(doc_id)
     result = apply_true_redaction(pdf_bytes, payload.areas)
-    url = _upload_result(result, f"{doc_id}_redacted.pdf")
+    url = _upload_result(result, f"{doc_id}_redacted.pdf", user=user)
     AuditLogRepository.create(
         user_id=user["sub"],
         resource_id=doc_id,
@@ -93,7 +102,7 @@ async def pdf_form_fill(request: Request, doc_id: str, payload: Dict[str, str], 
     # Sanitize dictionary
     safe_payload = sanitize_dict(payload)
     filled = fill_form_fields(pdf_bytes, safe_payload)
-    url = _upload_result(filled, f"{doc_id}_filled.pdf")
+    url = _upload_result(filled, f"{doc_id}_filled.pdf", user=user)
     return {"url": url, "status": "success"}
 
 
@@ -111,7 +120,7 @@ async def pdf_merge(request: Request, payload: PdfMergePayload, user: dict = Dep
         pdf_bytes_list.append(_download_pdf_from_storage(doc_id))
     merged = merge_pdfs(pdf_bytes_list)
     out_name = f"merged_{uuid.uuid4().hex[:8]}.pdf"
-    url = _upload_result(merged, out_name)
+    url = _upload_result(merged, out_name, user=user)
     return {"url": url, "status": "success", "page_count": len(payload.doc_ids)}
 
 
@@ -125,7 +134,7 @@ async def pdf_split(request: Request, doc_id: str, payload: PdfSplitPayload, use
     parts = split_pdf(pdf_bytes, ranges)
     urls: List[str] = []
     for i, part_bytes in enumerate(parts):
-        url = _upload_result(part_bytes, f"{doc_id}_part{i + 1}.pdf")
+        url = _upload_result(part_bytes, f"{doc_id}_part{i + 1}.pdf", user=user)
         urls.append(url)
     return {"urls": urls, "status": "success", "parts": len(urls)}
 
@@ -138,7 +147,7 @@ async def pdf_compress(request: Request, doc_id: str, user: dict = Depends(requi
     pdf_bytes = _download_pdf_from_storage(doc_id)
     original_size = len(pdf_bytes)
     compressed = compress_pdf(pdf_bytes)
-    url = _upload_result(compressed, f"{doc_id}_compressed.pdf")
+    url = _upload_result(compressed, f"{doc_id}_compressed.pdf", user=user)
     return {
         "url": url,
         "status": "success",
@@ -155,7 +164,7 @@ async def pdf_rotate(request: Request, doc_id: str, payload: PdfRotatePayload, u
     _check_ownership(doc_id, user)
     pdf_bytes = _download_pdf_from_storage(doc_id)
     rotated = rotate_pages(pdf_bytes, payload.rotation, payload.page_indices)
-    url = _upload_result(rotated, f"{doc_id}_rotated.pdf")
+    url = _upload_result(rotated, f"{doc_id}_rotated.pdf", user=user)
     return {"url": url, "status": "success"}
 
 
@@ -167,7 +176,7 @@ async def pdf_watermark(request: Request, doc_id: str, payload: PdfWatermarkPayl
     pdf_bytes = _download_pdf_from_storage(doc_id)
     safe_text = sanitize_string(payload.text)
     watermarked = add_watermark(pdf_bytes, safe_text, payload.opacity)
-    url = _upload_result(watermarked, f"{doc_id}_watermarked.pdf")
+    url = _upload_result(watermarked, f"{doc_id}_watermarked.pdf", user=user)
     return {"url": url, "status": "success"}
 
 
@@ -178,7 +187,7 @@ async def pdf_protect(request: Request, doc_id: str, payload: PdfProtectPayload,
     _check_ownership(doc_id, user)
     pdf_bytes = _download_pdf_from_storage(doc_id)
     protected = protect_pdf(pdf_bytes, payload.user_password, payload.owner_password)
-    url = _upload_result(protected, f"{doc_id}_protected.pdf")
+    url = _upload_result(protected, f"{doc_id}_protected.pdf", user=user)
     return {"url": url, "status": "success"}
 
 

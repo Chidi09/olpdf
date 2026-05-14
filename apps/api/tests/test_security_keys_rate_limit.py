@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock, ANY
 from ..main import app
 from .. import limiter as limiter_module
+from ..auth_utils import require_auth
 
 client = TestClient(app)
 
@@ -14,6 +15,7 @@ def reset_limiter():
     yield
 
 def test_api_key_authentication_failure():
+    app.dependency_overrides.clear()
     with patch("apps.api.repositories.user_repo.ApiKeyRepository.get_by_hash") as mock_get:
         mock_get.return_value = None
         response = client.get("/api/documents/some-id", headers={"X-API-Key": "invalid-key"})
@@ -21,6 +23,7 @@ def test_api_key_authentication_failure():
         assert response.json()["message"] == "Invalid API key"
 
 def test_api_key_authentication_success():
+    app.dependency_overrides.clear()
     with patch("apps.api.repositories.user_repo.ApiKeyRepository.get_by_hash") as mock_get:
         mock_get.return_value = {
             "id": "key-123",

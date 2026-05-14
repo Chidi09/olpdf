@@ -38,6 +38,7 @@ import {
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
 import EditorCommandBar from "@/components/editor/EditorCommandBar";
+import PdfToolPalette from "@/components/editor/PdfToolPalette";
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -524,6 +525,11 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             onUndo={() => dispatchAi({ type: "REVERT" })}
             onDismiss={() => dispatchAi({ type: "RESET" })}
           />
+          {layoutMode === "editable" && (
+            <div className="mb-2">
+              <PdfToolPalette mode="editable" />
+            </div>
+          )}
         </div>
 
         <AIApplyEffectsLayer phase={aiState.phase} profile={animationProfile} />

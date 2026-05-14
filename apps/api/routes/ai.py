@@ -9,6 +9,7 @@ from ..services.ai_service import chat_with_document, summarise_document, detect
 from ..supabase_client import supabase
 from ..security_utils import sanitize_string
 from ..engine.normalizer import normalize_document_model
+from ..services.document_patch import apply_ai_block_patch
 
 # Import limiter from limiter module
 from ..limiter import limiter
@@ -123,10 +124,11 @@ async def accept_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dic
     
     doc = DocumentRepository.get_by_id(log["document_id"])
     model = doc["document_model"]
-    model["blocks"] = log["diff_snapshot"]["after"]
-    DocumentRepository.update(log["document_id"], {"document_model": model})
+    after_blocks = log["diff_snapshot"]["after"]
+    patched = apply_ai_block_patch(model, after_blocks)
+    DocumentRepository.update(log["document_id"], {"document_model": patched})
     DocumentRepository.update_log(log_id, {"status": "accepted"})
-    return {"status": "success", "document_model": normalize_document_model(model)}
+    return {"status": "success", "document_model": normalize_document_model(patched)}
 
 @router.post("/logs/{log_id}/reject")
 async def reject_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dict:

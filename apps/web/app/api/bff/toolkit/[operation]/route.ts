@@ -1,14 +1,12 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_BASE_URL } from "../../_shared";
 
 const GO_SERVICE_URL = process.env.EXPORT_SERVICE_URL || "";
 const GO_TOOLKIT_OPS = new Set(["merge", "split", "compress", "rotate", "watermark"]);
 
-async function getAccessToken(): Promise<string | null> {
+async function getAccessToken(request: Request): Promise<string | null> {
   try {
-    const hdr = await headers();
-    const cookie = hdr.get("cookie") || "";
+    const cookie = request.headers.get("cookie") || "";
     const token = cookie.split(";").map(v => v.trim()).find(v => v.startsWith("olpdf_session="))?.slice("olpdf_session=".length)?.trim();
     return token || null;
   } catch { return null; }
@@ -29,20 +27,30 @@ function preparePythonBody(operation: string, body: Record<string, unknown>): Re
   return Object.keys(rest).length > 0 ? rest : null;
 }
 
-async function tryGoService(operation: string, body: Record<string, unknown>, token: string | null): Promise<Response | null> {
+async function tryGoServiceAsync(operation: string, body: Record<string, unknown>, token: string | null): Promise<Response | null> {
   if (!GO_SERVICE_URL || !GO_TOOLKIT_OPS.has(operation)) return null;
   try {
-    const goRes = await fetch(`${GO_SERVICE_URL}/toolkit/${operation}`, {
+    // Add async=true to signal Go should return a job_id immediately
+    const goUrl = new URL(`${GO_SERVICE_URL}/toolkit/${operation}`);
+    goUrl.searchParams.set("async", "true");
+    // Pass auth token as part of the body for async goroutine to use
+    const enrichedBody = { ...body, _auth_token: token };
+    const goRes = await fetch(goUrl.toString(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10000),
+      body: JSON.stringify(enrichedBody),
+      signal: AbortSignal.timeout(30000),
     });
     if (goRes.ok) {
       const data = await goRes.json();
+      // If Go returned a job_id (202), return it as-is for the frontend to poll
+      if (goRes.status === 202 || data.job_id) {
+        return NextResponse.json(data, { status: 202 });
+      }
+      // Otherwise it's a synchronous response
       return NextResponse.json(data, { status: goRes.status });
     }
   } catch {
@@ -73,12 +81,13 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "doc_id_required" }, { status: 422 });
   }
 
-  const token = await getAccessToken();
-  // Try Go service first for supported operations
-  const goResult = await tryGoService(operation, body, token);
+  const token = await getAccessToken(request);
+
+  // Try Go service first — it may return 202 with job_id for async processing
+  const goResult = await tryGoServiceAsync(operation, body, token);
   if (goResult) return goResult;
 
-  // Fall back to Python API
+  // Fall back to Python API for small/not-yet-migrated ops
   const path = buildPythonPath(operation, apiOp, docId);
   const pythonBody = preparePythonBody(operation, body);
 

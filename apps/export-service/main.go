@@ -907,6 +907,8 @@ func main() {
 	mux.HandleFunc("/toolkit/forms-fill",     handleFormsFill)
 	mux.HandleFunc("/toolkit/extract-images", handleExtractImages)
 
+	mux.HandleFunc("/import/upload", handleUpload)
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"status":"ok"}`)
