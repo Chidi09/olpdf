@@ -96,6 +96,10 @@ async def start_import(
             merged_model["page_dimensions"] = payload.client_model.get(
                 "page_dimensions", []
             )
+            # Preserve client_model meta (e.g. native_pdf_session from WASM parser)
+            client_meta = payload.client_model.get("meta") or {}
+            existing_meta = merged_model.get("meta") or {}
+            merged_model["meta"] = {**existing_meta, **client_meta}
             DocumentRepository.update(
                 payload.document_id, {"document_model": merged_model}
             )
@@ -344,7 +348,9 @@ async def export_document(
         go_bytes = await _export_via_go(doc_dict, normalized_format)
         if go_bytes:
             object_name = f"exports/{doc_id}.{normalized_format}"
-            url = r2_storage.upload_bytes(go_bytes, object_name)
+            url = r2_storage.upload_bytes_and_presign(go_bytes, object_name)
+            if not url:
+                raise HTTPException(status_code=500, detail="Failed to upload export")
             return {
                 "id": doc_id,
                 "url": url,
@@ -372,7 +378,9 @@ async def export_document(
             pdf_bytes = engine(doc_dict)
 
         object_name = f"exports/{doc_id}.{normalized_format}"
-        url = r2_storage.upload_bytes(pdf_bytes, object_name)
+        url = r2_storage.upload_bytes_and_presign(pdf_bytes, object_name)
+        if not url:
+            raise HTTPException(status_code=500, detail="Failed to upload export")
 
         # Best-effort email notification
         try:

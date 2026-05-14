@@ -225,3 +225,18 @@ export function documentModelToTiptap(model: EditorDocumentModel): TiptapDoc {
     content,
   };
 }
+
+export function mergeTiptapIntoNativePdfModel(baseModel: EditorDocumentModel, tiptapDoc: unknown): EditorDocumentModel {
+  const textModel = tiptapToDocumentModel(tiptapDoc, baseModel.id);
+  const textById = new Map(textModel.blocks.map((b) => [b.id, b.content ?? ""]));
+  return {
+    ...baseModel,
+    blocks: (baseModel.blocks ?? []).map((block) => ({
+      ...block,
+      content: textById.has(block.id) ? (textById.get(block.id) ?? "") : block.content,
+    })),
+    page_dimensions: baseModel.page_dimensions ?? [],
+    meta: baseModel.meta,
+    styles: baseModel.styles ?? {},
+  };
+}

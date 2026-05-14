@@ -57,11 +57,15 @@ import AIStatusHelper from "@/components/editor/ai/AIStatusHelper";
 import { isOperationValid } from "@/components/editor/ai/tools/validators";
 import { pickMinimalOperation } from "@/components/editor/ai/tools/minimalOpPlanner";
 import type { ToolOperation } from "@/components/editor/ai/tools/contracts";
+import type { PdfEditOperation } from "@/types/nativePdf";
+import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
 
 type FidelityCanvasProps = {
   documentId: string;
   model: DocumentModel;
   onModelChange?: (model: DocumentModel) => void;
+  onNativeOperation?: (operation: PdfEditOperation) => void;
+  onAiLifecycleEvent?: (action: AiApplyAction) => void;
 };
 
 type ChangeRecord = {
@@ -283,7 +287,7 @@ function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function FidelityCanvas({ documentId, model, onModelChange }: FidelityCanvasProps) {
+export default function FidelityCanvas({ documentId, model, onModelChange, onNativeOperation, onAiLifecycleEvent }: FidelityCanvasProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(900);
   const containerWidthRef = useRef(900);
@@ -361,7 +365,11 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
   };
 
   // ── AI Apply Lifecycle ─────────────────────────────────────────────────
-  const [aiState, dispatchAi] = useReducer(aiApplyReducer, initialAiApplyState);
+  const [aiState, dispatchAiLocal] = useReducer(aiApplyReducer, initialAiApplyState);
+  const dispatchAi = useCallback((action: AiApplyAction) => {
+    dispatchAiLocal(action);
+    onAiLifecycleEvent?.(action);
+  }, [onAiLifecycleEvent]);
   const animationProfile = resolveAnimationProfile({
     changedBlockCount: aiState.changedBlockCount,
     affectedPageCount: aiState.affectedPageCount,
@@ -402,6 +410,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     pushToHistory(nextModel);
     saveDebounced.current(nextModel);
     currentModelRef.current = nextModel;
+    onModelChange?.(nextModel);
     setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "accepted" } : c)));
   };
 
@@ -442,8 +451,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     pushToHistory(nextModel);
     saveDebounced.current(nextModel);
     currentModelRef.current = nextModel;
+    onModelChange?.(nextModel);
     setTimeout(() => dispatchAi({ type: "FINISH_APPLYING" }), 400);
-  }, [model, pushToHistory]);
+  }, [model, pushToHistory, onModelChange]);
 
 
   // ── Zoom helpers ─────────────────────────────────────────────────────────
@@ -845,7 +855,10 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
         }
       } else {
         const syncedModel = syncCanvasToModel(pageIndex, fcanvas);
-        if (syncedModel) currentModelRef.current = syncedModel;
+        if (syncedModel) {
+          currentModelRef.current = syncedModel;
+          onModelChange?.(syncedModel);
+        }
         if (e.target && e.target.type === "textbox") {
           const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
           const beforeBlock = blockId ? (model.blocks ?? []).find((b) => b.id === blockId) : null;
@@ -854,9 +867,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
             const beforeText = beforeBlock.content ?? "";
             const afterText = tb.text ?? "";
             if (beforeText !== afterText) {
-              opStore.applyOperation({
+              const nativeOp = {
                 id: crypto.randomUUID(),
-                type: "replace_text",
+                type: "replace_text" as const,
                 pageIndex,
                 targetObjectId: blockId,
                 before: { text: beforeText, bbox: beforeBlock.bounding_box },
@@ -867,7 +880,9 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
                   ((tb.top ?? 0) + (tb.height ?? 0) * (tb.scaleY ?? 1)) / scale,
                 ]},
                 createdAt: new Date().toISOString(),
-              });
+              };
+              opStore.applyOperation(nativeOp);
+              onNativeOperation?.(nativeOp);
             }
           }
         }

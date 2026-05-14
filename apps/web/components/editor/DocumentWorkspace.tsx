@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState, useRef, useCallback } from "react";
+import { useMemo, useEffect, useState, useRef, useCallback, useReducer } from "react";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -16,6 +16,13 @@ import { normalizeDocumentBlocks } from "@/lib/documentTransformers";
 import { useEditorProfile } from "@/hooks/useEditorProfile";
 import { useDocumentExport } from "@/components/editor/export/useDocumentExport";
 import type { ExportTelemetryPayload } from "@/components/editor/export/types";
+import { useNativePdfSession } from "@/hooks/useNativePdfSession";
+import { getNativeSession } from "@/lib/nativePdf/documentModelAdapter";
+import type { PdfEditOperation } from "@/types/nativePdf";
+import { aiApplyReducer, initialAiApplyState } from "@/components/editor/ai/aiApplyState";
+import { resolveAnimationProfile } from "@/components/editor/ai/aiAnimationPolicy";
+import AIApplyEffectsLayer from "@/components/editor/ai/AIApplyEffectsLayer";
+import AIStatusHelper from "@/components/editor/ai/AIStatusHelper";
 import PageThumbnailRail from "@/components/editor/PageThumbnailRail";
 import {
   Bars3BottomLeftIcon,
@@ -30,6 +37,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
+import EditorCommandBar from "@/components/editor/EditorCommandBar";
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -114,6 +122,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const runAi = async () => {
     if (!canRunAi) return;
     setIsRunningAi(true);
+    dispatchAi({ type: "START_STREAMING" });
     try {
       const response = await fetch(`/api/bff/ai/documents/${documentId}/instruction`, {
         method: "POST",
@@ -131,6 +140,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         diff_snapshot: data.diff_snapshot,
       });
       setInstruction("");
+      dispatchAi({ type: "FINISH_STREAMING" });
       toast("AI suggestion ready — review and insert below.", "info");
     } finally {
       setIsRunningAi(false);
@@ -139,11 +149,13 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
   const acceptAi = async () => {
     if (!activeAiLog) return;
+    dispatchAi({ type: "START_APPLYING", changedBlockCount: 1, affectedPageCount: 1 });
     try {
       const response = await fetch(`/api/bff/ai/logs/${activeAiLog.id}/accept`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
       if (data.document_model) setCurrentModel(normalizeModelForEditor(data.document_model, documentId));
       setActiveAiLog(null);
+      dispatchAi({ type: "FINISH_APPLYING" });
       toast("AI suggestion inserted", "success");
     } catch {
       toast("Failed to apply AI suggestion", "error");
@@ -155,6 +167,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     try {
       await fetch(`/api/bff/ai/logs/${activeAiLog.id}/reject`, { method: "POST" });
       setActiveAiLog(null);
+      dispatchAi({ type: "RESET" });
       toast("AI suggestion rejected", "info");
     } catch {
       setActiveAiLog(null);
@@ -166,11 +179,15 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     return activeAiLog.diff_snapshot;
   }, [activeAiLog]);
 
+  const nativeSessionInfo = useNativePdfSession(documentId, currentModel);
+  const nativeSession = getNativeSession(currentModel);
+  const nativeSessionReady = nativeSession?.status === "ready" || nativeSession?.status === "partial";
+
   const hasAbsolutePdfLayout = Boolean(
     currentModel?.page_dimensions?.length || currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)),
   );
-  const canUseFidelity = Boolean(currentModel?.page_dimensions?.length && currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)));
-  const layoutMode = currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable");
+  const canUseFidelity = nativeSessionReady || Boolean(currentModel?.page_dimensions?.length && currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)));
+  const layoutMode = (nativeSessionReady && currentModel?.meta?.layout_mode === undefined) ? "fidelity" : (currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable"));
   const [leftTab, setLeftTab] = useState<"outline" | "pages">("outline");
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -179,6 +196,12 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const editorContentRef = useRef<HTMLDivElement>(null);
   const toast = useToastStore((s) => s.toast);
   const editorProfile = useEditorProfile();
+  const [aiState, dispatchAi] = useReducer(aiApplyReducer, initialAiApplyState);
+  const animationProfile = resolveAnimationProfile({
+    changedBlockCount: aiState.changedBlockCount,
+    affectedPageCount: aiState.affectedPageCount,
+    isReducedMotion: typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  });
 
   const exportHook = useDocumentExport({
     documentId,
@@ -318,6 +341,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
   const setLayoutMode = async (mode: "editable" | "fidelity") => {
     if (!currentModel || layoutMode === mode) return;
+    await nativeSessionInfo.flushOperations();
     const nextModel: DocumentModel = {
       ...currentModel,
       meta: { ...currentModel.meta, title: currentModel.meta?.title || "Untitled Document", layout_mode: mode },
@@ -425,11 +449,32 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
         />
 
-        <header className="z-30 flex h-14 shrink-0 items-center justify-between border-b border-white/[0.08] bg-black/40 px-4 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="rounded-md p-1.5 text-[#888] transition-colors hover:bg-white/[0.05] hover:text-white" aria-label="Back to dashboard">
-              <ChevronLeftIcon className="h-4 w-4" />
-            </Link>
+        <EditorCommandBar
+          mode={layoutMode}
+          title={titleDraft}
+          isSaving={saveMutation.isPending}
+          canUseFidelity={canUseFidelity}
+          nativeSessionStatus={nativeSession?.status}
+          onTitleChange={setTitleDraft}
+          onTitleBlur={() => {
+            if (!currentModel || titleDraft === (currentModel.meta?.title ?? "")) return;
+            const nextModel = { ...currentModel, meta: { ...currentModel.meta, title: titleDraft } };
+            setCurrentModel(nextModel);
+            saveMutation.mutate(nextModel);
+          }}
+          onModeToggle={() => {
+            if (layoutMode === "editable" && !canUseFidelity) {
+              if (nativeSession?.status === "parsing") { toast("PDF is still being parsed by the browser engine.", "info"); }
+              else if ((currentModel?.meta as Record<string, unknown> | undefined)?.import_status === "processing") { toast("PDF import is still processing.", "info"); }
+              else if (nativeSession && !nativeSessionReady) { toast("Native PDF session is not ready yet.", "error"); }
+              else { toast("Fidelity view requires page dimensions and block layout data.", "info"); }
+              return;
+            }
+            void setLayoutMode(layoutMode === "editable" ? "fidelity" : "editable");
+          }}
+          onExport={() => void exportHook.exportNow()}
+          isExporting={exportHook.isExporting}
+          leftSlot={
             <GlassTooltip label={isOutlineOpen ? "Hide outline" : "Show outline"}>
               <button
                 onClick={() => setIsOutlineOpen((open) => !open)}
@@ -442,79 +487,53 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
                 <Bars3BottomLeftIcon className="h-3.5 w-3.5" /> Outline
               </button>
             </GlassTooltip>
-            <input
-              type="text"
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={() => {
-                if (!currentModel || titleDraft === (currentModel.meta?.title ?? "")) return;
-                const nextModel = { ...currentModel, meta: { ...currentModel.meta, title: titleDraft } };
-                setCurrentModel(nextModel);
-                saveMutation.mutate(nextModel);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-              }}
-              className="w-64 rounded border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-white outline-none transition-all hover:border-[#333] focus:border-orange-500 focus:bg-[#0A0A0A]"
-            />
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#666]">
-              {saveMutation.isPending ? (
-                <><InlineSpinner className="h-3 w-3 text-[#888]" /> Syncing...</>
-              ) : (
-                <><CheckCircleIcon className="h-3 w-3 text-[#666]" /> Saved</>
-              )}
-            </div>
-          </div>
+          }
+          rightSlot={
+            <>
+              <GlassTooltip label={isAssistantOpen ? "Hide assistant" : "Show assistant"}>
+                <button
+                  onClick={() => setIsAssistantOpen((open) => !open)}
+                  className={`flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                    isAssistantOpen
+                      ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                      : "border-[#333] bg-[#0A0A0A] text-[#888] hover:bg-[#111] hover:text-white"
+                  }`}
+                >
+                  <SparklesIcon className="h-3.5 w-3.5" /> AI
+                </button>
+              </GlassTooltip>
+              <GlassTooltip label="Share" shortcut="⌘S">
+                <button onClick={() => void shareEditor()} className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
+                  <ShareIcon className="h-4 w-4" />
+                </button>
+              </GlassTooltip>
+              <GlassTooltip label="Publish to web">
+                <button onClick={() => toast("Publish is not enabled yet", "info")} className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
+                  <PlayIcon className="h-3.5 w-3.5" /> Publish
+                </button>
+              </GlassTooltip>
+            </>
+          }
+        />
 
-          <div className="flex items-center gap-2">
-            <GlassTooltip label={layoutMode === "editable" ? "Switch to Fidelity" : "Switch to Editable"}>
-              <button
-                onClick={() => {
-                  if (layoutMode === "editable" && !canUseFidelity) { toast("Fidelity view is available after PDF import finishes.", "info"); return; }
-                  void setLayoutMode(layoutMode === "editable" ? "fidelity" : "editable");
-                }}
-                className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-2.5 text-xs font-semibold text-[#888] transition-colors hover:bg-[#111] hover:text-white active:scale-[0.98]"
-              >
-                {layoutMode === "editable" ? "Fidelity" : "Editable"}
-              </button>
-            </GlassTooltip>
-            <GlassTooltip label={isAssistantOpen ? "Hide assistant" : "Show assistant"}>
-              <button
-                onClick={() => setIsAssistantOpen((open) => !open)}
-                className={`flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
-                  isAssistantOpen
-                    ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                    : "border-[#333] bg-[#0A0A0A] text-[#888] hover:bg-[#111] hover:text-white"
-                }`}
-              >
-                <SparklesIcon className="h-3.5 w-3.5" /> AI
-              </button>
-            </GlassTooltip>
-            <GlassTooltip label="Share" shortcut="⌘S">
-              <button onClick={() => void shareEditor()} className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
-                <ShareIcon className="h-4 w-4" />
-              </button>
-            </GlassTooltip>
-            <GlassTooltip label="Export PDF">
-              <button onClick={() => void exportHook.exportNow()} disabled={exportHook.isExporting || !currentModel} className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
-                {exportHook.isExporting ? <InlineSpinner className="h-3.5 w-3.5" /> : <ArrowDownTrayIcon className="h-3.5 w-3.5" />} {exportHook.isExporting ? "Exporting" : "Export"}
-              </button>
-            </GlassTooltip>
-            <GlassTooltip label="Publish to web">
-              <button onClick={() => toast("Publish is not enabled yet", "info")} className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
-                <PlayIcon className="h-3.5 w-3.5" /> Publish
-              </button>
-            </GlassTooltip>
-          </div>
-        </header>
+        <div className="mx-auto w-full max-w-[1200px] px-4 pt-2">
+          <AIStatusHelper
+            phase={aiState.phase}
+            onApply={() => void acceptAi()}
+            onViewDiff={() => {}}
+            onUndo={() => dispatchAi({ type: "REVERT" })}
+            onDismiss={() => dispatchAi({ type: "RESET" })}
+          />
+        </div>
 
+        <AIApplyEffectsLayer phase={aiState.phase} profile={animationProfile} />
         <div ref={editorContentRef} className="relative z-20 min-h-0 flex-1 overflow-hidden">
           {!currentModel ? (
             <div className="flex h-full w-full items-center justify-center bg-black/20 text-xs font-semibold uppercase tracking-[0.18em] text-[#777]">
               Loading editor
             </div>
           ) : layoutMode === "fidelity" ? (
-            <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} />
+            <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
           ) : (
             <CollaborativeEditor
               documentId={documentId}

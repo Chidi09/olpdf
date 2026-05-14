@@ -61,10 +61,17 @@ export type PdfEditOperation = {
   createdAt: string;
 };
 
+export type PdfEditSessionStatus = "parsing" | "ready" | "partial" | "failed";
+export type PdfEditSessionSource = "wasm" | "server" | "hybrid";
+
 export type PdfEditSession = {
   documentId: string;
   originalObjectKey: string;
   pages: Array<{ pageIndex: number; width: number; height: number; previewUrl?: string }>;
   objects: PdfNativeObject[];
   operations: PdfEditOperation[];
+  status?: PdfEditSessionStatus;
+  source?: PdfEditSessionSource;
+  parseMetrics?: ParseMetrics;
+  lastSyncedAt?: string;
 };

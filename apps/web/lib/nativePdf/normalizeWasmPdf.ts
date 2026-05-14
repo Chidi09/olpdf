@@ -89,5 +89,9 @@ export function normalizeWasmResult(result: WasmBridgeOutput, documentId: string
     pages,
     objects,
     operations: [],
+    status: result.metrics.pages_failed > 0 ? "partial" : "ready",
+    source: "wasm",
+    parseMetrics: result.metrics,
+    lastSyncedAt: new Date().toISOString(),
   };
 }

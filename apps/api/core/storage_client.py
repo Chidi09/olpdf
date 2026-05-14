@@ -42,6 +42,13 @@ class R2StorageClient:
         except ClientError:
             return None
 
+    def upload_bytes_and_presign(self, data: bytes, object_name: str, expiration: int = 86400) -> Optional[str]:
+        """Upload data to R2 and return a presigned download URL."""
+        uploaded = self.upload_bytes(data, object_name)
+        if not uploaded:
+            return None
+        return self.generate_presigned_url(object_name, expiration=expiration)
+
     def upload_file(self, file_path: str, object_name: str) -> Optional[str]:
         if not self.s3:
             raise ValueError("R2 Storage client is not configured.")

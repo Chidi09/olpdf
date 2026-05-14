@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { DocumentModel } from "@olpdf/document-model";
 import { toExportErrorMessage, type ExportPhase, type ExportTelemetryPayload } from "./types";
 import { sanitizeDocumentModelForApi } from "@/lib/documentModelSanitizer";
+import type { PdfEditSession } from "@/types/nativePdf";
 
 export interface UseDocumentExportOptions {
   documentId: string;
@@ -34,10 +35,16 @@ export function useDocumentExport(options: UseDocumentExportOptions) {
       await flushSave();
 
       setPhase("exporting");
+      const nativeSession = (model.meta as Record<string, unknown> | undefined)?.native_pdf_session as PdfEditSession | undefined;
       const response = await fetch(`/api/bff/documents/${documentId}/export/${format}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_model: sanitizeDocumentModelForApi(model as unknown as Record<string, unknown>), font_metrics: {} }),
+        body: JSON.stringify({
+          document_model: sanitizeDocumentModelForApi(model as unknown as Record<string, unknown>),
+          font_metrics: {},
+          operations: nativeSession?.operations ?? [],
+          original_object_key: nativeSession?.originalObjectKey ?? (model.meta as Record<string, unknown> | undefined)?.original_pdf_key,
+        }),
       });
 
       const data = await response.json().catch(() => ({}));

@@ -70,6 +70,7 @@ import {
   createEmptyDocumentModel,
   documentModelToTiptap,
   tiptapToDocumentModel,
+  mergeTiptapIntoNativePdfModel,
   normalizeDocumentBlocks,
 } from "../lib/documentTransformers";
 import { useDocumentQuery, useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
@@ -244,12 +245,15 @@ export default function CollaborativeEditor({
           return;
         }
         const baseModel = hydratedModelRef.current;
-        const newModel = {
-          ...baseModel,
-          ...tiptapToDocumentModel(editor.getJSON(), documentId),
-          meta: baseModel.meta,
-          styles: baseModel.styles,
-        };
+        const isNativePdf = (baseModel.meta as Record<string, unknown> | undefined)?.native_pdf === true;
+        const newModel = isNativePdf
+          ? mergeTiptapIntoNativePdfModel(baseModel, editor.getJSON())
+          : {
+              ...baseModel,
+              ...tiptapToDocumentModel(editor.getJSON(), documentId),
+              meta: baseModel.meta,
+              styles: baseModel.styles,
+            };
         setModel(newModel);
         setIsDirty(true);
         if (onModelChange) onModelChange(newModel);

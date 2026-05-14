@@ -168,6 +168,24 @@ def extract_native_page(page: Any, page_idx: int) -> List[Dict[str, Any]]:
         })
     return blocks
 
+def merge_import_model(existing_model: dict, extracted_model: dict | None, final_status: str) -> dict:
+    """Merge extracted blocks/page dimensions into an existing document model
+    while preserving meta fields (e.g. native_pdf_session set by the WASM parser)."""
+    existing_meta = existing_model.get("meta") or {}
+    extracted = extracted_model or {}
+    merged = {
+        **existing_model,
+        "blocks": extracted.get("blocks", existing_model.get("blocks", [])),
+        "page_dimensions": extracted.get("page_dimensions", existing_model.get("page_dimensions", [])),
+        "styles": existing_model.get("styles", {}),
+        "meta": {
+            **existing_meta,
+            "import_status": final_status,
+        },
+    }
+    return merged
+
+
 async def route_pdf_import(file_bytes: bytes, document_id: str, layout_mode: str = "editable", request_id: str = "") -> dict:
     native_blocks: List[Dict[str, Any]] = []
     pages_needing_ocr: List[int] = []
@@ -216,9 +234,19 @@ async def route_pdf_import(file_bytes: bytes, document_id: str, layout_mode: str
     # Save page metadata
     _safe_insert_page_metadata(metadata_rows)
     
-    # Update document with native blocks
+    # Update document with native blocks while preserving existing meta (e.g. native_pdf_session)
     if native_blocks:
-        sanitized_model = sanitize_document_model({"blocks": native_blocks, "page_dimensions": page_dimensions})
+        try:
+            existing_doc = supabase.table("documents").select("document_model").eq("id", document_id).single().execute()
+            existing_model = existing_doc.data.get("document_model") or {}
+        except Exception:
+            existing_model = {}
+        merged_model = merge_import_model(
+            existing_model,
+            {"blocks": native_blocks, "page_dimensions": page_dimensions},
+            final_status="partial" if pages_needing_ocr else "ready"
+        )
+        sanitized_model = sanitize_document_model(merged_model)
         _safe_update_document(document_id, {
             "document_model": sanitized_model,
             "status": "partial" if pages_needing_ocr else "ready"

@@ -1,6 +1,6 @@
 const ALLOWED_TOP_KEYS = new Set(["id", "meta", "styles", "blocks", "page_dimensions"]);
 
-const ALLOWED_META_KEYS = new Set(["title", "author", "page_size", "margins", "export_standard", "layout_mode", "color_space"]);
+const ALLOWED_META_KEYS = new Set(["title", "author", "page_size", "margins", "export_standard", "layout_mode", "color_space", "native_pdf", "original_pdf_key", "native_pdf_session", "import_status"]);
 
 const ALLOWED_BLOCK_KEYS = new Set([
   "id", "type", "content", "rich_spans", "next_block_id", "column_index",
