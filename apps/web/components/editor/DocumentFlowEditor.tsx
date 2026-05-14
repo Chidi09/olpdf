@@ -348,7 +348,7 @@ function BlockCell({
         top: y0 * scale,
         width: (x1 - x0) * scale,
         minHeight: (y1 - y0) * scale,
-        background: isFocused ? "white" : "transparent",
+        background: isFocused ? "white" : "#ffffff", // Cover the underlying text to prevent double vision
         border: isFocused ? "2px solid #f97316" : "1px solid transparent",
         borderRadius: 2,
         padding: 2,
