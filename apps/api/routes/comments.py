@@ -22,14 +22,17 @@ class CommentCreate(BaseModel):
 @router.get("/")
 async def list_comments(doc_id: str, user: dict = Depends(require_auth)) -> List[Dict[str, Any]]:
     check_ownership(doc_id, user)
-    res = (
-        supabase.table("document_comments")
-        .select("*")
-        .eq("document_id", doc_id)
-        .order("created_at")
-        .execute()
-    )
-    return res.data or []
+    try:
+        res = (
+            supabase.table("document_comments")
+            .select("*")
+            .eq("document_id", doc_id)
+            .order("created_at")
+            .execute()
+        )
+        return res.data or []
+    except Exception:
+        return []
 
 
 @router.post("/")

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { BookModel, BookChapter } from "@olpdf/document-model";
-import { FileType2, Sparkles, Scale, FileOutput, Tablet } from "lucide-react";
+import { SparklesIcon, ScaleIcon, ArrowDownTrayIcon, DeviceTabletIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { InlineSpinner } from "@/components/ui/MicroUI";
 
 type ChapterStatus = "draft" | "review" | "final";
@@ -129,20 +129,20 @@ export default function BookInspector({
               disabled={isNarrativeRunning}
               className="w-full text-left px-3 py-2 text-sm rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all flex items-center gap-2 group disabled:opacity-50"
             >
-                {isNarrativeRunning ? <InlineSpinner className="h-4 w-4" /> : <Sparkles className="h-4 w-4 group-hover:animate-pulse" />} Continue Narrative
+                {isNarrativeRunning ? <InlineSpinner className="h-4 w-4" /> : <SparklesIcon className="h-4 w-4 group-hover:animate-pulse" />} Continue Narrative
             </button>
             <button
               onClick={onSuggestChapterTitle}
               disabled={isTitleLoading}
               className="w-full text-left px-3 py-2 text-sm rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all flex items-center gap-2 group disabled:opacity-50"
             >
-                {isTitleLoading ? <InlineSpinner className="h-4 w-4" /> : <FileType2 className="h-4 w-4 group-hover:rotate-12 transition-transform" />} Suggest Chapter Title
+                {isTitleLoading ? <InlineSpinner className="h-4 w-4" /> : <DocumentTextIcon className="h-4 w-4 group-hover:rotate-12 transition-transform" />} Suggest Chapter Title
             </button>
             <button 
                 onClick={onCheckConsistency}
                 className="w-full text-left px-3 py-2 text-sm rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all flex items-center gap-2 group"
             >
-                <Scale className="h-4 w-4 group-hover:scale-110 transition-transform" /> Check Consistency (RAG)
+                <ScaleIcon className="h-4 w-4 group-hover:scale-110 transition-transform" /> Check Consistency (RAG)
             </button>
         </div>
       </div>
@@ -156,14 +156,14 @@ export default function BookInspector({
             onClick={() => void onExportBook("pdf")}
             className="flex flex-col items-center justify-center p-3 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all"
           >
-            <FileOutput className="mb-1 h-5 w-5" />
+            <ArrowDownTrayIcon className="mb-1 h-5 w-5" />
             <span className="text-[10px] font-bold uppercase tracking-tighter text-[var(--text-primary)]">Print PDF</span>
           </button>
           <button 
             onClick={() => void onExportBook("epub")}
             className="flex flex-col items-center justify-center p-3 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-all"
           >
-            <Tablet className="mb-1 h-5 w-5" />
+            <DeviceTabletIcon className="mb-1 h-5 w-5" />
             <span className="text-[10px] font-bold uppercase tracking-tighter text-[var(--text-primary)]">Kindle EPUB</span>
           </button>
         </div>

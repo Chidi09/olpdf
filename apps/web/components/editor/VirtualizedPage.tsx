@@ -86,6 +86,7 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
   return (
     <div
       ref={wrapperRef}
+      data-page-index={dim.page_index}
       className="relative mx-auto rounded-sm bg-white shadow-[0_8px_30px_rgba(0,0,0,0.14)]"
       style={{ width: pageWidth, height: pageHeight }}
     >

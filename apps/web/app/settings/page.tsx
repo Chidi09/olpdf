@@ -17,7 +17,9 @@ function ProviderIcon({ slug, color, size = 18 }: { slug: string; color: string;
   const [error, setError] = useState(false);
   const src = slug === "openai"
     ? "https://cdn.simpleicons.org/openai/white"
-    : `https://cdn.simpleicons.org/${slug}/${color.replace("#", "")}`;
+    : slug === "moonshot"
+      ? "https://cdn.simpleicons.org/kimifoundation/white"
+      : `https://cdn.simpleicons.org/${slug}/${color.replace("#", "")}`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

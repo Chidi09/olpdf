@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Bars3CenterLeftIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import BookSidebar, { type BookMatterKey } from "./BookSidebar";
 import BookInspector from "./BookInspector";
 import CollaborativeEditor from "../CollaborativeEditor";
@@ -25,6 +25,8 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   const [isTitleLoading, setIsTitleLoading] = useState(false);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [consistencyResult, setConsistencyResult] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(true);
 
   const { data: book, isLoading } = useQuery<BookModel>({
     queryKey: ["book", bookId],
@@ -122,32 +124,36 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   };
 
   const checkConsistency = async () => {
+    setAiError(null);
     try {
       const res = await fetch(`/api/bff/books/${bookId}/consistency`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: "Check character and timeline consistency." }),
       });
-      if (!res.ok) return;
+      if (!res.ok) { const data = await res.json().catch(() => ({})); setAiError(data?.detail || data?.message || "Consistency check failed"); return; }
       const data = await res.json();
       const text = typeof data?.result === "string" ? data.result : typeof data?.message === "string" ? data.message : JSON.stringify(data);
       setConsistencyResult(text);
       setTimeout(() => setConsistencyResult(null), 15000);
     } catch {
-      // silent
+      setAiError("Consistency check failed due to a network error.");
     }
   };
 
   const continueNarrative = async () => {
     if (!activeChapter?.id) return;
     setIsNarrativeRunning(true);
+    setAiError(null);
     try {
       const res = await fetch(`/api/bff/books/${bookId}/chapters/${activeChapter.id}/continue`, { method: "POST" });
-      if (!res.ok) return;
+      if (!res.ok) { const data = await res.json().catch(() => ({})); setAiError(data?.detail || data?.message || "Continue narrative failed"); return; }
       const data = await res.json();
       if (data.document_model) {
         queryClient.invalidateQueries({ queryKey: ["document", activeChapter.document_id] });
       }
+    } catch {
+      setAiError("Continue narrative failed due to a network error.");
     } finally {
       setIsNarrativeRunning(false);
     }
@@ -156,9 +162,10 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   const suggestChapterTitle = async () => {
     if (!activeChapter?.id) return;
     setIsTitleLoading(true);
+    setAiError(null);
     try {
       const res = await fetch(`/api/bff/books/${bookId}/chapters/${activeChapter.id}/suggest-title`, { method: "POST" });
-      if (!res.ok) return;
+      if (!res.ok) { const data = await res.json().catch(() => ({})); setAiError(data?.detail || data?.message || "Title suggestion failed"); return; }
       const data = await res.json();
       const suggested = data.title || "Untitled Chapter";
       if (window.confirm(`Suggest chapter title: "${suggested}"?`)) {
@@ -169,6 +176,8 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
         });
         queryClient.invalidateQueries({ queryKey: ["book", bookId] });
       }
+    } catch {
+      setAiError("Title suggestion failed due to a network error.");
     } finally {
       setIsTitleLoading(false);
     }
@@ -207,8 +216,8 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
 
       <div className="flex-1 flex flex-col relative overflow-hidden">
         <div className="h-12 border-b border-[var(--border-subtle)] flex items-center px-4 bg-[var(--bg-surface)]/50 backdrop-blur-sm">
-          <button onClick={toggleSidebar} className="p-1 hover:bg-white/5 rounded text-[var(--text-secondary)]">
-            {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          <button onClick={toggleSidebar} className="p-1 hover:bg-white/5 rounded text-[var(--text-secondary)]" aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}>
+            {isSidebarOpen ? <XMarkIcon className="h-4 w-4" /> : <Bars3CenterLeftIcon className="h-4 w-4" />}
           </button>
           <div className="ml-4 flex-1">
             <h1 className="text-sm font-bold text-[var(--text-primary)]">
@@ -239,7 +248,25 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
         </div>
       </div>
 
-      <div className="w-80 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] flex flex-col">
+      <div className={`border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] transition-all duration-300 flex flex-col ${isInspectorOpen ? "w-80" : "w-10 overflow-hidden"}`}>
+        {!isInspectorOpen ? (
+          <button onClick={() => setIsInspectorOpen(true)} className="flex h-full w-10 items-start justify-center pt-4 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label="Open inspector">
+            <Bars3CenterLeftIcon className="h-4 w-4" />
+          </button>
+        ) : (
+        <>
+        <div className="flex items-center justify-between h-10 px-3 border-b border-[var(--border-subtle)]">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-tertiary)]">Inspector</span>
+          <button onClick={() => setIsInspectorOpen(false)} className="p-1 hover:bg-white/5 rounded text-[var(--text-secondary)]" aria-label="Close inspector">
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
+        {aiError && (
+          <div className="mx-3 mt-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300 flex items-center justify-between">
+            <span>{aiError}</span>
+            <button onClick={() => setAiError(null)} className="ml-2 p-0.5 text-red-400 hover:text-red-200"><XMarkIcon className="h-3 w-3" /></button>
+          </div>
+        )}
         <BookInspector
           book={safeBook}
           activeChapter={activeChapter}
@@ -253,6 +280,8 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
           exportStatus={exportStatus ?? undefined}
           onUpdateBookMeta={(updates) => updateBookMetaMutation.mutate(updates)}
         />
+        </>
+        )}
       </div>
     </div>
   );

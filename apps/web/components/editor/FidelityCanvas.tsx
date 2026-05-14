@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useReducer } from "react";
 import {
   CursorArrowRaysIcon,
   StopIcon,
@@ -50,6 +50,13 @@ import { useEditorToolbarActions } from "@/hooks/useEditorToolbarActions";
 import { useModelSyncAndReflow } from "@/hooks/useModelSyncAndReflow";
 import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TableData } from "@/types/editor";
 import { usePdfEditOperationsStore } from "@/store/usePdfEditOperationsStore";
+import { aiApplyReducer, initialAiApplyState } from "@/components/editor/ai/aiApplyState";
+import { resolveAnimationProfile } from "@/components/editor/ai/aiAnimationPolicy";
+import AIApplyEffectsLayer from "@/components/editor/ai/AIApplyEffectsLayer";
+import AIStatusHelper from "@/components/editor/ai/AIStatusHelper";
+import { isOperationValid } from "@/components/editor/ai/tools/validators";
+import { pickMinimalOperation } from "@/components/editor/ai/tools/minimalOpPlanner";
+import type { ToolOperation } from "@/components/editor/ai/tools/contracts";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -353,6 +360,14 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     saveDebounced.current(nextModel);
   };
 
+  // ── AI Apply Lifecycle ─────────────────────────────────────────────────
+  const [aiState, dispatchAi] = useReducer(aiApplyReducer, initialAiApplyState);
+  const animationProfile = resolveAnimationProfile({
+    changedBlockCount: aiState.changedBlockCount,
+    affectedPageCount: aiState.affectedPageCount,
+    isReducedMotion: typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  });
+
   const { history, redoStack, pushToHistory, undo, redo, saveVersionSnapshot, convertBlockToField } = useEditorToolbarActions({
     model,
     onModelChange,
@@ -419,6 +434,16 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
     () => currentModelRef.current.blocks ?? [],
     addPendingChange,
   );
+
+  const handleAiEdit = useCallback((blocks: DocumentBlock[], operation: ToolOperation) => {
+    if (!isOperationValid(operation)) return;
+    dispatchAi({ type: "START_APPLYING", changedBlockCount: operation.anchor.blockIds.length, affectedPageCount: 1 });
+    const nextModel = { ...model, blocks };
+    pushToHistory(nextModel);
+    saveDebounced.current(nextModel);
+    currentModelRef.current = nextModel;
+    setTimeout(() => dispatchAi({ type: "FINISH_APPLYING" }), 400);
+  }, [model, pushToHistory]);
 
 
   // ── Zoom helpers ─────────────────────────────────────────────────────────
@@ -1248,12 +1273,23 @@ export default function FidelityCanvas({ documentId, model, onModelChange }: Fid
           currentModelRef.current = nextModel;
         }}
       />
-      {aiSummary && (
-        <div className="mx-auto mb-3 w-full max-w-[1200px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2 text-xs text-[var(--text-secondary)]">
-          <span className="mr-2 font-bold text-[var(--text-primary)]">AI Summary:</span>
-          {aiSummary}
-        </div>
-      )}
+      <AIApplyEffectsLayer phase={aiState.phase} profile={animationProfile} />
+
+      <div className="mx-auto mb-3 w-full max-w-[1200px]">
+        <AIStatusHelper
+          phase={aiState.phase}
+          onApply={() => dispatchAi({ type: "START_STAGING" })}
+          onViewDiff={() => {}}
+          onUndo={() => dispatchAi({ type: "REVERT" })}
+          onDismiss={() => dispatchAi({ type: "RESET" })}
+        />
+        {aiSummary && (
+          <div className="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[#0A0A0A]/90 px-3 py-2 text-xs text-[var(--text-secondary)] backdrop-blur-sm">
+            <span className="mr-2 font-semibold text-[var(--text-primary)]">AI Summary</span>
+            {aiSummary}
+          </div>
+        )}
+      </div>
 
       {/* Pages */}
       {/* eslint-disable-next-line react-hooks/refs -- pageDimensions is state derived, not a ref */}

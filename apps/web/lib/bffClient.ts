@@ -9,6 +9,19 @@ export class BffHttpError extends Error {
   }
 }
 
+async function extractErrorMessage(response: Response, label: string): Promise<string> {
+  try {
+    const body = await response.json();
+    if (body && typeof body === "object") {
+      if (typeof body.detail === "string") return body.detail;
+      if (typeof body.message === "string") return body.message;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return `${label} failed: ${response.status}`;
+}
+
 export async function bffGet<T>(path: string): Promise<T> {
   const response = await fetch(path, {
     method: "GET",
@@ -17,7 +30,8 @@ export async function bffGet<T>(path: string): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new BffHttpError(`BFF GET failed: ${response.status}`, response.status);
+    const msg = await extractErrorMessage(response, "BFF GET");
+    throw new BffHttpError(msg, response.status);
   }
 
   return response.json() as Promise<T>;
@@ -31,7 +45,8 @@ export async function bffPost<T>(path: string, body: unknown): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new BffHttpError(`BFF POST failed: ${response.status}`, response.status);
+    const msg = await extractErrorMessage(response, "BFF POST");
+    throw new BffHttpError(msg, response.status);
   }
 
   return response.json() as Promise<T>;

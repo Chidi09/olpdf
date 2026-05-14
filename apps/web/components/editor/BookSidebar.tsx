@@ -2,7 +2,7 @@
 
 import React from "react";
 import { BookModel } from "@olpdf/document-model";
-import { BookOpen } from "lucide-react";
+import { BookOpenIcon } from "@heroicons/react/24/outline";
 
 export type BookMatterKey = "title_page" | "copyright" | "toc" | "about_author";
 
@@ -32,7 +32,7 @@ export default function BookSidebar({
       {/* ... previous code ... */}
       <div className="p-6 border-b border-[var(--border-subtle)]">
         <h2 className="text-xl font-display font-bold text-[var(--accent)] flex items-center gap-2">
-          <BookOpen className="h-5 w-5" /> {book.title}
+          <BookOpenIcon className="h-5 w-5" /> {book.title}
         </h2>
         <div className="flex gap-4 mt-2">
             <button 

@@ -14,9 +14,12 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { useToastStore } from "@/store/useToastStore";
 import { normalizeDocumentBlocks } from "@/lib/documentTransformers";
 import { useEditorProfile } from "@/hooks/useEditorProfile";
+import { useDocumentExport } from "@/components/editor/export/useDocumentExport";
+import type { ExportTelemetryPayload } from "@/components/editor/export/types";
+import PageThumbnailRail from "@/components/editor/PageThumbnailRail";
 import {
   Bars3BottomLeftIcon,
-  Squares2X2Icon,
+  PhotoIcon,
   SparklesIcon,
   ChevronLeftIcon,
   PlayIcon,
@@ -168,15 +171,33 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   );
   const canUseFidelity = Boolean(currentModel?.page_dimensions?.length && currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)));
   const layoutMode = currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable");
-  const [leftTab, setLeftTab] = useState<"outline" | "blocks">("outline");
+  const [leftTab, setLeftTab] = useState<"outline" | "pages">("outline");
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
   const editorContentRef = useRef<HTMLDivElement>(null);
   const toast = useToastStore((s) => s.toast);
   const editorProfile = useEditorProfile();
+
+  const exportHook = useDocumentExport({
+    documentId,
+    getModel: useCallback(() => currentModel, [currentModel]),
+    flushSave: useCallback(async () => {
+      if (currentModel) await saveMutation.mutateAsync(currentModel);
+    }, [currentModel, saveMutation]),
+    onTelemetry: useCallback((payload: ExportTelemetryPayload) => {
+      console.log("[export-telemetry]", payload);
+    }, []),
+  });
+
+  useEffect(() => {
+    if (exportHook.phase === "success") {
+      toast("PDF export started", "success");
+    } else if (exportHook.phase === "error" && exportHook.error) {
+      toast(exportHook.error, "error");
+    }
+  }, [exportHook.phase, exportHook.error, toast]);
 
   useEffect(() => {
     setTitleDraft(currentModel?.meta?.title || "Untitled Document");
@@ -198,17 +219,26 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     });
   }, [currentModel?.blocks]);
 
-  const scrollToHeading = useCallback((text: string) => {
+  const scrollToOutlineItem = useCallback((item: { id: string; label: string; pageIndex: number }) => {
+    if (layoutMode === "fidelity" && item.pageIndex >= 0) {
+      const el = document.querySelector(`[data-page-index="${item.pageIndex}"]`);
+      if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    }
+
     const pm = document.querySelector(".ProseMirror");
-    if (!pm) return;
-    const headings = pm.querySelectorAll("h1, h2, h3, h4, h5, h6");
-    for (const h of headings) {
-      if (h.textContent?.trim() === text) {
-        h.scrollIntoView({ behavior: "smooth", block: "center" });
-        break;
+    if (pm) {
+      const byBlockId = pm.querySelector(`[data-block-id="${item.id}"]`);
+      if (byBlockId) { byBlockId.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+
+      const headings = pm.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      for (const h of headings) {
+        if (h.textContent?.trim() === item.label) {
+          h.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
       }
     }
-  }, []);
+  }, [layoutMode]);
 
   const ITEM_HEIGHT = 36;
 
@@ -301,29 +331,6 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     toast("Editor link copied", "success");
   };
 
-  const exportPdf = async () => {
-    if (!currentModel || isExporting) return;
-    setIsExporting(true);
-    try {
-      const response = await fetch(`/api/bff/documents/${documentId}/export/fidelity`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_model: currentModel, font_metrics: {} }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data?.url) throw new Error("export_failed");
-      const a = document.createElement("a");
-      a.href = data.url;
-      a.download = `${currentModel.meta?.title || "document"}.pdf`;
-      a.click();
-      toast("PDF export started", "success");
-    } catch {
-      toast("Export failed. Try again after saving.", "error");
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <div className="flex h-screen w-full overflow-x-auto overflow-y-hidden bg-black text-[#ededed]">
       {isOutlineOpen && <aside className="z-20 hidden w-[240px] shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl lg:flex 2xl:w-[260px]">
@@ -351,16 +358,26 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             <Bars3BottomLeftIcon className="h-3.5 w-3.5" /> Outline
           </button>
           <button
-            onClick={() => setLeftTab("blocks")}
+            onClick={() => setLeftTab("pages")}
             className={`flex flex-1 items-center justify-center gap-2 rounded py-1.5 text-xs font-medium transition-colors ${
-              leftTab === "blocks" ? "bg-[#222] text-white" : "text-[#888] hover:bg-[#111] hover:text-white"
+              leftTab === "pages" ? "bg-[#222] text-white" : "text-[#888] hover:bg-[#111] hover:text-white"
             }`}
           >
-            <Squares2X2Icon className="h-3.5 w-3.5" /> Blocks
+            <PhotoIcon className="h-3.5 w-3.5" /> Pages
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
+          {leftTab === "pages" ? (
+            <PageThumbnailRail
+              pageDimensions={currentModel?.page_dimensions ?? []}
+              activePageIndex={undefined}
+              onSelectPage={(idx) => {
+                const el = document.querySelector(`[data-page-index="${idx}"]`);
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            />
+          ) : (
           <div className="relative pl-3 border-l border-[var(--border-subtle)]">
             {outlineItems.length > 0 && activeSectionId && (
               <div
@@ -372,7 +389,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               {outlineItems.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => scrollToHeading(item.label)}
+                  onClick={() => scrollToOutlineItem(item)}
                   className={`group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[var(--bg-elevated)] ${
                     activeSectionId === item.id
                       ? "text-[var(--text-primary)] font-medium"
@@ -385,7 +402,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
                       ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]"
                       : "border-[#444] bg-[var(--bg-panel)] text-[var(--text-tertiary)] group-hover:border-orange-500 group-hover:text-orange-500"
                   }`}>
-                    {leftTab === "outline" ? item.type : "B"}
+                    {item.type}
                   </span>
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.pageIndex >= 0 && (
@@ -397,7 +414,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               ))}
             </div>
           </div>
-          {outlineItems.length === 0 && <p className="px-2 py-2 text-xs text-[var(--text-tertiary)]">No blocks yet.</p>}
+          )}
+          {leftTab === "outline" && outlineItems.length === 0 && <p className="px-2 py-2 text-xs text-[var(--text-tertiary)]">No blocks yet.</p>}
         </div>
       </aside>}
 
@@ -449,6 +467,17 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           </div>
 
           <div className="flex items-center gap-2">
+            <GlassTooltip label={layoutMode === "editable" ? "Switch to Fidelity" : "Switch to Editable"}>
+              <button
+                onClick={() => {
+                  if (layoutMode === "editable" && !canUseFidelity) { toast("Fidelity view is available after PDF import finishes.", "info"); return; }
+                  void setLayoutMode(layoutMode === "editable" ? "fidelity" : "editable");
+                }}
+                className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-2.5 text-xs font-semibold text-[#888] transition-colors hover:bg-[#111] hover:text-white active:scale-[0.98]"
+              >
+                {layoutMode === "editable" ? "Fidelity" : "Editable"}
+              </button>
+            </GlassTooltip>
             <GlassTooltip label={isAssistantOpen ? "Hide assistant" : "Show assistant"}>
               <button
                 onClick={() => setIsAssistantOpen((open) => !open)}
@@ -467,8 +496,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               </button>
             </GlassTooltip>
             <GlassTooltip label="Export PDF">
-              <button onClick={() => void exportPdf()} disabled={isExporting || !currentModel} className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
-                {isExporting ? <InlineSpinner className="h-3.5 w-3.5" /> : <ArrowDownTrayIcon className="h-3.5 w-3.5" />} {isExporting ? "Exporting" : "Export"}
+              <button onClick={() => void exportHook.exportNow()} disabled={exportHook.isExporting || !currentModel} className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
+                {exportHook.isExporting ? <InlineSpinner className="h-3.5 w-3.5" /> : <ArrowDownTrayIcon className="h-3.5 w-3.5" />} {exportHook.isExporting ? "Exporting" : "Export"}
               </button>
             </GlassTooltip>
             <GlassTooltip label="Publish to web">
@@ -527,33 +556,6 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
         <div className="flex-1 overflow-y-auto p-3">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#666]">Mode</div>
-              <div className="inline-flex rounded-md border border-white/10 bg-white/[0.02] p-0.5">
-                <button
-                  onClick={() => void setLayoutMode("editable")}
-                  className={`rounded px-2 py-1 text-[10px] font-medium uppercase ${layoutMode === "editable" ? "bg-white text-black" : "text-[#777] hover:text-white"}`}
-                >
-                  Editable
-                </button>
-                <button
-                  onClick={() => {
-                    if (!canUseFidelity) { toast("Fidelity view is available after PDF import finishes.", "info"); return; }
-                    void setLayoutMode("fidelity");
-                  }}
-                  className={`rounded px-2 py-1 text-[10px] font-medium uppercase transition-colors ${
-                    layoutMode === "fidelity"
-                      ? "bg-white text-black"
-                      : canUseFidelity
-                        ? "text-[#777] hover:text-white"
-                        : "text-[#555] cursor-not-allowed"
-                  }`}
-                >
-                  Fidelity
-                </button>
-              </div>
-            </div>
-
             <textarea
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
