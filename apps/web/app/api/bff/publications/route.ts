@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { API_BASE_URL } from "../../_shared";
+import { API_BASE_URL } from "../_shared";
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;

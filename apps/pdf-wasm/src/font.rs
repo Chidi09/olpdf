@@ -325,7 +325,3 @@ pub fn text_width(text: &str, info: &Option<PageFontInfo>, font_size: f64) -> f6
 
     (text.len() as f64 * font_size * 0.5).max(20.0)
 }
-
-// Re-export WINANSI and MACROMAN so font.rs callers (encoding fallback seed)
-// can reach the tables from within this crate.
-pub use crate::cmap::{WINANSI, MACROMAN};

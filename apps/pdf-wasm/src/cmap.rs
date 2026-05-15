@@ -5,7 +5,7 @@ use std::collections::HashMap;
 // These cover PDFs that use /WinAnsiEncoding, /MacRomanEncoding, or
 // /PDFDocEncoding without embedding a ToUnicode CMap.  Index = byte value.
 
-static WINANSI: [u32; 256] = [
+pub(crate) static WINANSI: [u32; 256] = [
     0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,  // 0x00-0x0F
     0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,  // 0x10-0x1F
     0x20,0x21,0x22,0x23,0x24,0x25,0x26,0x27, // 0x20-0x27
@@ -40,7 +40,7 @@ static WINANSI: [u32; 256] = [
     0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF,
 ];
 
-static MACROMAN: [u32; 256] = [
+pub(crate) static MACROMAN: [u32; 256] = [
     0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
     // 0x20-0x7E: same as ASCII
