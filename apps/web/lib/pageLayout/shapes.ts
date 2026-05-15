@@ -31,7 +31,7 @@ export function createShapeFrame(kind: ShapeKind, x: number, y: number, w = 100,
     return { ...base, shapeType: "arrow" as const, height: 2 };
   }
   if (kind === "roundedRect") {
-    return { ...base, shapeType: "roundedRect" as const };
+    return { ...base, shapeType: "rounded_rect" as const };
   }
   return { ...base, shapeType: "rect" as const };
 }
@@ -42,11 +42,8 @@ export function createSymbolFrame(symbol: string, x: number, y: number): SymbolF
   return {
     id: `sym-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     type: "symbol",
-    symbol,
-    fontFamily: "Inter",
-    fontSize: 24,
-    fontWeight: "normal",
-    fontStyle: "normal",
+    symbolId: symbol,
+    size: 24,
     color: "#111111",
     visible: true,
     locked: false,

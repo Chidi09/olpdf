@@ -29,6 +29,7 @@ import { Canvas, Ellipse, FabricObject, Group, IText, Line, PencilBrush, Rect, T
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import { useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useFidelityCanvasStore, type ShapeTool } from "@/store/useFidelityCanvasStore";
+import { usePageLayoutStore } from "@/store/usePageLayoutStore";
 import FormatBar from "@/components/editor/FormatBar";
 import { reflow } from "@/engine/reflow";
 import { DocumentFlowEditor } from "@/components/editor/DocumentFlowEditor";

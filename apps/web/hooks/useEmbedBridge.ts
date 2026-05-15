@@ -12,7 +12,10 @@ interface UseEmbedBridgeArgs {
   onLoad?: (buffer: ArrayBuffer) => void;
 }
 
-function postToParent(envelope: { olpdf: 1; id: string; type: string; payload: unknown }, parentOrigin: string) {
+function postToParent(
+  envelope: { olpdf: 1; id: string; type: string; payload: unknown; replyTo?: string },
+  parentOrigin: string,
+) {
   if (typeof window === "undefined") return;
   window.parent.postMessage(envelope, parentOrigin);
 }

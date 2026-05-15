@@ -75,6 +75,15 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
     return modelRef.current;
   }, []);
 
+  const { emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave, emitExportComplete } = useEmbedBridge({
+    parentOrigin,
+    onLoad: handleLoad,
+    onSetTheme: handleSetTheme,
+    onSetReadOnly: handleSetReadOnly,
+    onTriggerExport: handleTriggerExport,
+    onGetDocument: handleGetDocument,
+  });
+
   const handleExportComplete = useCallback((result: { requestId: string; url: string }) => {
     setExportRequest(null);
     emitExportComplete(result.url);
@@ -83,15 +92,6 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
   const handleExportError = useCallback((_result: { requestId: string; message: string }) => {
     setExportRequest(null);
   }, []);
-
-  const { emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave } = useEmbedBridge({
-    parentOrigin,
-    onLoad: handleLoad,
-    onSetTheme: handleSetTheme,
-    onSetReadOnly: handleSetReadOnly,
-    onTriggerExport: handleTriggerExport,
-    onGetDocument: handleGetDocument,
-  });
 
   const handleModelChange = useCallback(
     (updated: DocumentModel) => {

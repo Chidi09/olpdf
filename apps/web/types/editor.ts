@@ -4,6 +4,9 @@ import type { FabricObject } from "fabric";
 export interface FabricObjectMeta {
   blockId?: string;
   blockType?: string;
+  layoutObjectId?: string;
+  layoutObjectType?: string;
+  pageId?: string;
   shapeType?: string;
   fieldType?: string;
   isCommentIndicator?: boolean;

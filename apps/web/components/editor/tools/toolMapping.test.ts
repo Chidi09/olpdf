@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { canvasToolFromRegistryId, registryIdFromCanvasTool, getTool } from "./toolRegistry";
 
 describe("tool id mapping", () => {

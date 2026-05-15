@@ -84,7 +84,7 @@ export function validateLayoutOperations(operations: LayoutOperation[], doc: Pag
     if ("pageId" in op && op.pageId !== undefined && !pageIds.has(op.pageId)) {
       errors.push(`${op.type} references missing page ${op.pageId}`);
     }
-    if ("objectId" in op && !objectIds.has(op.objectId) && op.type !== "insert_text" && op.type !== "insert_image" && op.type !== "insert_table" && op.type !== "insert_shape" && op.type !== "insert_symbol" && op.type !== "add_highlight" && op.type !== "add_comment" && op.type !== "add_signature") {
+    if ("objectId" in op && !objectIds.has(op.objectId)) {
       errors.push(`${op.type} references missing object ${op.objectId}`);
     }
     if (op.type === "resize_object" && (op.width <= 0 || op.height <= 0)) {

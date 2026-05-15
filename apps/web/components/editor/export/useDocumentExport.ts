@@ -5,7 +5,7 @@ import { sanitizeDocumentModelForApi } from "@/lib/documentModelSanitizer";
 import type { PdfEditSession } from "@/types/nativePdf";
 import { pageLayoutFromDocumentModel } from "@/lib/pageLayout/fromNativePdf";
 import { buildLayoutExportPayload } from "@/lib/pageLayout/exportPayload";
-import { operationsFromLayoutDiff, validateLayoutOperations } from "@/lib/pageLayout/operations";
+import { operationsFromLayoutDiff, validateLayoutOperations, type LayoutOperation } from "@/lib/pageLayout/operations";
 import { usePageLayoutStore } from "@/store/usePageLayoutStore";
 
 export interface UseDocumentExportOptions {
@@ -47,9 +47,9 @@ export function useDocumentExport(options: UseDocumentExportOptions) {
       if (isNativePdf) {
         const layoutDoc = layoutStoreDoc ?? pageLayoutFromDocumentModel(model as any);
         const payloadObj = buildLayoutExportPayload(layoutDoc) as unknown as Record<string, unknown>;
-        const ops = layoutStoreDoc
+        const ops: LayoutOperation[] = layoutStoreDoc
           ? operationsFromLayoutDiff(null, layoutStoreDoc)
-          : (nativeSession?.operations ?? []);
+          : [];
         const validationErrors = validateLayoutOperations(ops, layoutDoc);
         if (validationErrors.length > 0) {
           setError(`Validation failed: ${validationErrors.join("; ")}`);

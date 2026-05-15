@@ -9,7 +9,13 @@ export type ShapeTool =
   | "arrow"
   | "text"
   | "sticky"
-  | "draw";
+  | "draw"
+  | "image"
+  | "table"
+  | "symbol"
+  | "highlight"
+  | "comment"
+  | "signature";
 
 export interface SelectedBlockMeta {
   blockId: string;

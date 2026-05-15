@@ -140,17 +140,37 @@ export type FormFieldFrame = ObjectBase & {
   required: boolean;
 };
 
-export type SignatureFrame = ObjectBase & {
-  type: "signature";
-  signatureData: string;
-  drawnAt?: string;
+export type HighlightFrame = ObjectBase & {
+  type: "annotation";
+  annotationType: "highlight";
+  color: string;
 };
 
-export type AnnotationFrame = ObjectBase & {
+export type CommentFrame = ObjectBase & {
   type: "annotation";
-  annotationType: "highlight" | "underline" | "strikeout" | "sticky_note" | "comment" | "callout" | "stamp";
+  annotationType: "comment";
+  text: string;
+  author: string;
+  resolved: boolean;
+  color?: string;
+};
+
+export type SignatureFrame = ObjectBase & {
+  type: "annotation";
+  annotationType: "signature";
+  signerName: string;
+  imageSrc?: string;
+  drawn: boolean;
+  typed: boolean;
+};
+
+export type MarkupAnnotationFrame = ObjectBase & {
+  type: "annotation";
+  annotationType: "underline" | "strikeout" | "sticky_note" | "callout" | "stamp";
   content?: string;
   color: string;
 };
 
-export type LayoutObject = TextFrame | ImageFrame | TableFrame | ChartFrame | ShapeFrame | SymbolFrame | FormFieldFrame | SignatureFrame | AnnotationFrame;
+export type AnnotationFrame = HighlightFrame | CommentFrame | SignatureFrame | MarkupAnnotationFrame;
+
+export type LayoutObject = TextFrame | ImageFrame | TableFrame | ChartFrame | ShapeFrame | SymbolFrame | FormFieldFrame | AnnotationFrame;

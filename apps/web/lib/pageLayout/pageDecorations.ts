@@ -68,7 +68,7 @@ export function expandPageDecorations(doc: PageLayoutDocument): PageLayoutPage[]
 
     if (decorations.pageNumbers && !(isFirst && decorations.pageNumbers.excludeFirstPage)) {
       const pageNum = (decorations.pageNumbers.startAt ?? 1) + idx;
-      let pageNumText = decorations.pageNumbers.format;
+      let pageNumText: string = decorations.pageNumbers.format;
       if (pageNumText.includes("page_n_of_m")) {
         pageNumText = `Page ${pageNum} of ${totalPages}`;
       } else if (pageNumText.includes("page_n")) {

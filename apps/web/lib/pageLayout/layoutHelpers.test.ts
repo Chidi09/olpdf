@@ -52,7 +52,7 @@ describe("createSymbolFrame", () => {
   it("creates a symbol frame", () => {
     const s = createSymbolFrame("✓", 10, 20);
     expect(s.type).toBe("symbol");
-    expect(s.symbol).toBe("✓");
+    expect(s.symbolId).toBe("✓");
   });
 });
 
