@@ -1,0 +1,19 @@
+{
+  "name": "@olpdf/playground",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build": "next build"
+  },
+  "dependencies": {
+    "@olpdf/embed": "workspace:*",
+    "next": "16.2.4",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

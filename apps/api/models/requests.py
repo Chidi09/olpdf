@@ -1,14 +1,64 @@
 """All inbound Pydantic request bodies."""
 from pydantic import BaseModel, Base64Bytes, Field, ConfigDict
-from typing import Any, Dict, List, Literal, Optional, Annotated
+from typing import Any, Dict, List, Literal, Optional, Annotated, Union
 
 from .document import DocumentModel
+
+
+class LayoutObjectPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    type: str
+    x: float
+    y: float
+    width: float
+    height: float
+    rotation: float = 0
+    content: Optional[str] = None
+    src: Optional[str] = None
+    fontFamily: Optional[str] = None
+    fontSize: Optional[float] = None
+    fill: Optional[str] = None
+    stroke: Optional[str] = None
+
+
+class LayoutPagePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    index: int
+    width: float
+    height: float
+    objects: List[LayoutObjectPayload] = []
+
+
+class LayoutPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    source_kind: str = "imported_pdf"
+    original_pdf_key: Optional[str] = None
+    pages: List[LayoutPagePayload] = []
+    export_strategy: Literal["preserve_original", "regenerate"] = "preserve_original"
+
+
+class LayoutOperationPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    type: str
+    page_id: Optional[str] = None
+    pageId: Optional[str] = None
+    object_id: Optional[str] = None
+    objectId: Optional[str] = None
+    x: Optional[float] = None
+    y: Optional[float] = None
+    width: Optional[float] = None
+    height: Optional[float] = None
+    content: Optional[str] = None
 
 
 class ExportRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     document_model: DocumentModel
     font_metrics: Optional[Dict[str, Dict[str, float]]] = None
+    layout_payload: Optional[Dict[str, Any]] = None
+    original_object_key: Optional[str] = None
+    operations: Optional[List[Union[Dict[str, Any], LayoutOperationPayload]]] = []
 
 
 class ImportStartPayload(BaseModel):

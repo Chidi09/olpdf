@@ -3,109 +3,108 @@
 import { useEffect, useCallback } from "react";
 import type { DocumentModel } from "@olpdf/document-model";
 
-type EmbedCommand =
-  | { type: "LOAD"; data: { buffer: ArrayBuffer } }
-  | { type: "SET_THEME"; data: { theme: "light" | "dark" } }
-  | { type: "DOWNLOAD" };
-
 interface UseEmbedBridgeArgs {
   parentOrigin: string;
-  onLoad?: (buffer: ArrayBuffer) => void;
+  onSetReadOnly?: (readOnly: boolean) => void;
   onSetTheme?: (theme: "light" | "dark") => void;
-  onDownload?: () => void;
+  onTriggerExport?: (format: "pdf" | "docx") => void;
+  onGetDocument?: () => DocumentModel | null;
+  onLoad?: (buffer: ArrayBuffer) => void;
 }
 
-function postToParent(type: string, data: unknown, parentOrigin: string) {
+function postToParent(envelope: { olpdf: 1; id: string; type: string; payload: unknown }, parentOrigin: string) {
   if (typeof window === "undefined") return;
-  window.parent.postMessage({ type, data }, parentOrigin);
+  window.parent.postMessage(envelope, parentOrigin);
+}
+
+function getNewId(): string {
+  return crypto.randomUUID();
 }
 
 export function useEmbedBridge({
   parentOrigin,
-  onLoad,
+  onSetReadOnly,
   onSetTheme,
-  onDownload,
+  onTriggerExport,
+  onGetDocument,
+  onLoad,
 }: UseEmbedBridgeArgs) {
+  if (parentOrigin === "*") throw new Error("parentOrigin cannot be *");
+
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (parentOrigin !== "*" && e.origin !== parentOrigin) return;
-      const cmd = e.data as EmbedCommand;
-      switch (cmd.type) {
-        case "LOAD":
-          onLoad?.(cmd.data.buffer);
+      if (e.origin !== parentOrigin) return;
+
+      const data = e.data as Record<string, unknown>;
+      if (!data || data.olpdf !== 1) return;
+
+      const type = String(data.type ?? "");
+      const payload = data.payload as Record<string, unknown> ?? {};
+      const replyTo = String(data.id ?? "");
+
+      function reply(result: "reply:ok" | "reply:error", replyPayload: unknown) {
+        postToParent({ olpdf: 1, id: getNewId(), type: result, payload: replyPayload, replyTo }, parentOrigin);
+      }
+
+      switch (type) {
+        case "command:setReadOnly":
+          onSetReadOnly?.(Boolean(payload.readOnly));
           break;
-        case "SET_THEME":
-          onSetTheme?.(cmd.data.theme);
+        case "command:setTheme":
+          onSetTheme?.(payload.theme as "light" | "dark");
           break;
-        case "DOWNLOAD":
-          onDownload?.();
+        case "command:triggerExport":
+          onTriggerExport?.(payload.format as "pdf" | "docx");
+          break;
+        case "command:getDocument": {
+          const doc = onGetDocument?.();
+          reply("reply:ok", { documentModel: doc ?? null });
+          break;
+        }
+        case "command:loadDocument":
+          if (payload.buffer) {
+            onLoad?.(payload.buffer as ArrayBuffer);
+          }
           break;
       }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [parentOrigin, onLoad, onSetTheme, onDownload]);
+  }, [parentOrigin, onSetReadOnly, onSetTheme, onTriggerExport, onGetDocument, onLoad]);
 
   // Signal ready to the host page
   useEffect(() => {
-    postToParent("READY", undefined, parentOrigin);
+    postToParent({ olpdf: 1, id: getNewId(), type: "event:ready", payload: {} }, parentOrigin);
   }, [parentOrigin]);
 
-  /**
-   * MODEL_UPDATE — emitted whenever the DocumentModel changes.
-   * Carries the full model including rich_spans, next_block_id, page_dimensions, etc.
-   * Replaces the deprecated BLOCK_CHANGE event which only carried a flat content string.
-   *
-   * Host SDK usage:
-   *   editor.on('MODEL_UPDATE', ({ documentModel }) => { ... })
-   */
   const emitModelUpdate = useCallback(
     (documentId: string, model: DocumentModel) => {
-      postToParent("MODEL_UPDATE", { documentId, documentModel: model }, parentOrigin);
+      postToParent({ olpdf: 1, id: getNewId(), type: "event:modelUpdate", payload: { documentId, documentModel: model } }, parentOrigin);
     },
     [parentOrigin],
   );
 
-  /**
-   * PAGE_ADDED — emitted when the layout engine adds a new overflow page.
-   *
-   * Host SDK usage:
-   *   editor.on('PAGE_ADDED', ({ pageIndex, width, height }) => { ... })
-   */
   const emitPageAdded = useCallback(
     (pageIndex: number, width: number, height: number) => {
-      postToParent("PAGE_ADDED", { pageIndex, width, height }, parentOrigin);
+      postToParent({ olpdf: 1, id: getNewId(), type: "event:pageAdded", payload: { pageIndex, width, height } }, parentOrigin);
     },
     [parentOrigin],
   );
 
-  /**
-   * PAGE_REMOVED — emitted when the layout engine removes a previously-added overflow page.
-   *
-   * Host SDK usage:
-   *   editor.on('PAGE_REMOVED', ({ pageIndex }) => { ... })
-   */
   const emitPageRemoved = useCallback(
     (pageIndex: number) => {
-      postToParent("PAGE_REMOVED", { pageIndex }, parentOrigin);
-    },
-    [parentOrigin],
-  );
-
-  /** @deprecated Use emitModelUpdate — BLOCK_CHANGE loses rich_spans formatting. */
-  const emitBlockChange = useCallback(
-    (blockId: string, content: string) => {
-      postToParent("BLOCK_CHANGE", { blockId, content }, parentOrigin);
+      postToParent({ olpdf: 1, id: getNewId(), type: "event:pageRemoved", payload: { pageIndex } }, parentOrigin);
     },
     [parentOrigin],
   );
 
   const emitSave = useCallback(
     (documentId: string, model: DocumentModel) => {
-      postToParent("SAVE", {
-        documentId,
-        blockCount: model.blocks?.length ?? 0,
-        pageCount: model.page_dimensions?.length ?? 1,
+      postToParent({
+        olpdf: 1,
+        id: getNewId(),
+        type: "event:save",
+        payload: { documentId, blockCount: model.blocks?.length ?? 0, pageCount: model.page_dimensions?.length ?? 1 },
       }, parentOrigin);
     },
     [parentOrigin],
@@ -113,10 +112,10 @@ export function useEmbedBridge({
 
   const emitExportComplete = useCallback(
     (url: string) => {
-      postToParent("EXPORT_COMPLETE", { url }, parentOrigin);
+      postToParent({ olpdf: 1, id: getNewId(), type: "event:exportComplete", payload: { url } }, parentOrigin);
     },
     [parentOrigin],
   );
 
-  return { emitModelUpdate, emitPageAdded, emitPageRemoved, emitBlockChange, emitSave, emitExportComplete };
+  return { emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave, emitExportComplete };
 }

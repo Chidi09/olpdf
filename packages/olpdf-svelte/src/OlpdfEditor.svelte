@@ -24,16 +24,16 @@
 
   onMount(() => {
     editor = new OlPDFEmbed(container, { host, documentId, token });
-    editor.on('READY', () => onReady?.());
-    editor.on('MODEL_UPDATE', ({ documentModel }) => onModelUpdate?.(documentModel));
-    editor.on('EXPORT_COMPLETE', ({ url }) => onExportComplete?.(url));
+    editor.on('event:ready', () => onReady?.());
+    editor.on<{ documentModel: DocumentModel }>('event:modelUpdate', ({ documentModel }) => onModelUpdate?.(documentModel));
+    editor.on<{ url: string }>('event:exportComplete', ({ url }) => onExportComplete?.(url));
   });
 
   // Re-initialise if documentId or token change at runtime
   $: if (editor && (documentId || token)) {
     editor.destroy();
     editor = new OlPDFEmbed(container, { host, documentId, token });
-    editor.on('MODEL_UPDATE', ({ documentModel }) => onModelUpdate?.(documentModel));
+    editor.on<{ documentModel: DocumentModel }>('event:modelUpdate', ({ documentModel }) => onModelUpdate?.(documentModel));
   }
 
   onDestroy(() => editor?.destroy());

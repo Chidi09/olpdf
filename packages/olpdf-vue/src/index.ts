@@ -45,11 +45,11 @@ export const OlpdfEditor = defineComponent({
         documentId: props.documentId,
         token: props.token,
       });
-      editor.on('READY', () => emit('ready'));
-      editor.on('MODEL_UPDATE', ({ documentModel }) => emit('model-update', documentModel));
-      editor.on('EXPORT_COMPLETE', ({ url }) => emit('export-complete', url));
-      editor.on('PAGE_ADDED', ({ pageIndex, width, height }) => emit('page-added', pageIndex, width, height));
-      editor.on('PAGE_REMOVED', ({ pageIndex }) => emit('page-removed', pageIndex));
+      editor.on('event:ready', () => emit('ready'));
+      editor.on<{ documentModel: DocumentModel }>('event:modelUpdate', ({ documentModel }) => emit('model-update', documentModel));
+      editor.on<{ url: string }>('event:exportComplete', ({ url }) => emit('export-complete', url));
+      editor.on<{ pageIndex: number; width: number; height: number }>('event:pageAdded', ({ pageIndex, width, height }) => emit('page-added', pageIndex, width, height));
+      editor.on<{ pageIndex: number }>('event:pageRemoved', ({ pageIndex }) => emit('page-removed', pageIndex));
     }
 
     onMounted(init);

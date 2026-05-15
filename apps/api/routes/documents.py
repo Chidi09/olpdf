@@ -324,6 +324,34 @@ async def _export_via_go(doc_dict: dict, format_type: str) -> bytes | None:
         return None
 
 
+async def _export_layout_via_go(layout_payload: dict, original_object_key: str | None) -> bytes | None:
+    """Send layout payload to Go layout export endpoint."""
+    if not EXPORT_SERVICE_URL:
+        return None
+    try:
+        import httpx
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Worker-Secret": WORKER_SECRET,
+        }
+        payload = {
+            "layout_payload": layout_payload,
+            "original_object_key": original_object_key,
+        }
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{EXPORT_SERVICE_URL}/export/layout",
+                headers=headers,
+                json=payload,
+            )
+        if resp.status_code != 200:
+            return None
+        return resp.content
+    except Exception:
+        return None
+
+
 @router.post("/{doc_id}/export/{format_type}")
 @limiter.limit("5/minute")
 async def export_document(
@@ -344,6 +372,31 @@ async def export_document(
         doc = export_req.document_model
         font_metrics = export_req.font_metrics or {}
         doc_dict = doc.model_dump()
+
+        # If layout payload present, route to Go layout export endpoint
+        if export_req.layout_payload:
+            go_bytes = await _export_layout_via_go(
+                export_req.layout_payload,
+                export_req.original_object_key,
+            )
+            if go_bytes:
+                object_name = f"exports/{doc_id}.pdf"
+                uploaded = r2_storage.upload_bytes(go_bytes, object_name)
+                if not uploaded:
+                    raise HTTPException(status_code=500, detail="Failed to upload layout export")
+                link = DownloadLinkRepository.create(
+                    owner_id=user["sub"],
+                    object_key=object_name,
+                    filename=f"{getattr(doc.meta, 'title', doc_id) or doc_id}.pdf",
+                    content_type="application/pdf",
+                )
+                return {
+                    "id": doc_id,
+                    "url": link["url"],
+                    "size": len(go_bytes),
+                    "format": "pdf",
+                    "engine": "go-layout",
+                }
 
         # Try Go export service first
         go_bytes = await _export_via_go(doc_dict, normalized_format)

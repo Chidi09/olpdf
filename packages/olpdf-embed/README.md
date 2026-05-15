@@ -5,7 +5,7 @@ Lightweight iframe SDK for embedding the OLPDF editor.
 ## Usage
 
 ```js
-import { OlPDFEmbed } from "olpdf-embed";
+import { OlPDFEmbed } from "@olpdf/embed";
 
 const editor = new OlPDFEmbed(document.getElementById("editor"), {
   host: "https://olpdf.xyz",

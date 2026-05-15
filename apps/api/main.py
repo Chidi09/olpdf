@@ -15,7 +15,7 @@ from .core.auth import verify_jwt_token
 from .core.security import hash_api_key
 from .core.supabase_client import supabase
 from .repositories.user_repo import ApiKeyRepository
-from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments, ai_settings, auth, pdf_edits, telemetry, downloads, pdf_jobs
+from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments, ai_settings, auth, pdf_edits, telemetry, downloads, pdf_jobs, publications, v1
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -259,7 +259,9 @@ def create_app() -> FastAPI:
     app.include_router(pdf_edits.router)
     app.include_router(downloads.router)
     app.include_router(pdf_jobs.router)
+    app.include_router(publications.router)
     app.include_router(telemetry.router)
+    app.include_router(v1.router)
 
     @app.on_event("startup")
     async def warm_redis():

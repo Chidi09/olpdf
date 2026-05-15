@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import type { DocumentModel } from "@olpdf/document-model";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
@@ -26,7 +26,10 @@ type ThemeValue = "light" | "dark";
 export default function EmbedClient({ documentId, token, parentOrigin }: EmbedClientProps) {
   const [model, setModel] = useState<DocumentModel | null>(null);
   const [theme, setTheme] = useState<ThemeValue>("light");
+  const [readOnly, setReadOnly] = useState(false);
+  const [exportRequest, setExportRequest] = useState<{ requestId: string; format: "pdf" | "docx" } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const modelRef = useRef<DocumentModel | null>(null);
 
   // Authenticate the embed session with the provided short-lived token.
   useEffect(() => {
@@ -43,7 +46,10 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
             if (!r.ok) throw new Error(`Failed to load document (${r.status})`);
             return r.json() as Promise<{ document_model: DocumentModel }>;
           })
-          .then(({ document_model }) => setModel(document_model));
+          .then(({ document_model }) => {
+            setModel(document_model);
+            modelRef.current = document_model;
+          });
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Failed to load document."));
   }, [documentId, token]);
@@ -54,32 +60,43 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
   }, [theme]);
 
   const handleLoad = useCallback((_buffer: ArrayBuffer) => {
-    // Re-upload flow: POST the buffer to the ingest BFF and reload the model.
-    // For now the embed is read-only for externally-loaded buffers — the host
-    // should upload the file and obtain a documentId before constructing the embed.
     console.warn("[embed] LOAD command received but the document is already loaded by ID.");
   }, []);
 
   const handleSetTheme = useCallback((t: ThemeValue) => setTheme(t), []);
 
-  const handleDownload = useCallback(() => {
-    // Trigger the existing export flow by simulating a click on the hidden
-    // export button rendered by FidelityCanvas. The export result URL is
-    // emitted back via emitExportComplete once the export completes.
-    document.dispatchEvent(new CustomEvent("olpdf:embed:download"));
+  const handleSetReadOnly = useCallback((ro: boolean) => setReadOnly(ro), []);
+
+  const handleTriggerExport = useCallback((format: "pdf" | "docx") => {
+    setExportRequest({ requestId: crypto.randomUUID(), format });
   }, []);
 
-  const { emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave, emitExportComplete } = useEmbedBridge({
+  const handleGetDocument = useCallback(() => {
+    return modelRef.current;
+  }, []);
+
+  const handleExportComplete = useCallback((result: { requestId: string; url: string }) => {
+    setExportRequest(null);
+    emitExportComplete(result.url);
+  }, [emitExportComplete]);
+
+  const handleExportError = useCallback((_result: { requestId: string; message: string }) => {
+    setExportRequest(null);
+  }, []);
+
+  const { emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave } = useEmbedBridge({
     parentOrigin,
     onLoad: handleLoad,
     onSetTheme: handleSetTheme,
-    onDownload: handleDownload,
+    onSetReadOnly: handleSetReadOnly,
+    onTriggerExport: handleTriggerExport,
+    onGetDocument: handleGetDocument,
   });
 
   const handleModelChange = useCallback(
     (updated: DocumentModel) => {
+      modelRef.current = updated;
       setModel((prev) => {
-        // Emit PAGE_ADDED / PAGE_REMOVED when page count changes
         const prevPages = prev?.page_dimensions ?? [];
         const nextPages = updated.page_dimensions ?? [];
         if (nextPages.length > prevPages.length) {
@@ -101,7 +118,7 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
     [documentId, emitModelUpdate, emitPageAdded, emitPageRemoved, emitSave],
   );
 
-  // Expose emitExportComplete so FidelityCanvas can call it when export finishes.
+  // Listen for export result from FidelityCanvas and emit to host
   useEffect(() => {
     const handler = (e: Event) => {
       const { url } = (e as CustomEvent<{ url: string }>).detail ?? {};
@@ -132,6 +149,10 @@ export default function EmbedClient({ documentId, token, parentOrigin }: EmbedCl
       <FidelityCanvas
         documentId={documentId}
         model={model}
+        readOnly={readOnly}
+        exportRequest={exportRequest}
+        onExportComplete={handleExportComplete}
+        onExportError={handleExportError}
         onModelChange={handleModelChange}
       />
     </div>

@@ -64,11 +64,31 @@ export type PdfEditOperation = {
 export type PdfEditSessionStatus = "parsing" | "ready" | "partial" | "failed";
 export type PdfEditSessionSource = "wasm" | "server" | "hybrid";
 
+export type WasmLayoutObject = {
+  id: string;
+  type: string;
+  pageIndex: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  zIndex: number;
+  sourceRef: string;
+  originalPdfObjectId: string;
+  content?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  color?: string;
+  textAlign?: string;
+};
+
 export type PdfEditSession = {
   documentId: string;
   originalObjectKey: string;
   pages: Array<{ pageIndex: number; width: number; height: number; previewUrl?: string }>;
   objects: PdfNativeObject[];
+  layoutObjects?: WasmLayoutObject[];
   operations: PdfEditOperation[];
   status?: PdfEditSessionStatus;
   source?: PdfEditSessionSource;

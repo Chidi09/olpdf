@@ -43,16 +43,25 @@ OLPDF is an open-source, structure-first AI document studio. It classifies every
 ```
 olpdf-monorepo/
 ├── apps/
-│   ├── web/          # Next.js 15 frontend
-│   ├── api/          # FastAPI backend
-│   └── worker/       # Modal GPU worker (Surya OCR, PaddleOCR)
+│   ├── web/              # Next.js frontend (editor, embed route, docs)
+│   ├── api/              # FastAPI backend (REST + v1 public API)
+│   ├── export-service/   # Go PDF export engine
+│   ├── pdf-wasm/         # Rust WASM PDF layout extraction
+│   ├── playground/       # Local embed playground
+│   ├── ocr-worker/       # Modal GPU worker (Surya OCR, PaddleOCR)
+│   └── worker/           # Background job worker
 ├── packages/
-│   ├── document-model/   # Shared Zod (TS) + Pydantic (Python) schemas
+│   ├── olpdf-embed/      # Browser SDK — @olpdf/embed (TypeScript)
+│   ├── olpdf-react/      # React wrapper — @olpdf/react
+│   ├── olpdf-vue/        # Vue 3 wrapper — @olpdf/vue
+│   ├── olpdf-svelte/     # Svelte wrapper — @olpdf/svelte
+│   ├── olpdf-py/         # Python API client
+│   ├── olpdf-go/         # Go API client
+│   ├── olpdf-rs/         # Rust API client
+│   ├── olpdf-dotnet/     # .NET API client
+│   ├── document-model/   # Shared type definitions
 │   ├── ui/               # Shared React component library
 │   └── config/           # ESLint, Tailwind, TypeScript base configs
-├── schema.sql            # Supabase schema (run via migrations)
-├── supabase/             # Supabase migration files
-└── docker-compose.yml    # Local dev: Supabase + Redis emulator
 ```
 
 ---
@@ -288,6 +297,61 @@ Configure via `RESEND_API_KEY` (recommended) or `SMTP_*` environment variables. 
 | Fake redaction | PyMuPDF `apply_redactions()` removes underlying vectors |
 | Export file abuse | 24-hour TTL cron on `exports/` storage bucket |
 | Plaintext password exposure | AES-256 encryption for protected PDFs |
+
+---
+
+## Embed SDK
+
+OLPDF provides embed SDKs for integrating PDF editing into any app:
+
+| Package | Description |
+|---|---|
+| `@olpdf/embed` | Framework-agnostic browser SDK (postMessage bridge to the hosted editor) |
+| `@olpdf/react` | React/Next.js component wrapper |
+| `@olpdf/vue` | Vue 3 / Nuxt component wrapper |
+| `@olpdf/svelte` | Svelte/SvelteKit component wrapper |
+| `olpdf-py` | Python API client |
+| `olpdf-go` | Go API client |
+| `olpdf-rs` | Rust API client |
+| `olpdf-dotnet` | .NET API client |
+
+**Usage:**
+
+```js
+import { OlPDFEmbed } from "@olpdf/embed";
+
+const editor = new OlPDFEmbed(container, {
+  host: "https://olpdf.xyz",
+  documentId: "doc_abc123",
+  token: "your-embed-token",
+});
+
+editor.on("event:ready", () => console.log("Editor ready"));
+editor.on("event:modelUpdate", ({ documentModel }) => myDB.save(documentModel));
+```
+
+See `packages/olpdf-embed/README.md` for full documentation.
+
+### Local playground
+
+```bash
+cd apps/playground
+# Set env vars:
+export NEXT_PUBLIC_OLPDF_HOST=http://localhost:3000
+export NEXT_PUBLIC_OLPDF_DOCUMENT_ID=doc_demo
+export NEXT_PUBLIC_OLPDF_TOKEN=demo-token
+pnpm dev
+```
+
+### Public API
+
+The `/v1/` API is available at `api.olpdf.xyz` for programmatic access:
+
+- `POST /v1/extract` — semantic extraction from PDF URL
+- `POST /v1/tokens` — mint embed JWTs (planned)
+- `POST /v1/documents` — upload documents (planned)
+
+Authentication: `Authorization: Bearer <api-key>`.
 
 ---
 

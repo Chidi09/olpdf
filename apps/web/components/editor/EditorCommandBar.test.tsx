@@ -22,4 +22,24 @@ describe("EditorCommandBar", () => {
     expect(screen.getByText("Export")).toBeTruthy();
     expect(screen.getByText("Saved")).toBeTruthy();
   });
+
+  it("hides mode toggle when showModeToggle is false", () => {
+    render(
+      <EditorCommandBar
+        mode="fidelity"
+        title="Doc"
+        isSaving={false}
+        canUseFidelity={true}
+        showModeToggle={false}
+        onTitleChange={vi.fn()}
+        onTitleBlur={vi.fn()}
+        onModeToggle={vi.fn()}
+        onExport={vi.fn()}
+        isExporting={false}
+      />
+    );
+    expect(screen.getByDisplayValue("Doc")).toBeTruthy();
+    expect(screen.queryByText("Editable")).toBeNull();
+    expect(screen.getByText("Export")).toBeTruthy();
+  });
 });

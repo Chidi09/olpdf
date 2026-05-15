@@ -17,6 +17,7 @@ type EditorCommandBarProps = {
   title: string;
   isSaving: boolean;
   canUseFidelity: boolean;
+  showModeToggle?: boolean;
   nativeSessionStatus?: string;
   onTitleChange: (title: string) => void;
   onTitleBlur: () => void;
@@ -37,6 +38,7 @@ export default function EditorCommandBar({
   onTitleBlur,
   onExport,
   isExporting,
+  showModeToggle,
   aiSlot,
   leftSlot,
   rightSlot,
@@ -66,6 +68,7 @@ export default function EditorCommandBar({
       </div>
 
       <div className="flex items-center gap-2">
+        {showModeToggle !== false && (
         <GlassTooltip label={mode === "editable" ? "Switch to Fidelity" : "Switch to Editable"}>
           <button
             onClick={onModeToggle}
@@ -74,6 +77,7 @@ export default function EditorCommandBar({
             {mode === "editable" ? "Fidelity" : "Editable"}
           </button>
         </GlassTooltip>
+        )}
         {aiSlot}
         <GlassTooltip label="Export PDF">
           <button onClick={onExport} disabled={isExporting} className="flex h-8 items-center gap-1.5 rounded-md border border-[#333] bg-[#0A0A0A] px-3 text-xs font-semibold text-[#ededed] transition-colors hover:bg-[#111] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">

@@ -75,11 +75,11 @@ export function OlpdfEditor({
 
     const editor = new OlPDFEmbed(containerRef.current, { host, documentId, token });
 
-    editor.on('READY', () => onReadyRef.current?.());
-    editor.on('MODEL_UPDATE', ({ documentModel }) => onModelUpdateRef.current?.(documentModel));
-    editor.on('EXPORT_COMPLETE', ({ url }) => onExportCompleteRef.current?.(url));
-    editor.on('PAGE_ADDED', ({ pageIndex, width, height }) => onPageAddedRef.current?.(pageIndex, width, height));
-    editor.on('PAGE_REMOVED', ({ pageIndex }) => onPageRemovedRef.current?.(pageIndex));
+    editor.on('event:ready', () => onReadyRef.current?.());
+    editor.on<{ documentModel: DocumentModel }>('event:modelUpdate', ({ documentModel }) => onModelUpdateRef.current?.(documentModel));
+    editor.on<{ url: string }>('event:exportComplete', ({ url }) => onExportCompleteRef.current?.(url));
+    editor.on<{ pageIndex: number; width: number; height: number }>('event:pageAdded', ({ pageIndex, width, height }) => onPageAddedRef.current?.(pageIndex, width, height));
+    editor.on<{ pageIndex: number }>('event:pageRemoved', ({ pageIndex }) => onPageRemovedRef.current?.(pageIndex));
 
     return () => editor.destroy();
   }, [host, documentId, token]);

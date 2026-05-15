@@ -29,6 +29,10 @@ class DocumentMeta(BaseModel):
     export_standard: Literal["standard", "pdf_a", "tagged"] = "standard"
     layout_mode: Literal["editable", "fidelity"] = "editable"
     color_space: Literal["rgb", "cmyk"] = "rgb"
+    native_pdf: Optional[bool] = None
+    original_pdf_key: Optional[str] = Field(default=None, max_length=500)
+    native_pdf_session: Optional[Dict[str, Any]] = None
+    import_status: Optional[str] = Field(default=None, max_length=20)
 
 
 class RichSpan(BaseModel):

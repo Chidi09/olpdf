@@ -19,6 +19,9 @@ import type { ExportTelemetryPayload } from "@/components/editor/export/types";
 import { useNativePdfSession } from "@/hooks/useNativePdfSession";
 import { getNativeSession } from "@/lib/nativePdf/documentModelAdapter";
 import type { PdfEditOperation } from "@/types/nativePdf";
+import { pageLayoutFromDocumentModel } from "@/lib/pageLayout/fromNativePdf";
+import type { PageLayoutDocument } from "@/types/pageLayout";
+import { usePageLayoutStore } from "@/store/usePageLayoutStore";
 import { aiApplyReducer, initialAiApplyState } from "@/components/editor/ai/aiApplyState";
 import { resolveAnimationProfile } from "@/components/editor/ai/aiAnimationPolicy";
 import AIApplyEffectsLayer from "@/components/editor/ai/AIApplyEffectsLayer";
@@ -75,6 +78,17 @@ type AiLog = {
 
 interface DocumentWorkspaceProps {
   documentId: string;
+}
+
+export function isImportedPdfDocument(model: DocumentModel | null | undefined): boolean {
+  const meta = model?.meta as Record<string, unknown> | undefined;
+  return meta?.native_pdf === true || typeof meta?.original_pdf_key === "string";
+}
+
+export type EditorSurface = "pdf_canvas" | "writer";
+
+export function resolveEditorSurface(model: DocumentModel | null | undefined): EditorSurface {
+  return isImportedPdfDocument(model) ? "pdf_canvas" : "writer";
 }
 
 function normalizeModelForEditor(model: DocumentModel, documentId: string): DocumentModel {
@@ -184,11 +198,37 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const nativeSession = getNativeSession(currentModel);
   const nativeSessionReady = nativeSession?.status === "ready" || nativeSession?.status === "partial";
 
+  const editorSurface = resolveEditorSurface(currentModel);
+
+  const layoutDocument: PageLayoutDocument | null = useMemo(() => {
+    if (editorSurface !== "pdf_canvas" || !currentModel) return null;
+    return pageLayoutFromDocumentModel(currentModel);
+  }, [currentModel, editorSurface]);
+
+  const setPageLayoutDoc = usePageLayoutStore((s) => s.setDocument);
+  const prevLayoutRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (editorSurface === "pdf_canvas" && layoutDocument) {
+      const key = layoutDocument.pages.map((p) => p.id).join(",");
+      if (prevLayoutRef.current !== key) {
+        prevLayoutRef.current = key;
+        setPageLayoutDoc(layoutDocument);
+      }
+    } else if (editorSurface !== "pdf_canvas") {
+      prevLayoutRef.current = null;
+      setPageLayoutDoc(null);
+    }
+  }, [layoutDocument, editorSurface, setPageLayoutDoc]);
+
   const hasAbsolutePdfLayout = Boolean(
     currentModel?.page_dimensions?.length || currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)),
   );
-  const canUseFidelity = nativeSessionReady || Boolean(currentModel?.page_dimensions?.length && currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)));
-  const layoutMode = (nativeSessionReady && currentModel?.meta?.layout_mode === undefined) ? "fidelity" : (currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable"));
+  const canUseFidelity = !isImportedPdfDocument(currentModel) && (
+    nativeSessionReady || Boolean(currentModel?.page_dimensions?.length && currentModel?.blocks?.some((block) => Array.isArray(block.bounding_box)))
+  );
+  const layoutMode = editorSurface === "pdf_canvas" ? "fidelity" : (
+    (nativeSessionReady && currentModel?.meta?.layout_mode === undefined) ? "fidelity" : (currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable"))
+  );
   const [leftTab, setLeftTab] = useState<"outline" | "pages">("outline");
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -401,6 +441,11 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
                 const el = document.querySelector(`[data-page-index="${idx}"]`);
                 if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
               }}
+              onReorderPages={(from, to) => {
+                if (usePageLayoutStore.getState().document) {
+                  usePageLayoutStore.getState().reorderPages(from, to);
+                }
+              }}
             />
           ) : (
           <div className="relative pl-3 border-l border-[var(--border-subtle)]">
@@ -455,6 +500,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           title={titleDraft}
           isSaving={saveMutation.isPending}
           canUseFidelity={canUseFidelity}
+          showModeToggle={editorSurface !== "pdf_canvas"}
           nativeSessionStatus={nativeSession?.status}
           onTitleChange={setTitleDraft}
           onTitleBlur={() => {
@@ -525,7 +571,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             onUndo={() => dispatchAi({ type: "REVERT" })}
             onDismiss={() => dispatchAi({ type: "RESET" })}
           />
-          {layoutMode === "editable" && (
+          {editorSurface === "pdf_canvas" && (
             <div className="mb-2">
               <PdfToolPalette mode="editable" />
             </div>
@@ -538,8 +584,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             <div className="flex h-full w-full items-center justify-center bg-black/20 text-xs font-semibold uppercase tracking-[0.18em] text-[#777]">
               Loading editor
             </div>
-          ) : layoutMode === "fidelity" ? (
-            <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
+          ) : editorSurface === "pdf_canvas" || layoutMode === "fidelity" ? (
+            <FidelityCanvas documentId={documentId} model={currentModel} layoutDocument={layoutDocument ?? undefined} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
           ) : (
             <CollaborativeEditor
               documentId={documentId}

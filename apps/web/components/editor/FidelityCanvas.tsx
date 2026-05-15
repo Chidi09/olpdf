@@ -49,6 +49,11 @@ import { useAiTools } from "@/hooks/useAiTools";
 import { useEditorToolbarActions } from "@/hooks/useEditorToolbarActions";
 import { useModelSyncAndReflow } from "@/hooks/useModelSyncAndReflow";
 import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TableData } from "@/types/editor";
+import type { LayoutObject } from "@/types/pageLayout";
+import { fabricSpecFromLayoutObject, createFabricObject } from "@/components/editor/pageLayoutFabric";
+import { createDefaultTableFrame } from "@/lib/pageLayout/table";
+import { createShapeFrame, createSymbolFrame, COMMON_SYMBOLS } from "@/lib/pageLayout/shapes";
+import { createHighlightFrame, createCommentFrame, createSignatureFrame } from "@/lib/pageLayout/annotations";
 import { usePdfEditOperationsStore } from "@/store/usePdfEditOperationsStore";
 import { aiApplyReducer, initialAiApplyState } from "@/components/editor/ai/aiApplyState";
 import { resolveAnimationProfile } from "@/components/editor/ai/aiAnimationPolicy";
@@ -59,13 +64,19 @@ import { pickMinimalOperation } from "@/components/editor/ai/tools/minimalOpPlan
 import type { ToolOperation } from "@/components/editor/ai/tools/contracts";
 import type { PdfEditOperation } from "@/types/nativePdf";
 import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
+import type { PageLayoutDocument } from "@/types/pageLayout";
 
 type FidelityCanvasProps = {
   documentId: string;
   model: DocumentModel;
+  layoutDocument?: PageLayoutDocument;
   onModelChange?: (model: DocumentModel) => void;
   onNativeOperation?: (operation: PdfEditOperation) => void;
   onAiLifecycleEvent?: (action: AiApplyAction) => void;
+  readOnly?: boolean;
+  exportRequest?: { requestId: string; format: "pdf" | "docx" } | null;
+  onExportComplete?: (result: { requestId: string; url: string }) => void;
+  onExportError?: (result: { requestId: string; message: string }) => void;
 };
 
 type ChangeRecord = {
@@ -287,7 +298,7 @@ function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function FidelityCanvas({ documentId, model, onModelChange, onNativeOperation, onAiLifecycleEvent }: FidelityCanvasProps) {
+export default function FidelityCanvas({ documentId, model, layoutDocument, onModelChange, onNativeOperation, onAiLifecycleEvent, readOnly, exportRequest, onExportComplete, onExportError }: FidelityCanvasProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(900);
   const containerWidthRef = useRef(900);
@@ -306,6 +317,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
   const overflowMenuRef = useRef<HTMLDivElement>(null);
   // pageImages[i] = presigned PNG URL for page i, or undefined while loading
   const [pageImages, setPageImages] = useState<Record<number, string>>({});
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
   const { activeTool, setActiveTool, selectedBlock, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode, formMode, toggleFormMode } = useFidelityCanvasStore();
@@ -402,6 +414,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
   };
 
   const acceptChange = (change: ChangeRecord) => {
+    if (readOnly) return;
     const blocks = (currentModelRef.current.blocks ?? []).map((b) => {
       if (b.id !== change.blockId) return b;
       return { ...b, [change.field]: change.newValue } as DocumentBlock;
@@ -445,7 +458,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
   );
 
   const handleAiEdit = useCallback((blocks: DocumentBlock[], operation: ToolOperation) => {
-    if (!isOperationValid(operation)) return;
+    if (readOnly || !isOperationValid(operation)) return;
     dispatchAi({ type: "START_APPLYING", changedBlockCount: operation.anchor.blockIds.length, affectedPageCount: 1 });
     const nextModel = { ...model, blocks };
     pushToHistory(nextModel);
@@ -524,6 +537,19 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
           if (active.length === 0) continue;
           const editing = active.find((o) => o.type === "textbox" && (o as IText).isEditing);
           if (editing) continue;
+          // Check if any have layoutObjectId and delete via store
+          const layoutIds = active
+            .map((o) => {
+              const d = (o as FabricObjectWithMeta).data;
+              return d?.layoutObjectId ? { id: d.layoutObjectId, pageId: d.pageId } : null;
+            })
+            .filter(Boolean) as { id: string; pageId: string }[];
+          if (layoutIds.length > 0) {
+            const store = usePageLayoutStore.getState();
+            for (const { id, pageId } of layoutIds) {
+              store.deleteObject(pageId, id);
+            }
+          }
           canvas.discardActiveObject();
           canvas.remove(...active);
           deleted = true;
@@ -564,6 +590,35 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  // ── Read-only mode ─────────────────────────────────────────────────────
+  useEffect(() => {
+    for (const [, canvas] of fabricCanvasesRef.current.entries()) {
+      canvas.selection = !readOnly;
+      canvas.getObjects().forEach((obj) => { obj.selectable = !readOnly; obj.evented = !readOnly; });
+      canvas.renderAll();
+    }
+  }, [readOnly]);
+
+  // ── Export request ────────────────────────────────────────────────────
+  const prevExportRequestRef = useRef(exportRequest);
+  useEffect(() => {
+    if (!exportRequest || exportRequest === prevExportRequestRef.current) return;
+    prevExportRequestRef.current = exportRequest;
+    const fetchExport = async () => {
+      try {
+        const res = await fetch(`/api/bff/documents/${documentId}/export/${exportRequest.format}`, { method: "POST" });
+        if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+        const data = await res.json() as { url?: string };
+        if (data.url) {
+          onExportComplete?.({ requestId: exportRequest.requestId, url: data.url });
+        }
+      } catch (err) {
+        onExportError?.({ requestId: exportRequest.requestId, message: err instanceof Error ? err.message : "Unknown export error" });
+      }
+    };
+    void fetchExport();
+  }, [exportRequest, documentId, onExportComplete, onExportError]);
 
   useCollaborationBridge(ydocRef, fabricCanvasesRef, scale, saveDebounced);
 
@@ -776,6 +831,21 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
       .filter((b) => (b.page_index ?? 0) === pageIndex)
       .sort((a, b) => (a.z_index ?? 0) - (b.z_index ?? 0));
 
+    // If layoutDocument is provided, render from layout objects instead of blocks
+    if (layoutDocument) {
+      const pageLayout = layoutDocument.pages.find((p) => p.index === pageIndex);
+      if (pageLayout) {
+        for (const obj of pageLayout.objects) {
+          const spec = fabricSpecFromLayoutObject(obj, pageLayout.id);
+          const fabricObj = createFabricObject(spec, {
+            layoutObjectId: obj.id,
+            layoutObjectType: obj.type,
+            pageId: pageLayout.id,
+          });
+          if (fabricObj) fcanvas.add(fabricObj);
+        }
+      }
+    } else {
     for (const block of pageBlocks) {
       if (block.type === "image") {
         loadImageBlock(block, scale, fcanvas);
@@ -812,6 +882,7 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
         fcanvas.add(badge);
       }
     }
+    }
 
     const sync = debounce(() => syncCanvasToModel(pageIndex, fcanvas), 400);
     const reflowDebounced = debounce((blockId: string) => {
@@ -827,6 +898,25 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
 
     fcanvas.on("object:added", sync);
     fcanvas.on("object:modified", (e) => {
+      // Handle layout object modifications via page layout store
+      const target = e.target as FabricObjectWithMeta | undefined;
+      const layoutId = target?.data?.layoutObjectId;
+      if (layoutId) {
+        const { getState } = usePageLayoutStore;
+        const { document: layoutDoc, activePageId } = getState();
+        if (layoutDoc) {
+          const pageId = `page-${pageIndex}`;
+          const obj = e.target as any;
+          const left = (obj.left ?? 0) / scale;
+          const top = (obj.top ?? 0) / scale;
+          const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
+          const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+          getState().moveObject(pageId, layoutId, left, top);
+          getState().resizeObject(pageId, layoutId, w, h);
+        }
+        return;
+      }
+
       if (suggestModeRef.current && e.target) {
         const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
         if (blockId) {
@@ -1014,29 +1104,95 @@ export default function FidelityCanvas({ documentId, model, onModelChange, onNat
 
   // ── Add new shape via toolbar ─────────────────────────────────────────────
 
+  const canvasInsertLayoutObject = useCallback((canvas: Canvas, pageIndex: number, obj: LayoutObject) => {
+    const pageId = `page-${pageIndex}`;
+    usePageLayoutStore.getState().insertObject(pageId, obj);
+
+    const spec = fabricSpecFromLayoutObject(obj, pageId);
+    const fabricObj = createFabricObject(spec, {
+      layoutObjectId: obj.id,
+      layoutObjectType: obj.type,
+      pageId,
+    });
+    if (fabricObj) {
+      canvas.add(fabricObj);
+      canvas.setActiveObject(fabricObj);
+      canvas.renderAll();
+    }
+  }, []);
+
   const addShape = (pageIndex: number) => {
     const canvas = fabricCanvasesRef.current.get(pageIndex);
     if (!canvas || activeTool === "select" || activeTool === "draw") return;
 
+    if (activeTool === "image") {
+      if (!imageInputRef.current) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.onchange = async (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (!file) return;
+          try {
+            const { uploadDocumentImageAsset, createImageFrame } = await import("@/lib/pageLayout/assets");
+            const asset = await uploadDocumentImageAsset(documentId, file);
+            const imgFrame = createImageFrame(70, 70, 300, 200, asset.url, asset.assetKey);
+            canvasInsertLayoutObject(canvas, pageIndex, imgFrame);
+          } catch (err) {
+            console.error("Image upload failed:", err);
+          }
+        };
+        imageInputRef.current = input;
+        document.body.appendChild(input);
+      }
+      imageInputRef.current.click();
+      return;
+    }
+
+    if (activeTool === "table") {
+      canvasInsertLayoutObject(canvas, pageIndex, createDefaultTableFrame(70, 70));
+      return;
+    }
+
+    if (activeTool === "symbol") {
+      canvasInsertLayoutObject(canvas, pageIndex, createSymbolFrame("✓", 70, 70));
+      return;
+    }
+
+    if (activeTool === "highlight") {
+      canvasInsertLayoutObject(canvas, pageIndex, createHighlightFrame(70, 70, 200, 30));
+      return;
+    }
+
+    if (activeTool === "comment") {
+      canvasInsertLayoutObject(canvas, pageIndex, createCommentFrame(70, 70, "Comment", "You"));
+      return;
+    }
+
+    if (activeTool === "signature") {
+      canvasInsertLayoutObject(canvas, pageIndex, createSignatureFrame(70, 70, "Signature"));
+      return;
+    }
+
     let shape;
     if (activeTool === "rect") {
       shape = new Rect({ left: 70, top: 70, width: 140, height: 90, fill: "rgba(14,165,233,0.12)", stroke: "#0284c7", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rect" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rect", layoutObjectId: `shape-${Date.now()}` };
     } else if (activeTool === "roundedRect") {
       shape = new Rect({ left: 80, top: 80, width: 160, height: 96, rx: 16, ry: 16, fill: "rgba(99,102,241,0.12)", stroke: "#4f46e5", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rounded-rect" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rounded-rect", layoutObjectId: `shape-${Date.now()}` };
     } else if (activeTool === "ellipse") {
       shape = new Ellipse({ left: 90, top: 90, rx: 70, ry: 45, fill: "rgba(34,197,94,0.12)", stroke: "#16a34a", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "ellipse" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "ellipse", layoutObjectId: `shape-${Date.now()}` };
     } else if (activeTool === "arrow") {
       shape = new Line([120, 120, 290, 220], { stroke: "#dc2626", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28 };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28, layoutObjectId: `shape-${Date.now()}` };
     } else if (activeTool === "line") {
       shape = new Line([120, 120, 290, 220], { stroke: "#f97316", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "line" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "line", layoutObjectId: `shape-${Date.now()}` };
     } else if (activeTool === "sticky") {
       shape = new IText("Sticky note", { left: 120, top: 140, fill: "#3f3f46", fontSize: 16, fontFamily: "Georgia", backgroundColor: "#fff59d" });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46" };
+      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46", layoutObjectId: `shape-${Date.now()}` };
     } else {
       // activeTool === "text" — add a new text block
       const tb = new Textbox("New text", {

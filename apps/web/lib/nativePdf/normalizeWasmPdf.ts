@@ -39,6 +39,24 @@ export interface WasmBridgeOutput {
     is_invisible: boolean;
   }>;
   page_dimensions: Array<{ page_index: number; width: number; height: number }>;
+  layout_objects?: Array<{
+    id: string;
+    type: string;
+    page_index: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    z_index: number;
+    source_ref: string;
+    original_pdf_object_id: string;
+    content?: string;
+    font_family?: string;
+    font_size?: number;
+    color?: string;
+    text_align?: string;
+  }>;
 }
 
 export function normalizeWasmResult(result: WasmBridgeOutput, documentId: string, originalObjectKey: string): PdfEditSession {
@@ -83,11 +101,31 @@ export function normalizeWasmResult(result: WasmBridgeOutput, documentId: string
     height: p.height,
   }));
 
+  const layoutObjects = (result.layout_objects ?? []).map((obj) => ({
+    id: obj.id,
+    type: obj.type,
+    pageIndex: obj.page_index,
+    x: obj.x,
+    y: obj.y,
+    width: obj.width,
+    height: obj.height,
+    rotation: obj.rotation ?? 0,
+    zIndex: obj.z_index ?? 0,
+    sourceRef: obj.source_ref,
+    originalPdfObjectId: obj.original_pdf_object_id,
+    content: obj.content,
+    fontFamily: obj.font_family,
+    fontSize: obj.font_size,
+    color: obj.color,
+    textAlign: obj.text_align,
+  }));
+
   return {
     documentId,
     originalObjectKey,
     pages,
     objects,
+    layoutObjects: layoutObjects.length > 0 ? layoutObjects : undefined,
     operations: [],
     status: result.metrics.pages_failed > 0 ? "partial" : "ready",
     source: "wasm",

@@ -3,6 +3,10 @@ import type { DocumentModel } from "@olpdf/document-model";
 import { toExportErrorMessage, type ExportPhase, type ExportTelemetryPayload } from "./types";
 import { sanitizeDocumentModelForApi } from "@/lib/documentModelSanitizer";
 import type { PdfEditSession } from "@/types/nativePdf";
+import { pageLayoutFromDocumentModel } from "@/lib/pageLayout/fromNativePdf";
+import { buildLayoutExportPayload } from "@/lib/pageLayout/exportPayload";
+import { operationsFromLayoutDiff, validateLayoutOperations } from "@/lib/pageLayout/operations";
+import { usePageLayoutStore } from "@/store/usePageLayoutStore";
 
 export interface UseDocumentExportOptions {
   documentId: string;
@@ -36,6 +40,25 @@ export function useDocumentExport(options: UseDocumentExportOptions) {
 
       setPhase("exporting");
       const nativeSession = (model.meta as Record<string, unknown> | undefined)?.native_pdf_session as PdfEditSession | undefined;
+      const isNativePdf = (model.meta as Record<string, unknown> | undefined)?.native_pdf === true;
+
+      let layoutPayload: Record<string, unknown> | undefined;
+      const layoutStoreDoc = usePageLayoutStore.getState().document;
+      if (isNativePdf) {
+        const layoutDoc = layoutStoreDoc ?? pageLayoutFromDocumentModel(model as any);
+        const payloadObj = buildLayoutExportPayload(layoutDoc) as unknown as Record<string, unknown>;
+        const ops = layoutStoreDoc
+          ? operationsFromLayoutDiff(null, layoutStoreDoc)
+          : (nativeSession?.operations ?? []);
+        const validationErrors = validateLayoutOperations(ops, layoutDoc);
+        if (validationErrors.length > 0) {
+          setError(`Validation failed: ${validationErrors.join("; ")}`);
+          setPhase("error");
+          return;
+        }
+        layoutPayload = { ...payloadObj, operations: ops };
+      }
+
       const response = await fetch(`/api/bff/documents/${documentId}/export/${format}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,6 +67,7 @@ export function useDocumentExport(options: UseDocumentExportOptions) {
           font_metrics: {},
           operations: nativeSession?.operations ?? [],
           original_object_key: nativeSession?.originalObjectKey ?? (model.meta as Record<string, unknown> | undefined)?.original_pdf_key,
+          ...(layoutPayload ? { layout_payload: layoutPayload } : {}),
         }),
       });
 

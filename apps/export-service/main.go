@@ -87,12 +87,43 @@ type DocumentModel struct {
 	PageDimensions []PageDimension `json:"page_dimensions"`
 }
 
+type LayoutObject struct {
+	ID         string  `json:"id"`
+	Type       string  `json:"type"`
+	X          float64 `json:"x"`
+	Y          float64 `json:"y"`
+	Width      float64 `json:"width"`
+	Height     float64 `json:"height"`
+	Rotation   float64 `json:"rotation"`
+	Content    string  `json:"content,omitempty"`
+	Src        string  `json:"src,omitempty"`
+	FontFamily string  `json:"fontFamily,omitempty"`
+	FontSize   float64 `json:"fontSize,omitempty"`
+	Fill       string  `json:"fill,omitempty"`
+	Stroke     string  `json:"stroke,omitempty"`
+}
+
+type LayoutPage struct {
+	Index   int            `json:"index"`
+	Width   float64        `json:"width"`
+	Height  float64        `json:"height"`
+	Objects []LayoutObject `json:"objects"`
+}
+
+type LayoutPayload struct {
+	SourceKind       string       `json:"source_kind"`
+	OriginalPdfKey   string       `json:"original_pdf_key,omitempty"`
+	Pages            []LayoutPage `json:"pages"`
+	ExportStrategy   string       `json:"export_strategy"`
+}
+
 type ExportRequest struct {
 	DocumentModel     DocumentModel              `json:"document_model"`
 	ColorSpace        string                     `json:"color_space"`
 	FontMetrics       map[string]map[string]float64 `json:"font_metrics,omitempty"`
 	Operations        []EditOperation            `json:"operations,omitempty"`
 	OriginalObjectKey string                     `json:"original_object_key,omitempty"`
+	LayoutPayload     *LayoutPayload             `json:"layout_payload,omitempty"`
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -894,6 +925,7 @@ func main() {
 	mux.HandleFunc("/export/pdfa",     makePDFHandler("pdfa"))
 	mux.HandleFunc("/export/tagged",   makePDFHandler("tagged"))
 	mux.HandleFunc("/export/images",   handleImages)
+	mux.HandleFunc("/export/layout",   handleLayoutExport)
 
 	// Toolkit operations (routed from BFF when Go service is available)
 	mux.HandleFunc("/toolkit/merge",          handleMerge)
