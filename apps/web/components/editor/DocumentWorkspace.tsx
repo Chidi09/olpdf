@@ -42,6 +42,9 @@ import {
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
 import EditorCommandBar from "@/components/editor/EditorCommandBar";
+import { shouldShowCanvasToolbarHost } from "@/components/editor/canvasToolbarPlacement";
+
+export { shouldShowCanvasToolbarHost };
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -302,12 +305,14 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const layoutMode = editorSurface === "pdf_canvas" ? "fidelity" : (
     (nativeSessionReady && currentModel?.meta?.layout_mode === undefined) ? "fidelity" : (currentModel?.meta?.layout_mode ?? (hasAbsolutePdfLayout ? "fidelity" : "editable"))
   );
+  const showCanvasToolbarHost = shouldShowCanvasToolbarHost(editorSurface, layoutMode, Boolean(currentModel));
   const [leftTab, setLeftTab] = useState<"outline" | "pages">("outline");
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<"assistant" | "themes">("assistant");
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
+  const [canvasToolbarHost, setCanvasToolbarHost] = useState<HTMLDivElement | null>(null);
   const editorContentRef = useRef<HTMLDivElement>(null);
   const toast = useToastStore((s) => s.toast);
   const editorProfile = useEditorProfile();
@@ -646,6 +651,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         />
 
         <div className="mx-auto w-full max-w-[1200px] px-4 pt-2">
+          {showCanvasToolbarHost && <div ref={setCanvasToolbarHost} className="mb-2" />}
           <AIStatusHelper
             phase={aiState.phase}
             toolLabels={toolCallSummary}
@@ -663,7 +669,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               Loading editor
             </div>
           ) : editorSurface === "pdf_canvas" || layoutMode === "fidelity" ? (
-            <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
+            <FidelityCanvas documentId={documentId} model={currentModel} toolbarHost={showCanvasToolbarHost ? canvasToolbarHost : undefined} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
           ) : (
             <CollaborativeEditor
               documentId={documentId}

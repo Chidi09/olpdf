@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback, useReducer } from "react";
+import { createPortal } from "react-dom";
 import {
   CursorArrowRaysIcon,
   StopIcon,
@@ -66,11 +67,13 @@ import type { ToolOperation } from "@/components/editor/ai/tools/contracts";
 import type { PdfEditOperation } from "@/types/nativePdf";
 import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
 import type { PageLayoutDocument } from "@/types/pageLayout";
+import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
 
 type FidelityCanvasProps = {
   documentId: string;
   model: DocumentModel;
   layoutDocument?: PageLayoutDocument;
+  toolbarHost?: HTMLElement | null;
   onModelChange?: (model: DocumentModel) => void;
   onNativeOperation?: (operation: PdfEditOperation) => void;
   onAiLifecycleEvent?: (action: AiApplyAction) => void;
@@ -299,7 +302,7 @@ function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function FidelityCanvas({ documentId, model, layoutDocument, onModelChange, onNativeOperation, onAiLifecycleEvent, readOnly, exportRequest, onExportComplete, onExportError }: FidelityCanvasProps) {
+export default function FidelityCanvas({ documentId, model, layoutDocument, toolbarHost, onModelChange, onNativeOperation, onAiLifecycleEvent, readOnly, exportRequest, onExportComplete, onExportError }: FidelityCanvasProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(900);
   const containerWidthRef = useRef(900);
@@ -1221,10 +1224,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, onMo
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  return (
-    <div ref={rootRef} className="h-full overflow-auto bg-[var(--bg-surface)] p-4 md:p-6 xl:p-8">
-
-      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+  const canvasToolbar = (
       <div className="sticky top-4 z-40 mx-auto mb-4 w-full min-w-[760px] max-w-[1200px]">
         <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[var(--bg-elevated)] px-2 py-1.5 shadow-[0_1px_0_inset_rgb(255_255_255/6%),0_8px_24px_-8px_rgb(0_0_0/50%)] backdrop-blur-xl">
 
@@ -1433,7 +1433,19 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, onMo
           </div>
 
         </div>{/* end toolbar row */}
-      </div>{/* end toolbar wrapper */}
+      </div>
+  );
+
+  const renderedCanvasToolbar = shouldRenderInlineCanvasToolbar(toolbarHost)
+    ? canvasToolbar
+    : toolbarHost
+      ? createPortal(canvasToolbar, toolbarHost)
+      : null;
+
+  return (
+    <div ref={rootRef} className="h-full overflow-auto bg-[var(--bg-surface)] p-4 md:p-6 xl:p-8">
+
+      {renderedCanvasToolbar}
 
       {/* Format Bar — appears when a text block is selected */}
       <FormatBar />
