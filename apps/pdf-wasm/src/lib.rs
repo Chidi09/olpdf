@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::window;
 
 use layout::reconstruct_paragraphs;
-use types::{FontMeta, ParseMetrics, ParseResult, PreflightResult, RichSpan, WasmBlock, WasmLayoutObject, WasmPageDimension};
+use types::{FontMeta, ParseMetrics, ParseResult, PreflightResult, WasmBlock, WasmLayoutObject, WasmPageDimension};
 
 #[wasm_bindgen(start)]
 pub fn init_hooks() {
@@ -21,14 +21,16 @@ pub fn init_hooks() {
 
 #[wasm_bindgen]
 pub fn preflight_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
-    let doc = pdf_oxide::PdfDocument::load(data)
+    let doc = pdf_oxide::PdfDocument::from_bytes(data.to_vec())
         .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
     let page_count = doc.page_count()
         .map_err(|e| JsValue::from_str(&format!("Page count error: {e}")))?;
     let mut dims: Vec<WasmPageDimension> = Vec::new();
     for i in 0..page_count {
-        let (w, h) = doc.page_size(i)
+        let (x1, y1, x2, y2) = doc.get_page_media_box(i)
             .map_err(|e| JsValue::from_str(&format!("Page size error: {e}")))?;
+        let w = (x2 - x1).abs() as f64;
+        let h = (y2 - y1).abs() as f64;
         dims.push(WasmPageDimension { page_index: i, width: w, height: h });
     }
     serde_wasm_bindgen::to_value(&PreflightResult {
@@ -46,7 +48,7 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
         .ok_or_else(|| JsValue::from_str("No performance"))?;
     let start = perf.now();
 
-    let doc = pdf_oxide::PdfDocument::load(data)
+    let doc = pdf_oxide::PdfDocument::from_bytes(data.to_vec())
         .map_err(|e| JsValue::from_str(&format!("PDF parse error: {e}")))?;
     let page_count = doc.page_count()
         .map_err(|e| JsValue::from_str(&format!("Page count error: {e}")))?;
@@ -61,8 +63,10 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
     let mut total_missing_fonts = 0usize;
 
     for page_index in 0..page_count {
-        let (width, height) = doc.page_size(page_index)
+        let (x1, y1, x2, y2) = doc.get_page_media_box(page_index)
             .map_err(|e| JsValue::from_str(&format!("Page size error: {e}")))?;
+        let width = (x2 - x1).abs() as f64;
+        let height = (y2 - y1).abs() as f64;
         page_dimensions.push(WasmPageDimension { page_index, width, height });
 
         let mut vector_paths: Vec<[f64; 4]> = Vec::new();
@@ -127,9 +131,9 @@ fn parse_page_blocks(
     image_count: &mut usize,
     _warnings: &mut Vec<String>,
 ) -> Result<Vec<WasmBlock>, String> {
-    let chars = doc.extract_chars(page_index as u32)
+    let chars = doc.extract_chars(page_index)
         .map_err(|e| format!("extract_chars failed: {e}"))?;
-    let images = doc.extract_images(page_index as u32)
+    let images = doc.extract_images(page_index)
         .map_err(|e| format!("extract_images failed: {e}"))?;
     *image_count += images.len();
 
@@ -137,15 +141,17 @@ fn parse_page_blocks(
     let mut block_idx = 0usize;
     let mut current_text = String::new();
     let mut current_font = String::new();
-    let mut current_size = 12.0;
+    let mut current_size = 12.0_f64;
     let mut current_color = "#111111".to_string();
     let mut prev_y = 0.0;
     let mut prev_x = 0.0;
 
     for ch in &chars {
         if !current_text.is_empty() {
-            let y_delta = (prev_y - ch.bbox.y).abs();
-            let x_delta = (ch.bbox.x - prev_x).abs();
+            let ch_x = ch.bbox.x as f64;
+            let ch_y = ch.bbox.y as f64;
+            let y_delta = (prev_y - ch_y).abs();
+            let x_delta = (ch_x - prev_x).abs();
             if y_delta > current_size * 0.5 || x_delta > current_size * 2.0 {
                 let id = format!("blk_oxide_{page_index}_{block_idx}");
                 blocks.push(WasmBlock {
@@ -161,7 +167,7 @@ fn parse_page_blocks(
                     font_meta: FontMeta {
                         family: current_font.clone(),
                         size: current_size,
-                        is_bold: ch.font_weight.to_lowercase().contains("bold"),
+                        is_bold: ch.font_weight.is_bold(),
                         is_italic: ch.is_italic,
                         color: current_color.clone(),
                     },
@@ -180,10 +186,10 @@ fn parse_page_blocks(
 
         current_text.push(ch.char);
         current_font = ch.font_name.clone();
-        current_size = ch.font_size;
+        current_size = ch.font_size as f64;
         current_color = format!("#{:02X}{:02X}{:02X}", (ch.color.r * 255.0) as u8, (ch.color.g * 255.0) as u8, (ch.color.b * 255.0) as u8);
-        prev_x = ch.bbox.x;
-        prev_y = ch.bbox.y;
+        prev_x = ch.bbox.x as f64;
+        prev_y = ch.bbox.y as f64;
     }
 
     if !current_text.is_empty() {
@@ -247,7 +253,7 @@ fn block_to_layout_object(block: &WasmBlock) -> WasmLayoutObject {
 
 #[wasm_bindgen]
 pub fn parse_page_by_index(data: &[u8], page_index: usize) -> Result<JsValue, JsValue> {
-    let doc = pdf_oxide::PdfDocument::load(data)
+    let doc = pdf_oxide::PdfDocument::from_bytes(data.to_vec())
         .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
     let mut image_count = 0usize;
     let mut warnings = Vec::new();
@@ -259,7 +265,7 @@ pub fn parse_page_by_index(data: &[u8], page_index: usize) -> Result<JsValue, Js
 
 #[wasm_bindgen]
 pub fn preflight_streaming(data: &[u8]) -> Result<JsValue, JsValue> {
-    let doc = pdf_oxide::PdfDocument::load(data)
+    let doc = pdf_oxide::PdfDocument::from_bytes(data.to_vec())
         .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
     let page_count = doc.page_count()
         .map_err(|e| JsValue::from_str(&format!("Page count error: {e}")))?;

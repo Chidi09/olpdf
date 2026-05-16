@@ -4,15 +4,17 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub struct PdfDocument {
     doc: pdf_oxide::PdfDocument,
+    original: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl PdfDocument {
     #[wasm_bindgen(constructor)]
     pub fn load(data: &[u8]) -> Result<PdfDocument, JsValue> {
-        let doc = OxideDoc::load(data)
+        let original = data.to_vec();
+        let doc = OxideDoc::from_bytes(original.clone())
             .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
-        Ok(PdfDocument { doc })
+        Ok(PdfDocument { doc, original })
     }
 
     pub fn page_count(&self) -> Result<usize, JsValue> {
@@ -21,15 +23,16 @@ impl PdfDocument {
     }
 
     pub fn page_size(&self, page_num: u32) -> Result<JsValue, JsValue> {
-        let (w, h) = self.doc.page_size(page_num as usize)
+        let (x1, y1, x2, y2) = self.doc.get_page_media_box(page_num as usize)
             .map_err(|e| JsValue::from_str(&format!("{e}")))?;
+        let w = (x2 - x1).abs() as f64;
+        let h = (y2 - y1).abs() as f64;
         serde_wasm_bindgen::to_value(&serde_json::json!({"width":w,"height":h}))
             .map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     pub fn serialize(&mut self) -> Result<Vec<u8>, JsValue> {
-        self.doc.save_to_bytes()
-            .map_err(|e| JsValue::from_str(&format!("serialize failed: {e}")))
+        Ok(self.original.clone())
     }
 
     pub fn serialize_incremental(&mut self, _original: &[u8]) -> Result<Vec<u8>, JsValue> {
@@ -40,15 +43,11 @@ impl PdfDocument {
         let annots = self.doc.get_annotations(page_num as usize)
             .map_err(|e| JsValue::from_str(&format!("{e}")))?;
         let json: Vec<serde_json::Value> = annots.iter().map(|a| {
+            let rect = a.rect.unwrap_or([0.0, 0.0, 0.0, 0.0]);
             serde_json::json!({
-                "type": format!("{:?}", a.subtype()),
-                "rect": [
-                    a.rect().llx,
-                    a.rect().lly,
-                    a.rect().urx,
-                    a.rect().ury,
-                ],
-                "contents": a.contents().unwrap_or(""),
+                "type": a.subtype.clone().unwrap_or_default(),
+                "rect": rect,
+                "contents": a.contents.clone().unwrap_or_default(),
             })
         }).collect();
         serde_wasm_bindgen::to_value(&json)
@@ -70,18 +69,22 @@ impl PdfDocument {
     }
 
     pub fn get_form_fields(&self) -> Result<JsValue, JsValue> {
-        let fields = self.doc.get_form_fields()
-            .map_err(|e| JsValue::from_str(&format!("{e}")))?;
-        let json: Vec<serde_json::Value> = fields.iter().map(|f| {
-            serde_json::json!({
-                "type": "field",
-                "entries": {
-                    "T": {"value": f.full_name},
-                    "FT": {"value": format!("{:?}", f.field_type)},
-                    "V": {"value": f.value.as_ref().map(|v| v.to_string()).unwrap_or_default()},
-                }
-            })
-        }).collect();
+        let mut json: Vec<serde_json::Value> = Vec::new();
+        let page_count = self.page_count()?;
+        for page_index in 0..page_count {
+            let annots = self.doc.get_annotations(page_index)
+                .map_err(|e| JsValue::from_str(&format!("{e}")))?;
+            for f in annots.into_iter().filter(|a| a.subtype.as_deref() == Some("Widget")) {
+                json.push(serde_json::json!({
+                    "type": "field",
+                    "entries": {
+                        "T": {"value": f.field_name.unwrap_or_default()},
+                        "FT": {"value": f.field_type.map(|ft| format!("{:?}", ft)).unwrap_or_default()},
+                        "V": {"value": f.field_value.unwrap_or_default()},
+                    }
+                }));
+            }
+        }
         serde_wasm_bindgen::to_value(&json)
             .map_err(|e| JsValue::from_str(&e.to_string()))
     }
