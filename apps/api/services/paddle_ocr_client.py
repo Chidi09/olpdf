@@ -60,6 +60,12 @@ async def ocr_pages_with_paddle(
         if resp.status_code == 200:
             result = resp.json()
             blocks = result.get("blocks", [])
+            # Normalise to the same schema the Gemini path produces so callers
+            # never see missing rich_spans / float / column_index fields.
+            for b in blocks:
+                b.setdefault("rich_spans", [])
+                b.setdefault("float", "none")
+                b.setdefault("column_index", 0)
             logger.info(
                 "PaddleOCR returned %d blocks for document %s (%d pages)",
                 len(blocks),
