@@ -7,7 +7,7 @@ _LAYOUT_FIELDS: Set[str] = {
 }
 
 _TEXT_FIELDS: Set[str] = {
-    "content", "rich_spans",
+    "content", "rich_spans", "type", "style_overrides",
 }
 
 

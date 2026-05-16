@@ -20,70 +20,83 @@ _TOOL_DECLARATIONS = [{"function_declarations": [
     {"name": "InsertBlock", "description": "Insert a new block after a specific block ID (use 'START' for the beginning).", "parameters": {"type": "OBJECT", "properties": {"after_block_id": {"type": "STRING"}, "block_type": {"type": "STRING", "enum": list(_VALID_BLOCK_TYPES)}, "content": {"type": "STRING"}}, "required": ["after_block_id", "block_type", "content"]}},
     {"name": "DeleteBlock", "description": "Delete a specific block.", "parameters": {"type": "OBJECT", "properties": {"block_id": {"type": "STRING"}}, "required": ["block_id"]}},
     {"name": "ReorderBlocks", "description": "Reorder all blocks in the document.", "parameters": {"type": "OBJECT", "properties": {"block_ids_in_order": {"type": "ARRAY", "items": {"type": "STRING"}}}, "required": ["block_ids_in_order"]}},
+    {"name": "UpdateStyle", "description": "Update a document-level style property.", "parameters": {"type": "OBJECT", "properties": {"property": {"type": "STRING", "enum": list(_VALID_STYLE_PROPS)}, "value": {"type": "STRING"}}, "required": ["property", "value"]}},
+    {"name": "ChangeBlockType", "description": "Change the type of an existing block.", "parameters": {"type": "OBJECT", "properties": {"block_id": {"type": "STRING"}, "new_type": {"type": "STRING", "enum": ["paragraph", "heading1", "heading2", "heading3", "callout", "table", "list", "divider", "page_break"]}}, "required": ["block_id", "new_type"]}},
+    {"name": "SetBlockStyle", "description": "Set a style override on a block.", "parameters": {"type": "OBJECT", "properties": {"block_id": {"type": "STRING"}, "style_key": {"type": "STRING"}, "style_value": {"type": "STRING"}}, "required": ["block_id", "style_key", "style_value"]}},
+    {"name": "SetInlineFormat", "description": "Set rich formatting spans on a block (bold, italic, underline, color, links).", "parameters": {"type": "OBJECT", "properties": {"block_id": {"type": "STRING"}, "rich_spans": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {"text": {"type": "STRING"}, "bold": {"type": "BOOLEAN"}, "italic": {"type": "BOOLEAN"}, "underline": {"type": "BOOLEAN"}, "strikethrough": {"type": "BOOLEAN"}, "color": {"type": "STRING"}, "link_href": {"type": "STRING"}, "mark": {"type": "BOOLEAN"}}}}}, "required": ["block_id", "rich_spans"]}},
+    {"name": "MergeBlocks", "description": "Merge two consecutive blocks by concatenating their content.", "parameters": {"type": "OBJECT", "properties": {"block_id_1": {"type": "STRING"}, "block_id_2": {"type": "STRING"}}, "required": ["block_id_1", "block_id_2"]}},
+    {"name": "SplitBlock", "description": "Split a block into two at a character offset.", "parameters": {"type": "OBJECT", "properties": {"block_id": {"type": "STRING"}, "split_at_character": {"type": "INTEGER"}, "new_block_type": {"type": "STRING", "enum": ["paragraph", "heading1", "heading2", "heading3", "callout", "table", "list", "divider", "page_break"]}}, "required": ["block_id", "split_at_character"]}},
+    {"name": "DuplicateBlock", "description": "Duplicate a block and insert the copy immediately after it.", "parameters": {"type": "OBJECT", "properties": {"block_id": {"type": "STRING"}}, "required": ["block_id"]}},
+    {"name": "FindBlocks", "description": "Find blocks matching type and/or content pattern. Returns matching block IDs.", "parameters": {"type": "OBJECT", "properties": {"query": {"type": "STRING"}, "block_type": {"type": "STRING", "enum": ["paragraph", "heading1", "heading2", "heading3", "callout", "table", "list", "divider", "page_break"]}}, "required": []}},
+    {"name": "GenerateTable", "description": "Create a new table block with markdown content after a given block.", "parameters": {"type": "OBJECT", "properties": {"after_block_id": {"type": "STRING"}, "table_markdown": {"type": "STRING"}}, "required": ["after_block_id", "table_markdown"]}},
+    {"name": "SetDocMetadata", "description": "Update document-level metadata (title, author).", "parameters": {"type": "OBJECT", "properties": {"title": {"type": "STRING"}, "author": {"type": "STRING"}}, "required": []}},
+    {"name": "InsertTOC", "description": "Scan heading blocks and insert a table of contents at the top.", "parameters": {"type": "OBJECT", "properties": {}, "required": []}},
 ]}]
 
 
-def apply_tool_call(document: Dict[str, Any], tool_call: "_ToolCall | Any") -> Dict[str, Any]:
+async def apply_tool_call(
+    document: Dict[str, Any],
+    tool_call: "_ToolCall | Any",
+    provider: Any = None,
+) -> Dict[str, Any]:
     name = tool_call.name
     args = tool_call.args if isinstance(tool_call.args, dict) else dict(tool_call.args)
     blocks = document.get("blocks", [])
+    from ..engine.reflow_engine import reflow_document
+
+    def _new_id() -> str:
+        return f"blk_ai_{os.urandom(4).hex()}"
+
+    def _wire_after(existing: dict, new_block: dict) -> None:
+        next_id = existing.get("next_block_id")
+        existing["next_block_id"] = new_block["id"]
+        new_block["prev_block_id"] = existing["id"]
+        if next_id:
+            new_block["next_block_id"] = next_id
+            for nb in blocks:
+                if nb["id"] == next_id:
+                    nb["prev_block_id"] = new_block["id"]
+                    break
+
+    def _insert_after(target_id: str, new_block: dict) -> None:
+        for i, b in enumerate(blocks):
+            if b["id"] == target_id:
+                _wire_after(b, new_block)
+                blocks.insert(i + 1, new_block)
+                return
+        blocks.append(new_block)
 
     if name == "RewriteBlock":
         for b in blocks:
             if b["id"] == args.get("block_id"):
                 b["content"] = args.get("new_content")
-                # Clear rich_spans so the layout engine correctly reconstructs formatting from raw string
-                if "rich_spans" in b:
-                    del b["rich_spans"]
                 break
 
     elif name == "InsertBlock":
         block_type = args.get("block_type", "paragraph")
         if block_type not in _VALID_BLOCK_TYPES:
             block_type = "paragraph"
-        new_id = f"blk_ai_{os.urandom(4).hex()}"
         new_block = {
-            "id": new_id, 
-            "type": block_type, 
-            "content": args.get("content", ""), 
-            "confidence_score": 1.0, 
-            "needs_review": False, 
+            "id": _new_id(),
+            "type": block_type,
+            "content": args.get("content", ""),
+            "confidence_score": 1.0,
+            "needs_review": False,
             "style_overrides": {},
-            "float": "none"
+            "float": "none",
         }
         after_id = args.get("after_block_id")
         if after_id == "START":
             if blocks:
                 first_id = blocks[0]["id"]
                 new_block["next_block_id"] = first_id
-                blocks[0]["prev_block_id"] = new_id
+                blocks[0]["prev_block_id"] = new_block["id"]
             blocks.insert(0, new_block)
         else:
-            for i, b in enumerate(blocks):
-                if b["id"] == after_id:
-                    # Heal links
-                    next_id = b.get("next_block_id")
-                    b["next_block_id"] = new_id
-                    new_block["prev_block_id"] = b["id"]
-                    if next_id:
-                        new_block["next_block_id"] = next_id
-                        for nb in blocks:
-                            if nb["id"] == next_id:
-                                nb["prev_block_id"] = new_id
-                                break
-                    blocks.insert(i + 1, new_block)
-                    break
-            else:
-                # after_block_id not found — append at tail and wire up the previous last block
-                if blocks:
-                    tail = blocks[-1]
-                    tail["next_block_id"] = new_id
-                    new_block["prev_block_id"] = tail["id"]
-                blocks.append(new_block)
+            _insert_after(after_id, new_block)
 
     elif name == "DeleteBlock":
         block_id = args.get("block_id")
-        # Find the block to delete to heal links
         deleted_block = next((b for b in blocks if b["id"] == block_id), None)
         if deleted_block:
             prev_id = deleted_block.get("prev_block_id")
@@ -91,18 +104,15 @@ def apply_tool_call(document: Dict[str, Any], tool_call: "_ToolCall | Any") -> D
             if prev_id:
                 for b in blocks:
                     if b["id"] == prev_id:
-                        if next_id:
-                            b["next_block_id"] = next_id
-                        else:
+                        b["next_block_id"] = next_id if next_id else None
+                        if not next_id:
                             b.pop("next_block_id", None)
             if next_id:
                 for b in blocks:
                     if b["id"] == next_id:
-                        if prev_id:
-                            b["prev_block_id"] = prev_id
-                        else:
+                        b["prev_block_id"] = prev_id if prev_id else None
+                        if not prev_id:
                             b.pop("prev_block_id", None)
-                            
         document["blocks"] = [b for b in blocks if b["id"] != block_id]
 
     elif name == "ReorderBlocks":
@@ -111,19 +121,15 @@ def apply_tool_call(document: Dict[str, Any], tool_call: "_ToolCall | Any") -> D
         ordered = [block_map[bid] for bid in order if bid in block_map]
         mentioned = set(order)
         ordered += [b for b in blocks if b["id"] not in mentioned]
-        
-        # Re-link the AST flow sequentially
         for i in range(len(ordered)):
             if i > 0:
-                ordered[i]["prev_block_id"] = ordered[i-1]["id"]
+                ordered[i]["prev_block_id"] = ordered[i - 1]["id"]
             else:
                 ordered[i].pop("prev_block_id", None)
-                
             if i < len(ordered) - 1:
-                ordered[i]["next_block_id"] = ordered[i+1]["id"]
+                ordered[i]["next_block_id"] = ordered[i + 1]["id"]
             else:
                 ordered[i].pop("next_block_id", None)
-                
         document["blocks"] = ordered
 
     elif name == "UpdateStyle":
@@ -131,7 +137,160 @@ def apply_tool_call(document: Dict[str, Any], tool_call: "_ToolCall | Any") -> D
         if prop in _VALID_STYLE_PROPS:
             document.setdefault("styles", {})[prop] = args.get("value")
 
-    return document
+    elif name == "ChangeBlockType":
+        block_id = args.get("block_id")
+        new_type = args.get("new_type")
+        if new_type in _VALID_BLOCK_TYPES:
+            for b in blocks:
+                if b["id"] == block_id:
+                    b["type"] = new_type
+                    break
+
+    elif name == "SetBlockStyle":
+        block_id = args.get("block_id")
+        style_key = args.get("style_key")
+        style_value = args.get("style_value")
+        for b in blocks:
+            if b["id"] == block_id:
+                b.setdefault("style_overrides", {})[style_key] = style_value
+                break
+
+    elif name == "SetInlineFormat":
+        block_id = args.get("block_id")
+        new_spans = args.get("rich_spans", [])
+        for b in blocks:
+            if b["id"] == block_id:
+                b["rich_spans"] = new_spans
+                break
+
+    elif name == "MergeBlocks":
+        block_id_1 = args.get("block_id_1")
+        block_id_2 = args.get("block_id_2")
+        b1 = next((b for b in blocks if b["id"] == block_id_1), None)
+        b2 = next((b for b in blocks if b["id"] == block_id_2), None)
+        if b1 and b2:
+            sep = "\n" if b1.get("content") and b2.get("content") else ""
+            b1["content"] = (b1.get("content") or "") + sep + (b2.get("content") or "")
+            next_id = b2.get("next_block_id")
+            if next_id:
+                b1["next_block_id"] = next_id
+                for nb in blocks:
+                    if nb["id"] == next_id:
+                        nb["prev_block_id"] = b1["id"]
+                        break
+            else:
+                b1.pop("next_block_id", None)
+            document["blocks"] = [b for b in blocks if b["id"] != block_id_2]
+
+    elif name == "SplitBlock":
+        block_id = args.get("block_id")
+        split_at = int(args.get("split_at_character", 0))
+        new_type = args.get("new_block_type", "paragraph")
+        target = next((b for b in blocks if b["id"] == block_id), None)
+        if target and split_at > 0:
+            content = target.get("content") or ""
+            if split_at < len(content):
+                target["content"] = content[:split_at]
+                new_block = {
+                    "id": _new_id(),
+                    "type": new_type if new_type in _VALID_BLOCK_TYPES else "paragraph",
+                    "content": content[split_at:],
+                    "confidence_score": 1.0,
+                    "needs_review": False,
+                    "style_overrides": {},
+                }
+                _insert_after(block_id, new_block)
+
+    elif name == "DuplicateBlock":
+        block_id = args.get("block_id")
+        target = next((b for b in blocks if b["id"] == block_id), None)
+        if target:
+            new_block = {k: v for k, v in target.items() if k not in ("prev_block_id", "next_block_id")}
+            new_block["id"] = _new_id()
+            _insert_after(block_id, new_block)
+
+    elif name == "FindBlocks":
+        query = args.get("query", "")
+        block_type_filter = args.get("block_type")
+        matched = []
+        for b in blocks:
+            btype = b.get("type", "")
+            content = b.get("content", "")
+            if block_type_filter and btype != block_type_filter:
+                continue
+            if query and query.lower() not in (content or "").lower():
+                continue
+            matched.append({"id": b["id"], "type": btype, "content": (content or "")[:200]})
+        document["_found_blocks"] = matched
+
+    elif name == "GenerateTable":
+        after_id = args.get("after_block_id")
+        new_block = {
+            "id": _new_id(),
+            "type": "table",
+            "content": args.get("table_markdown", ""),
+            "confidence_score": 1.0,
+            "needs_review": False,
+            "style_overrides": {},
+        }
+        _insert_after(after_id, new_block)
+
+    elif name == "SetDocMetadata":
+        meta = document.setdefault("meta", {})
+        if "title" in args and args["title"]:
+            meta["title"] = args["title"]
+        if "author" in args and args["author"]:
+            meta["author"] = args["author"]
+
+    elif name == "InsertTOC":
+        headings = []
+        for b in blocks:
+            btype = b.get("type", "")
+            if btype in ("heading1", "heading2", "heading3"):
+                headings.append({"id": b["id"], "type": btype, "content": (b.get("content") or "")[:100]})
+        if headings:
+            toc_content = "\n".join(
+                f"{'  ' * (int(h['type'][-1]) - 1)}- {h['content']}" for h in headings
+            )
+            toc_block = {
+                "id": _new_id(),
+                "type": "paragraph",
+                "content": toc_content,
+                "confidence_score": 1.0,
+                "needs_review": False,
+                "style_overrides": {},
+            }
+            if blocks:
+                blocks[0]["prev_block_id"] = toc_block["id"]
+                toc_block["next_block_id"] = blocks[0]["id"]
+            blocks.insert(0, toc_block)
+
+    elif name in ("TranslateBlocks", "CompressContent", "ExpandContent"):
+        block_ids = args.get("block_ids", [])
+        if name == "TranslateBlocks":
+            target_lang = args.get("target_language", "English")
+            instruction_text = f"Translate the following text to {target_lang}. Preserve all formatting and meaning. Return only the translated text, nothing else."
+        elif name == "CompressContent":
+            target_chars = int(args.get("target_chars", 200))
+            instruction_text = f"Condense the following text to at most {target_chars} characters while preserving key information. Return only the condensed text, nothing else."
+        elif name == "ExpandContent":
+            target_chars = int(args.get("target_chars", 1000))
+            instruction_text = f"Expand the following text to approximately {target_chars} characters while preserving style and intent. Return only the expanded text, nothing else."
+        else:
+            instruction_text = ""
+
+        for b in blocks:
+            if b["id"] in block_ids:
+                content = b.get("content", "")
+                if content and provider:
+                    try:
+                        result = await provider.generate(f"{instruction_text}\n\n{content}")
+                        if result:
+                            b["content"] = result
+                    except Exception:
+                        pass
+
+    return reflow_document(document)
 
 
 async def execute_ai_instruction(document_id: str, instruction: str, user_id: str = "") -> Dict[str, Any]:
@@ -170,7 +329,7 @@ Use your tools to make the requested changes. Be precise."""
     for tc in tool_calls:
         args = tc.args if isinstance(tc.args, dict) else dict(tc.args)
         tool_calls_log.append({"name": tc.name, "args": args})
-        updated_doc = apply_tool_call(updated_doc, tc)
+        updated_doc = await apply_tool_call(updated_doc, tc, provider)
 
     log_res = supabase.table("ai_edit_logs").insert({
         "document_id": document_id,

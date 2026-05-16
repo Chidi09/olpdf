@@ -10,6 +10,7 @@ from ..supabase_client import supabase
 from ..security_utils import sanitize_string
 from ..engine.normalizer import normalize_document_model
 from ..services.document_patch import apply_ai_block_patch
+from ..engine.reflow_engine import reflow_document
 
 # Import limiter from limiter module
 from ..limiter import limiter
@@ -126,9 +127,10 @@ async def accept_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dic
     model = doc["document_model"]
     after_blocks = log["diff_snapshot"]["after"]
     patched = apply_ai_block_patch(model, after_blocks)
-    DocumentRepository.update(log["document_id"], {"document_model": patched})
+    reflowed = reflow_document(patched)
+    DocumentRepository.update(log["document_id"], {"document_model": reflowed})
     DocumentRepository.update_log(log_id, {"status": "accepted"})
-    return {"status": "success", "document_model": normalize_document_model(patched)}
+    return {"status": "success", "document_model": normalize_document_model(reflowed)}
 
 @router.post("/logs/{log_id}/reject")
 async def reject_ai_edit(log_id: str, user: dict = Depends(require_auth)) -> dict:

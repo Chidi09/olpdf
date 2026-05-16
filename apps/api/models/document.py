@@ -55,6 +55,7 @@ class DocumentBlock(BaseModel):
     type: str = Field(max_length=50)
     content: Optional[str] = Field(default=None, max_length=100000)
     rich_spans: List[RichSpan] = []
+    prev_block_id: Optional[str] = Field(default=None, max_length=100)
     next_block_id: Optional[str] = Field(default=None, max_length=100)
     column_index: int = Field(default=0, ge=0)
     alignment: Optional[str] = Field(default=None, max_length=20)
