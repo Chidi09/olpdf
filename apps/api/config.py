@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     ocr_batch_page_threshold: int = 50
     ocr_paddle_timeout: int = 120
     ocr_gemini_max_concurrency: int = 8
+    ocr_provider: str = "gemini"
+    google_cloud_vision_api_key: str = ""
+    google_cloud_vision_endpoint: str = "https://vision.googleapis.com/v1/images:annotate"
+    google_cloud_vision_timeout: int = 120
 
     # Dev
     olpdf_dev_mode: bool = False

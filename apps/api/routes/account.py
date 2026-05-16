@@ -18,12 +18,13 @@ async def delete_account(user: dict = Depends(require_auth)) -> dict:
     """
     user_id = user["sub"]
     try:
-        # Cascading deletion of data using service role
-        # Note: The database migrations should ideally handle cascading deletes 
-        # from profiles -> documents, books, etc.
-        # But we do explicit cleanup of Supabase Auth here.
         res = supabase_admin.auth.admin.delete_user(user_id)
-        return {"status": "success", "message": "Account scheduled for deletion"}
+        try:
+            from ..notification_utils import send_delete_confirmed_notification
+            send_delete_confirmed_notification(user_id)
+        except Exception:
+            pass
+        return {"status": "success", "message": "Account deleted"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

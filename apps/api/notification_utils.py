@@ -5,6 +5,11 @@ from .services.notification_service import (  # noqa: F401
     send_ocr_partial_notification,
     send_signature_request_notification,
     send_signature_complete_notification,
+    send_welcome_notification,
+    send_api_key_created_notification,
+    send_api_key_revoked_notification,
+    send_delete_confirmed_notification,
+    send_team_invite_notification,
 )
 
 APP_URL: str = os.environ.get("APP_URL", "https://olpdf.xyz")

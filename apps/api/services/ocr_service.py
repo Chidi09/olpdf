@@ -20,6 +20,7 @@ import fitz  # PyMuPDF
 import google.generativeai as genai
 
 from .ocr_classifier import OcrRoute, classify_pages
+from .google_vision_ocr_client import ocr_pages_with_cloud_vision
 from .paddle_ocr_client import ocr_pages_with_paddle, is_paddle_worker_alive
 
 logger = logging.getLogger("olpdf-api.ocr")
@@ -28,6 +29,7 @@ logger = logging.getLogger("olpdf-api.ocr")
 _CONFIDENCE_THRESHOLD = float(os.environ.get("OCR_CONFIDENCE_THRESHOLD", "0.85"))
 _BATCH_PAGE_THRESHOLD = int(os.environ.get("OCR_BATCH_PAGE_THRESHOLD", "50"))
 _MAX_CONCURRENCY = int(os.environ.get("OCR_GEMINI_MAX_CONCURRENCY", "8"))
+_OCR_PROVIDER = os.environ.get("OCR_PROVIDER", "gemini").strip().lower()
 
 _SYSTEM_PROMPT = """You are a document layout extractor. Given an image of a PDF page, extract ALL text content and return it as a JSON array of blocks.
 
@@ -203,6 +205,9 @@ async def ocr_document(
     """
     if not page_indices:
         return []
+
+    if _OCR_PROVIDER == "cloud_vision":
+        return await ocr_pages_with_cloud_vision(pdf_bytes, document_id, page_indices)
 
     # Classify pages into routing buckets
     buckets = classify_pages(

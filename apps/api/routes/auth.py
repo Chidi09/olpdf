@@ -157,9 +157,7 @@ def _save_magic_token(email: str, token: str) -> None:
 
 
 async def _send_magic_link_email(email: str, callback_url: str, token: str) -> None:
-    resend_key = (os.environ.get("RESEND_API_KEY") or "").strip()
-    if not resend_key:
-        raise HTTPException(status_code=500, detail="RESEND_API_KEY not configured")
+    from ..email.email_service import send_magic_link
 
     base_url = (os.environ.get("APP_URL") or os.environ.get("BETTER_AUTH_URL") or "https://www.olpdf.xyz").strip()
     if callback_url.startswith("/"):
@@ -168,31 +166,7 @@ async def _send_magic_link_email(email: str, callback_url: str, token: str) -> N
         sep = "&" if "?" in callback_url else "?"
         link = f"{callback_url}{sep}magicToken={token}"
 
-    html = (
-        "<div style='font-family:sans-serif;max-width:480px;margin:0 auto'>"
-        "<h2 style='color:#f97316'>Sign in to OLPDF</h2>"
-        "<p>Click below to sign in. This link expires in 10 minutes.</p>"
-        f"<a href='{link}' style='display:inline-block;padding:12px 24px;background:#f97316;color:#fff;border-radius:8px;text-decoration:none;font-weight:700'>Sign In</a>"
-        "</div>"
-    )
-
-    payload = {
-        "from": "OLPDF <no-reply@olpdf.xyz>",
-        "to": [email],
-        "subject": "Your OLPDF sign-in link",
-        "html": html,
-    }
-    async with httpx.AsyncClient(timeout=20) as client:
-        res = await client.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {resend_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
-        if res.status_code >= 400:
-            raise HTTPException(status_code=502, detail="Failed to send magic link email")
+    send_magic_link(email, link)
 
 
 class SignupInput(BaseModel):
@@ -246,6 +220,12 @@ async def signup(payload: SignupInput):
         }
     ).execute()
     _upsert_profile(user_row)
+
+    try:
+        from ..notification_utils import send_welcome_notification
+        send_welcome_notification(user_id, payload.name.strip())
+    except Exception:
+        pass
 
     token = _create_session_token(user_row)
     return {"token": token, "user": user_row}
@@ -429,6 +409,7 @@ async def oauth_callback(provider: str, code: str = Query(...), state: str = Que
         raise HTTPException(status_code=400, detail="OAuth provider did not return email")
 
     user = _get_user_by_email(email)
+    is_new = False
     if not user:
         user = {
             "id": _ensure_auth_user_id(email, name),
@@ -438,6 +419,7 @@ async def oauth_callback(provider: str, code: str = Query(...), state: str = Que
             "image": image,
         }
         supabase.table("user").insert(user).execute()
+        is_new = True
     else:
         supabase.table("user").update({"name": name, "image": image, "emailVerified": True}).eq("id", user["id"]).execute()
         user = _get_user_by_id(str(user["id"])) or user
@@ -455,6 +437,12 @@ async def oauth_callback(provider: str, code: str = Query(...), state: str = Que
         ).execute()
 
     _upsert_profile(user)
+    if is_new:
+        try:
+            from ..notification_utils import send_welcome_notification
+            send_welcome_notification(user["id"], name)
+        except Exception:
+            pass
     token = _create_session_token(user)
     return {"token": token, "user": user, "next": payload.get("next") or "/dashboard"}
 

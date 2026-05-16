@@ -32,6 +32,12 @@ async def create_api_key(payload: ApiKeyCreatePayload, user: dict = Depends(requ
         metadata={"name": payload.name, "scopes": payload.scopes},
     )
     
+    try:
+        from ..notification_utils import send_api_key_created_notification
+        send_api_key_created_notification(user["sub"], payload.name, prefix, payload.scopes)
+    except Exception:
+        pass
+
     return {
         "key": raw_key,
         "api_key": {
@@ -73,7 +79,14 @@ async def list_api_keys(user: dict = Depends(require_auth)) -> List[dict]:
 @router.delete("/{key_id}")
 async def delete_api_key(key_id: str, user: dict = Depends(require_auth)) -> dict:
     """Revokes an API key."""
+    key = ApiKeyRepository.get_by_id(key_id)
     ApiKeyRepository.delete(key_id, user["sub"])
+    if key:
+        try:
+            from ..notification_utils import send_api_key_revoked_notification
+            send_api_key_revoked_notification(user["sub"], key.get("name", "Unknown"), key.get("prefix", ""))
+        except Exception:
+            pass
     AuditLogRepository.create(
         user_id=user["sub"],
         resource_id=key_id,

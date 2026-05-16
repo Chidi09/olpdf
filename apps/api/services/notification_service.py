@@ -52,6 +52,39 @@ def send_signature_complete_notification(user_id: str, doc_title: str, certified
         send_signature_complete(to, "", doc_title, certified_url)
 
 
+def send_welcome_notification(user_id: str, name: str) -> None:
+    from ..email.email_service import send_welcome
+    to = get_user_email(user_id)
+    if to:
+        send_welcome(to, name)
+
+
+def send_api_key_created_notification(user_id: str, key_name: str, key_prefix: str, scopes: list) -> None:
+    from ..email.email_service import send_api_key_created
+    to = get_user_email(user_id)
+    if to:
+        send_api_key_created(to, "", key_name, key_prefix, ", ".join(scopes) if scopes else "")
+
+
+def send_api_key_revoked_notification(user_id: str, key_name: str, key_prefix: str) -> None:
+    from ..email.email_service import send_api_key_revoked
+    to = get_user_email(user_id)
+    if to:
+        send_api_key_revoked(to, "", key_name, key_prefix)
+
+
+def send_delete_confirmed_notification(user_id: str) -> None:
+    from ..email.email_service import send_delete_confirmed
+    to = get_user_email(user_id)
+    if to:
+        send_delete_confirmed(to, "")
+
+
+def send_team_invite_notification(to_email: str, inviter_name: str, workspace_name: str, role: str, invite_url: str) -> None:
+    from ..email.email_service import send_team_invite
+    send_team_invite(to_email, inviter_name, workspace_name, role, invite_url)
+
+
 def _app_url() -> str:
     import os
     return os.environ.get("APP_URL", "https://olpdf.xyz")

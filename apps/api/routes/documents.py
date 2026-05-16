@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional
 
 from fastapi import (
@@ -31,7 +32,9 @@ from ..models import (
 from ..repositories import DocumentRepository
 from ..security_utils import sanitize_document_model
 from ..worker_utils import route_pdf_import
-from ..workers.tasks.export_tasks import EXPORT_SERVICE_URL, WORKER_SECRET
+
+EXPORT_SERVICE_URL = os.environ.get("EXPORT_SERVICE_URL", "").rstrip("/")
+WORKER_SECRET = os.environ.get("WORKER_SECRET", "")
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 

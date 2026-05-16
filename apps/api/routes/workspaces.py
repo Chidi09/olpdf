@@ -34,12 +34,28 @@ async def list_workspace_members(workspace_id: str, role: str = Depends(require_
     return res.data
 
 @router.post("/{workspace_id}/members")
-async def add_workspace_member(workspace_id: str, user_id: str, role: str, current_role: str = Depends(require_role(["owner", "admin"]))) -> dict:
-    # Role checking: admins can't add owners
+async def add_workspace_member(workspace_id: str, user_id: str, role: str, user: dict = Depends(require_auth), current_role: str = Depends(require_role(["owner", "admin"]))) -> dict:
     if current_role == "admin" and role == "owner":
         raise HTTPException(status_code=403, detail="Admins cannot add owners")
-        
+
     WorkspaceRepository.add_user(workspace_id, user_id, role)
+
+    workspace = WorkspaceRepository.get_by_id(workspace_id)
+    workspace_name = workspace.get("name", "a workspace") if workspace else "a workspace"
+    try:
+        from ..supabase_client import supabase_admin
+        invitee = supabase_admin.auth.admin.get_user_by_id(user_id)
+        invitee_email = invitee.user.email if invitee and invitee.user else None
+        if invitee_email:
+            from ..notification_utils import send_team_invite_notification
+            from ..config import get_settings
+            app_url = get_settings().app_url
+            invite_url = f"{app_url}/workspaces/{workspace_id}"
+            send_team_invite_notification(
+                invitee_email, user.get("name", "A team member"), workspace_name, role, invite_url,
+            )
+    except Exception:
+        pass
     return {"status": "success"}
 
 @router.get("/{workspace_id}/documents")
