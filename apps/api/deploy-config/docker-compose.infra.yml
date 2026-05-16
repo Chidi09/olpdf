@@ -43,12 +43,10 @@ services:
     image: olpdf/ocr-worker:latest
     container_name: olpdf-ocr-worker
     restart: unless-stopped
+    env_file: .env.prod
     ports:
-      - "8001:8001"
+      - "8011:8001"
     environment:
-      WORKER_SECRET: "${WORKER_SECRET}"
-      SUPABASE_URL: "${SUPABASE_URL}"
-      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
       SUPABASE_STORAGE_BUCKET: "${SUPABASE_STORAGE_BUCKET:-user-uploads}"
       OLPDF_API_BASE_URL: "http://olpdf-api-blue:8000"
       OLPDF_DEV_MODE: "${OLPDF_DEV_MODE:-false}"
