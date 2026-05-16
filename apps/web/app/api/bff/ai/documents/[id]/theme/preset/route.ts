@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { forwardJson } from "../../../../../../_shared";
+import { forwardJson } from "../../../../../_shared";
 
 export async function POST(
   req: NextRequest,
