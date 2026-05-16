@@ -1,6 +1,3 @@
-// pdfWriter wraps pdfcpu to provide an fpdf-like interface for PDF generation.
-// This replaced go-pdf/fpdf (v0.9.0) which produced broken table borders and
-// misaligned mixed layouts.
 package main
 
 import (
@@ -8,16 +5,18 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
-
-	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+type pdfPage struct {
+	content bytes.Buffer
+	w       float64
+	h       float64
+}
+
 type pdfWriter struct {
-	doc *model.Document
-	pages   []*model.Page
+	pages []*pdfPage
 
 	curX, curY float64
 	fontSize   float64
@@ -35,6 +34,7 @@ type pdfWriter struct {
 
 	fontSeq int
 	fontMap map[string]string
+	fontBase map[string]string
 
 	title, author, creator, subject, producer string
 
@@ -46,38 +46,23 @@ type pdfWriter struct {
 }
 
 func newPDFWriter(pageW, pageH float64) (*pdfWriter, error) {
-	doc, err := api.CreateDocument()
-	if err != nil {
-		return nil, fmt.Errorf("create document: %w", err)
-	}
 	w := &pdfWriter{
-		doc:     doc,
 		pw:      pageW,
 		ph:      pageH,
 		marginL: 72, marginR: 72, marginT: 72, marginB: 72,
 		fontSize: 11,
 		fontMap:  make(map[string]string),
+		fontBase: make(map[string]string),
 	}
 	if err := w.addPage(pageW, pageH); err != nil {
 		return nil, err
 	}
+	w.selectFont("Helvetica", "", 11)
 	return w, nil
 }
 
 func (w *pdfWriter) addPage(pageW, pageH float64) error {
-	page, err := api.AddPage(w.doc)
-	if err != nil {
-		return fmt.Errorf("add page: %w", err)
-	}
-	if page.Content == nil {
-		page.Content = &bytes.Buffer{}
-	}
-	if page.Resources == nil {
-		page.Resources = model.NewResources()
-	}
-	if page.MediaBox == nil {
-		page.MediaBox = types.NewRectangle(0, 0, pageW, pageH)
-	}
+	page := &pdfPage{w: pageW, h: pageH}
 	w.pages = append(w.pages, page)
 	w.pageIdx = len(w.pages) - 1
 	w.curX = w.marginL
@@ -91,7 +76,7 @@ func (w *pdfWriter) addPage(pageW, pageH float64) error {
 	return nil
 }
 
-func (w *pdfWriter) page() *model.Page {
+func (w *pdfWriter) page() *pdfPage {
 	if w.pageIdx >= 0 && w.pageIdx < len(w.pages) {
 		return w.pages[w.pageIdx]
 	}
@@ -100,8 +85,8 @@ func (w *pdfWriter) page() *model.Page {
 
 func (w *pdfWriter) writes(s string) {
 	p := w.page()
-	if p != nil && p.Content != nil {
-		p.Content.WriteString(s)
+	if p != nil {
+		p.content.WriteString(s)
 	}
 }
 
@@ -145,13 +130,7 @@ func (w *pdfWriter) selectFont(family, style string, size float64) string {
 		baseName = family + "-BoldOblique"
 	}
 
-	p := w.page()
-	if p != nil && p.Resources != nil {
-		fd := types.IndirectRef{
-			ObjectNumber: w.fontSeq,
-		}
-		p.Resources.Fonts[types.Name(ref)] = fd
-	}
+	w.fontBase[ref] = baseName
 
 	w.fontKey = ref
 	w.fontFamily = family
@@ -161,23 +140,8 @@ func (w *pdfWriter) selectFont(family, style string, size float64) string {
 }
 
 func (w *pdfWriter) ensureFontResources() {
-	for key, ref := range w.fontMap {
-		parts := strings.SplitN(key, "+", 2)
-		family, style := parts[0], ""
-		if len(parts) == 2 {
-			style = parts[1]
-		}
-		p := w.page()
-		if p == nil || p.Resources == nil {
-			continue
-		}
-		if _, exists := p.Resources.Fonts[types.Name(ref)]; !exists {
-			p.Resources.Fonts[types.Name(ref)] = types.IndirectRef{
-				ObjectNumber: w.fontSeq,
-			}
-		}
-		_ = family
-		_ = style
+	if len(w.fontBase) == 0 {
+		w.selectFont("Helvetica", "", 11)
 	}
 }
 
@@ -752,13 +716,82 @@ func (w *pdfWriter) renderLayoutObjects(page LayoutPage) error {
 
 func (w *pdfWriter) writeTo(wr io.Writer) error {
 	w.ensureFontResources()
-	var buf bytes.Buffer
-	ctx, err := api.ReadContext(bytes.NewReader(nil), model.NewDefaultConfiguration())
-	if err != nil {
-		ctx = model.NewContext(w.doc, model.NewDefaultConfiguration())
+
+	objects := []string{"", ""} // 1: catalog, 2: pages
+	addObject := func(body string) int {
+		objects = append(objects, body)
+		return len(objects)
 	}
-	ctx.Doc = w.doc
-	if err := api.WriteContext(wr, ctx); err != nil {
+
+	fontRefs := make([]string, 0, len(w.fontBase))
+	for ref := range w.fontBase {
+		fontRefs = append(fontRefs, ref)
+	}
+	sort.Strings(fontRefs)
+	fontObjIDs := make(map[string]int, len(fontRefs))
+	for _, ref := range fontRefs {
+		base := w.fontBase[ref]
+		if base == "" {
+			base = "Helvetica"
+		}
+		fontObjIDs[ref] = addObject(fmt.Sprintf("<< /Type /Font /Subtype /Type1 /BaseFont /%s /Encoding /WinAnsiEncoding >>", base))
+	}
+
+	fontResource := ""
+	for _, ref := range fontRefs {
+		fontResource += fmt.Sprintf(" %s %d 0 R", ref, fontObjIDs[ref])
+	}
+	if fontResource == "" {
+		fontResource = " /F1 " + fmt.Sprint(addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")) + " 0 R"
+	}
+
+	pageIDs := make([]int, 0, len(w.pages))
+	for _, p := range w.pages {
+		stream := p.content.String()
+		contentID := addObject(fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(stream), stream))
+		pageID := addObject(fmt.Sprintf("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %g %g] /Resources << /Font <<%s >> >> /Contents %d 0 R >>", p.w, p.h, fontResource, contentID))
+		pageIDs = append(pageIDs, pageID)
+	}
+
+	kids := ""
+	for _, id := range pageIDs {
+		kids += fmt.Sprintf(" %d 0 R", id)
+	}
+	objects[1] = fmt.Sprintf("<< /Type /Pages /Kids [%s ] /Count %d >>", kids, len(pageIDs))
+
+	catalogExtra := ""
+	if w.tagged {
+		catalogExtra = " /MarkInfo << /Marked true >> /Lang (en-US)"
+	}
+	objects[0] = fmt.Sprintf("<< /Type /Catalog /Pages 2 0 R%s >>", catalogExtra)
+
+	infoID := 0
+	if w.title != "" || w.author != "" || w.creator != "" || w.subject != "" || w.producer != "" {
+		infoID = addObject(fmt.Sprintf("<< /Title (%s) /Author (%s) /Creator (%s) /Subject (%s) /Producer (%s) >>", w.escapeText(w.title), w.escapeText(w.author), w.escapeText(w.creator), w.escapeText(w.subject), w.escapeText(w.producer)))
+	}
+
+	var out bytes.Buffer
+	out.WriteString("%PDF-1.7\n%\xE2\xE3\xCF\xD3\n")
+	offsets := make([]int, len(objects)+1)
+	for i, body := range objects {
+		objNum := i + 1
+		offsets[objNum] = out.Len()
+		out.WriteString(fmt.Sprintf("%d 0 obj\n%s\nendobj\n", objNum, body))
+	}
+	xref := out.Len()
+	out.WriteString(fmt.Sprintf("xref\n0 %d\n", len(objects)+1))
+	out.WriteString("0000000000 65535 f \n")
+	for i := 1; i <= len(objects); i++ {
+		out.WriteString(fmt.Sprintf("%010d 00000 n \n", offsets[i]))
+	}
+	trailer := fmt.Sprintf("trailer\n<< /Size %d /Root 1 0 R", len(objects)+1)
+	if infoID > 0 {
+		trailer += fmt.Sprintf(" /Info %d 0 R", infoID)
+	}
+	trailer += fmt.Sprintf(" >>\nstartxref\n%d\n%%%%EOF\n", xref)
+	out.WriteString(trailer)
+
+	if _, err := wr.Write(out.Bytes()); err != nil {
 		return fmt.Errorf("write pdf: %w", err)
 	}
 	return nil
