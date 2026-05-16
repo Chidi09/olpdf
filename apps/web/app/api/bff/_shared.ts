@@ -97,3 +97,23 @@ export async function forwardRaw(path: string, init?: RequestInit) {
     );
   }
 }
+
+export async function forwardStream(path: string, init?: RequestInit) {
+  try {
+    const response = await forward(path, init);
+    const contentType = response.headers.get("content-type") || "text/event-stream";
+    return new NextResponse(response.body, {
+      status: response.status,
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "upstream_unavailable", message: "API upstream unavailable", detail: String(error) },
+      { status: 502 }
+    );
+  }
+}

@@ -4784,13 +4784,17 @@ function __wbg_get_imports() {
             return ret;
         },
         __wbindgen_init_externref_table: function() {
-            const table = wasm.__wbindgen_externrefs;
-            const offset = table.grow(4);
-            table.set(0, undefined);
-            table.set(offset + 0, undefined);
-            table.set(offset + 1, null);
-            table.set(offset + 2, true);
-            table.set(offset + 3, false);
+            try {
+                const table = wasm.__wbindgen_externrefs;
+                const offset = table.grow(4);
+                table.set(0, undefined);
+                table.set(offset + 0, undefined);
+                table.set(offset + 1, null);
+                table.set(offset + 2, true);
+                table.set(offset + 3, false);
+            } catch (_) {
+                // externref not supported; PDF parsing still works without it
+            }
         },
     };
     return {

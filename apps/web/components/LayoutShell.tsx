@@ -72,12 +72,18 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         importPayload.client_model = {
           blocks: session.objects.map((obj) => ({
             id: obj.id,
-            type: "text",
+            type: "paragraph",
             content: obj.text || "",
+            rich_spans: [],
             page_index: obj.pageIndex,
             bounding_box: obj.bbox,
             z_index: obj.zIndex,
-            font_meta: obj.fontFamily ? { family: obj.fontFamily, size: obj.fontSize, color: obj.color } : undefined,
+            column_index: 0,
+            alignment: "left",
+            confidence_score: 1.0,
+            needs_review: false,
+            style_overrides: {},
+            font_meta: obj.fontFamily ? { family: obj.fontFamily, size: obj.fontSize, color: obj.color, is_bold: false, is_italic: false } : undefined,
           })),
           page_dimensions: session.pages.map((p) => ({
             page_index: p.pageIndex,
@@ -86,12 +92,34 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           })),
         };
       }
-      await fetch("/api/bff/import/start", {
+      const importRes = await fetch("/api/bff/import/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(importPayload),
       });
-      router.push(`/editor/${created.id}`);
+      if (!importRes.ok) return;
+      // Wait for the import to finish before navigating
+      const es = new EventSource(`/api/bff/import/${created.id}/stream`);
+      es.onmessage = (e) => {
+        try {
+          const body = JSON.parse(e.data);
+          const s = typeof body.status === "string" ? body.status : "processing";
+          if (s === "ready" || s === "completed" || s === "success") {
+            es.close();
+            router.push(`/editor/${created.id}`);
+          }
+          if (s === "failed" || s === "error" || s === "timeout") {
+            es.close();
+            router.push(`/editor/${created.id}`); // still go, editor will show error state
+          }
+        } catch {
+          // ignore parse errors
+        }
+      };
+      es.onerror = () => {
+        es.close();
+        router.push(`/editor/${created.id}`); // fallback: navigate anyway
+      };
     } catch {
       // silent fail — user can retry via dashboard
     }

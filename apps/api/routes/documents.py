@@ -133,6 +133,41 @@ async def get_import_status(job_id: str, user: dict = Depends(require_auth)) -> 
     }
 
 
+@router.get("/import/{job_id}/stream")
+async def stream_import_progress(job_id: str, user: dict = Depends(require_auth)):
+    """SSE endpoint that polls DB for import progress, no Redis needed."""
+    import asyncio
+    import json
+
+    from fastapi.responses import StreamingResponse
+
+    check = lambda: check_ownership(job_id, user)
+
+    async def event_generator():
+        terminal = {"ready", "completed", "success", "failed", "error"}
+        attempts = 0
+        max_attempts = 300  # 300 * 800ms = 4 min timeout
+        while attempts < max_attempts:
+            try:
+                doc = check()
+                status = doc.get("status", "unknown")
+                progress = doc.get("import_progress", 0)
+                error = doc.get("error")
+                payload = {"status": status, "import_progress": progress}
+                if error:
+                    payload["error"] = error
+                yield f"data: {json.dumps(payload)}\n\n"
+                if status in terminal:
+                    return
+            except Exception:
+                yield f"data: {json.dumps({'status': 'unknown', 'import_progress': 0})}\n\n"
+            attempts += 1
+            await asyncio.sleep(0.8)
+        yield f"data: {json.dumps({'status': 'timeout', 'import_progress': 0, 'error': 'Import timed out'})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
 @router.get("")
 async def list_documents(
     page: int = 0, limit: int = 50, user: dict = Depends(require_auth)

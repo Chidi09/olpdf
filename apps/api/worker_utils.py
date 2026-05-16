@@ -263,6 +263,12 @@ async def route_pdf_import(file_bytes: bytes, document_id: str, layout_mode: str
         _safe_update_document(document_id, {"import_progress": 85})
         ocr_blocks = await ocr_document(file_bytes, document_id, pages_needing_ocr)
         if ocr_blocks:
+            ocr_blocks = [
+                b for b in ocr_blocks
+                if b.get("id") and b.get("page_index") is not None
+            ]
+            if not ocr_blocks:
+                logger.warning("document %s: all OCR blocks were malformed, skipping", document_id)
             all_blocks = sorted(
                 native_blocks + ocr_blocks,
                 key=lambda b: (b.get("page_index", 0), b.get("id", "")),

@@ -162,8 +162,9 @@ export default function Dashboard() {
     setUploadStatus("Parsing in browser");
     setUploadProgress(40);
     const wasmResult = await parsePdf(arrayBuffer).catch(() => null);
+    let session: PdfEditSession | null = null;
     if (wasmResult) {
-      const session = normalizeWasmResult(wasmResult as any, created.id, "pending");
+      session = normalizeWasmResult(wasmResult as any, created.id, "pending");
       setWasmSession(session);
     }
     const base64 = await new Promise<string>((resolve, reject) => {
@@ -180,18 +181,24 @@ export default function Dashboard() {
     setUploadProgress(50);
     importAbortRef.current = new AbortController();
     const importPayload: Record<string, unknown> = { documentId: created.id, fileBytes: base64, layout_mode: "fidelity" };
-    if (wasmSession) {
+    if (session) {
       importPayload.client_model = {
-        blocks: wasmSession.objects.map((obj) => ({
+        blocks: session.objects.map((obj) => ({
           id: obj.id,
-          type: "text",
+          type: "paragraph",
           content: obj.text || "",
+          rich_spans: [],
           page_index: obj.pageIndex,
           bounding_box: obj.bbox,
           z_index: obj.zIndex,
-          font_meta: obj.fontFamily ? { family: obj.fontFamily, size: obj.fontSize, color: obj.color } : undefined,
+          column_index: 0,
+          alignment: "left",
+          confidence_score: 1.0,
+          needs_review: false,
+          style_overrides: {},
+          font_meta: obj.fontFamily ? { family: obj.fontFamily, size: obj.fontSize, color: obj.color, is_bold: false, is_italic: false } : undefined,
         })),
-        page_dimensions: wasmSession.pages.map((p) => ({
+        page_dimensions: session.pages.map((p) => ({
           page_index: p.pageIndex,
           width: p.width,
           height: p.height,
@@ -207,29 +214,55 @@ export default function Dashboard() {
     setUploadStatus("Server enriching");
     setUploadProgress(55);
 
-    const poll = async () => {
-      for (let i = 0; i < 45; i += 1) {
-        if (importAbortRef.current?.signal.aborted) return;
-        const res = await fetch(`/api/bff/import/${created.id}/status`, { signal: importAbortRef.current?.signal }).catch(() => null);
-        const body = await res?.json().catch(() => ({} as Record<string, unknown>));
-        const p = typeof body?.import_progress === "number" ? body.import_progress : null;
-        const s = typeof body?.status === "string" ? body.status : "processing";
+    const es = new EventSource(`/api/bff/import/${created.id}/stream`);
+    importAbortRef.current = new AbortController();
+    const abortHandler = () => { es.close(); };
+    importAbortRef.current.signal.addEventListener("abort", abortHandler);
+    es.onmessage = (e) => {
+      try {
+        const body = JSON.parse(e.data);
+        const p = typeof body.import_progress === "number" ? body.import_progress : null;
+        const s = typeof body.status === "string" ? body.status : "processing";
         setUploadStatus(s);
         if (p !== null) setUploadProgress(Math.max(45, Math.min(98, p)));
         if (s === "ready" || s === "completed" || s === "success") {
           setUploadProgress(100);
-          break;
+          es.close();
+          importAbortRef.current?.signal.removeEventListener("abort", abortHandler);
+          router.push(`/editor/${created.id}`);
         }
         if (s === "failed" || s === "error") {
-          setUploadError(String(body?.error || "Import failed"));
-          break;
+          setUploadError(String(body.error || "Import failed"));
+          es.close();
+          importAbortRef.current?.signal.removeEventListener("abort", abortHandler);
         }
-        await new Promise((r) => setTimeout(r, 1200));
+        if (s === "timeout") {
+          setUploadError("Import timed out. The page will reload to try again.");
+          es.close();
+          importAbortRef.current?.signal.removeEventListener("abort", abortHandler);
+        }
+      } catch {
+        // ignore parse errors
       }
-      if (importAbortRef.current?.signal.aborted) return;
-      router.push(`/editor/${created.id}`);
     };
-    void poll();
+    es.onerror = () => {
+      // EventSource auto-reconnects; if it fails permanently fall back to single poll
+      es.close();
+      importAbortRef.current?.signal.removeEventListener("abort", abortHandler);
+      const fallbackFetch = async () => {
+        const res = await fetch(`/api/bff/import/${created.id}/status`).catch(() => null);
+        const body = await res?.json().catch(() => ({} as Record<string, unknown>));
+        const s = typeof body?.status === "string" ? body.status : "processing";
+        setUploadStatus(s);
+        if (s === "ready" || s === "completed" || s === "success") {
+          setUploadProgress(100);
+          router.push(`/editor/${created.id}`);
+        } else if (s === "failed" || s === "error") {
+          setUploadError(String(body?.error || "Import failed"));
+        }
+      };
+      void fallbackFetch();
+    };
   };
 
   const cancelImport = () => {
