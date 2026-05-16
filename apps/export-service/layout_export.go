@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
 
 func handleLayoutExport(w http.ResponseWriter, r *http.Request) {
