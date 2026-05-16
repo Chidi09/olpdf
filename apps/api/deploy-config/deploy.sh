@@ -193,6 +193,17 @@ echo "==> Restarting export-service with new image"
 docker compose -f "$APP_DIR/docker-compose.infra.yml" up -d --no-deps export
 
 echo ""
+echo "==> Building OCR worker image"
+docker build \
+  -t "olpdf/ocr-worker:latest" \
+  -f "$REPO_DIR/apps/ocr-worker/Dockerfile" \
+  "$REPO_DIR/apps/ocr-worker"
+
+echo ""
+echo "==> Restarting OCR worker with new image"
+docker compose -f "$APP_DIR/docker-compose.infra.yml" up -d --no-deps ocr-worker
+
+echo ""
 echo "==> Building API image"
 docker build \
   -t "olpdf/api:$INACTIVE" \

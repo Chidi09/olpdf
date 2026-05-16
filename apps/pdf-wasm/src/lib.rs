@@ -1,12 +1,8 @@
 mod blocks;
-mod cmap;
 mod document;
 mod font;
 mod hash;
 mod layout;
-mod lib_helpers;
-mod objects;
-mod page;
 mod types;
 
 pub use document::PdfDocument;
@@ -15,8 +11,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::window;
 
 use layout::reconstruct_paragraphs;
-use page::{get_page_size, parse_page};
-use types::{ParseMetrics, ParseResult, PreflightResult, WasmLayoutObject, WasmPageDimension};
+use types::{FontMeta, ParseMetrics, ParseResult, PreflightResult, RichSpan, WasmBlock, WasmLayoutObject, WasmPageDimension};
 
 #[wasm_bindgen(start)]
 pub fn init_hooks() {
@@ -24,28 +19,24 @@ pub fn init_hooks() {
     console_error_panic_hook::set_once();
 }
 
-// ── preflight_pdf ─────────────────────────────────────────────────────────
-
 #[wasm_bindgen]
 pub fn preflight_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
-    let doc = lopdf::Document::load_mem(data)
+    let doc = pdf_oxide::PdfDocument::load(data)
         .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
-    let pages = doc.get_pages();
+    let page_count = doc.page_count()
+        .map_err(|e| JsValue::from_str(&format!("Page count error: {e}")))?;
     let mut dims: Vec<WasmPageDimension> = Vec::new();
-    for (page_num, &page_id) in &pages {
-        let page_index = (*page_num as usize).saturating_sub(1);
-        let (width, height) = get_page_size(&doc, page_id);
-        dims.push(WasmPageDimension { page_index, width, height });
+    for i in 0..page_count {
+        let (w, h) = doc.page_size(i)
+            .map_err(|e| JsValue::from_str(&format!("Page size error: {e}")))?;
+        dims.push(WasmPageDimension { page_index: i, width: w, height: h });
     }
-    dims.sort_by_key(|p| p.page_index);
     serde_wasm_bindgen::to_value(&PreflightResult {
-        page_count: dims.len(),
+        page_count,
         page_dimensions: dims,
     })
     .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
 }
-
-// ── parse_pdf ─────────────────────────────────────────────────────────────
 
 #[wasm_bindgen]
 pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
@@ -55,9 +46,10 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
         .ok_or_else(|| JsValue::from_str("No performance"))?;
     let start = perf.now();
 
-    let doc = lopdf::Document::load_mem(data)
+    let doc = pdf_oxide::PdfDocument::load(data)
         .map_err(|e| JsValue::from_str(&format!("PDF parse error: {e}")))?;
-    let pages = doc.get_pages();
+    let page_count = doc.page_count()
+        .map_err(|e| JsValue::from_str(&format!("Page count error: {e}")))?;
 
     let mut all_blocks = Vec::new();
     let mut all_layout_objects: Vec<WasmLayoutObject> = Vec::new();
@@ -68,24 +60,21 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
     let mut total_image_count = 0usize;
     let mut total_missing_fonts = 0usize;
 
-    for (page_num, &page_id) in &pages {
-        let page_index = (*page_num as usize).saturating_sub(1);
-        let (width, height) = get_page_size(&doc, page_id);
+    for page_index in 0..page_count {
+        let (width, height) = doc.page_size(page_index)
+            .map_err(|e| JsValue::from_str(&format!("Page size error: {e}")))?;
         page_dimensions.push(WasmPageDimension { page_index, width, height });
 
         let mut vector_paths: Vec<[f64; 4]> = Vec::new();
-        let page_blocks = parse_page(
-            &doc,
-            page_id,
-            page_index,
-            height,
-            width,
-            &mut warnings,
-            &mut total_unmapped,
-            &mut vector_paths,
-            &mut total_image_count,
-            &mut total_missing_fonts,
-        );
+
+        let page_blocks = match parse_page_blocks(&doc, page_index, height, &mut total_image_count, &mut warnings) {
+            Ok(blocks) => blocks,
+            Err(e) => {
+                warnings.push(format!("Page {page_index} parse error: {e}"));
+                pages_failed += 1;
+                continue;
+            }
+        };
 
         if page_blocks.is_empty() { pages_failed += 1; }
 
@@ -97,13 +86,10 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
             &mut warnings,
         );
 
-        // Convert text blocks to layout objects
         for block in &result.blocks {
             all_layout_objects.push(block_to_layout_object(block));
         }
-        // Add table layout objects
         all_layout_objects.extend(result.table_objects);
-
         all_blocks.extend(result.blocks);
     }
 
@@ -112,7 +98,7 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
     let duration_ms = perf.now() - start;
     let total_blocks = all_blocks.len();
     let is_likely_scanned =
-        total_image_count > 0 && total_blocks < 5 && !pages.is_empty();
+        total_image_count > 0 && total_blocks < 5 && page_count > 0;
 
     let metrics = ParseMetrics {
         duration_ms,
@@ -134,9 +120,106 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
     .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
 }
 
-// ── Block → layout object projection ────────────────────────────────────
+fn parse_page_blocks(
+    doc: &pdf_oxide::PdfDocument,
+    page_index: usize,
+    _page_height: f64,
+    image_count: &mut usize,
+    _warnings: &mut Vec<String>,
+) -> Result<Vec<WasmBlock>, String> {
+    let chars = doc.extract_chars(page_index as u32)
+        .map_err(|e| format!("extract_chars failed: {e}"))?;
+    let images = doc.extract_images(page_index as u32)
+        .map_err(|e| format!("extract_images failed: {e}"))?;
+    *image_count += images.len();
 
-fn block_to_layout_object(block: &types::WasmBlock) -> WasmLayoutObject {
+    let mut blocks: Vec<WasmBlock> = Vec::new();
+    let mut block_idx = 0usize;
+    let mut current_text = String::new();
+    let mut current_font = String::new();
+    let mut current_size = 12.0;
+    let mut current_color = "#111111".to_string();
+    let mut prev_y = 0.0;
+    let mut prev_x = 0.0;
+
+    for ch in &chars {
+        if !current_text.is_empty() {
+            let y_delta = (prev_y - ch.bbox.y).abs();
+            let x_delta = (ch.bbox.x - prev_x).abs();
+            if y_delta > current_size * 0.5 || x_delta > current_size * 2.0 {
+                let id = format!("blk_oxide_{page_index}_{block_idx}");
+                blocks.push(WasmBlock {
+                    id: id.clone(),
+                    object_id: id.clone(),
+                    source_ref: format!("page:{page_index}:oxide:{block_idx}"),
+                    block_type: "text".to_string(),
+                    content: std::mem::take(&mut current_text),
+                    rich_spans: vec![],
+                    next_block_id: None,
+                    page_index,
+                    bounding_box: [0.0, 0.0, 0.0, 0.0],
+                    font_meta: FontMeta {
+                        family: current_font.clone(),
+                        size: current_size,
+                        is_bold: ch.font_weight.to_lowercase().contains("bold"),
+                        is_italic: ch.is_italic,
+                        color: current_color.clone(),
+                    },
+                    alignment: "left".to_string(),
+                    confidence_score: 1.0,
+                    needs_review: false,
+                    z_index: 0,
+                    column_index: 0,
+                    style_overrides: std::collections::HashMap::new(),
+                    bullet: None,
+                    is_invisible: false,
+                });
+                block_idx += 1;
+            }
+        }
+
+        current_text.push(ch.char);
+        current_font = ch.font_name.clone();
+        current_size = ch.font_size;
+        current_color = format!("#{:02X}{:02X}{:02X}", (ch.color.r * 255.0) as u8, (ch.color.g * 255.0) as u8, (ch.color.b * 255.0) as u8);
+        prev_x = ch.bbox.x;
+        prev_y = ch.bbox.y;
+    }
+
+    if !current_text.is_empty() {
+        let id = format!("blk_oxide_{page_index}_{block_idx}");
+        blocks.push(WasmBlock {
+            id: id.clone(),
+            object_id: id,
+            source_ref: format!("page:{page_index}:oxide:{block_idx}"),
+            block_type: "text".to_string(),
+            content: current_text,
+            rich_spans: vec![],
+            next_block_id: None,
+            page_index,
+            bounding_box: [0.0, 0.0, 0.0, 0.0],
+            font_meta: FontMeta {
+                family: current_font,
+                size: current_size,
+                is_bold: false,
+                is_italic: false,
+                color: current_color,
+            },
+            alignment: "left".to_string(),
+            confidence_score: 1.0,
+            needs_review: false,
+            z_index: 0,
+            column_index: 0,
+            style_overrides: std::collections::HashMap::new(),
+            bullet: None,
+            is_invisible: false,
+        });
+    }
+
+    Ok(blocks)
+}
+
+fn block_to_layout_object(block: &WasmBlock) -> WasmLayoutObject {
     WasmLayoutObject {
         id: block.object_id.clone(),
         object_type: "text".to_string(),
@@ -160,4 +243,29 @@ fn block_to_layout_object(block: &types::WasmBlock) -> WasmLayoutObject {
         value: None,
         required: None,
     }
+}
+
+#[wasm_bindgen]
+pub fn parse_page_by_index(data: &[u8], page_index: usize) -> Result<JsValue, JsValue> {
+    let doc = pdf_oxide::PdfDocument::load(data)
+        .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
+    let mut image_count = 0usize;
+    let mut warnings = Vec::new();
+    let blocks = parse_page_blocks(&doc, page_index, 0.0, &mut image_count, &mut warnings)
+        .map_err(|e| JsValue::from_str(&e))?;
+    serde_wasm_bindgen::to_value(&blocks)
+        .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
+}
+
+#[wasm_bindgen]
+pub fn preflight_streaming(data: &[u8]) -> Result<JsValue, JsValue> {
+    let doc = pdf_oxide::PdfDocument::load(data)
+        .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
+    let page_count = doc.page_count()
+        .map_err(|e| JsValue::from_str(&format!("Page count error: {e}")))?;
+    serde_wasm_bindgen::to_value(&serde_json::json!({
+        "total_pages": page_count,
+        "chunk_size": 4,
+    }))
+    .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
 }

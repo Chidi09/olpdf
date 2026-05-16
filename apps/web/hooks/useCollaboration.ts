@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import { IndexeddbPersistence } from "y-indexeddb";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import { WebsocketProvider } from "y-websocket";
 import type { DocumentModel } from "@olpdf/document-model";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -28,122 +28,57 @@ function initYDoc(model: DocumentModel): Y.Doc {
   return ydoc;
 }
 
-// Minimal awareness implementation backed by Supabase Realtime Presence.
-// Matches the interface FidelityCanvas expects from y-supabase's provider.awareness.
-class SupabaseAwareness {
-  readonly clientID: number;
-  private localState: Record<string, unknown> = {};
-  private states = new Map<number, Record<string, unknown>>();
-  private listeners = new Map<string, Set<() => void>>();
-  private channel: RealtimeChannel;
-
-  constructor(channel: RealtimeChannel, clientID: number) {
-    this.clientID = clientID;
-    this.channel = channel;
-
-    channel.on("presence", { event: "sync" }, () => {
-      this.states.clear();
-      const presenceState = channel.presenceState<{ clientID: number } & Record<string, unknown>>();
-      for (const presences of Object.values(presenceState)) {
-        for (const p of presences) {
-          const { clientID: cid, ...rest } = p as { clientID: number } & Record<string, unknown>;
-          if (typeof cid === "number") this.states.set(cid, rest);
-        }
-      }
-      // Always include local state so getStates() reflects it
-      this.states.set(this.clientID, this.localState);
-      this._emit("change");
-    });
-  }
-
-  getStates(): Map<number, Record<string, unknown>> {
-    return this.states;
-  }
-
-  getLocalState(): Record<string, unknown> {
-    return { ...this.localState };
-  }
-
-  setLocalStateField(key: string, value: unknown): void {
-    this.localState = { ...this.localState, [key]: value };
-    void this.channel.track({ clientID: this.clientID, ...this.localState });
-  }
-
-  on(_event: string, fn: () => void): void {
-    const set = this.listeners.get(_event) ?? new Set();
-    set.add(fn);
-    this.listeners.set(_event, set);
-  }
-
-  off(_event: string, fn: () => void): void {
-    this.listeners.get(_event)?.delete(fn);
-  }
-
-  private _emit(event: string): void {
-    this.listeners.get(event)?.forEach((fn) => fn());
-  }
-}
-
-export type CollaborationProvider = { awareness: SupabaseAwareness };
+export type CollaborationProvider = WebsocketProvider;
 
 export function useCollaboration(documentId: string, model: DocumentModel) {
   const ydocRef = useRef<Y.Doc | null>(null);
-  const providerRef = useRef<CollaborationProvider | null>(null);
+  const providerRef = useRef<WebsocketProvider | null>(null);
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     const ydoc = initYDoc(model);
     const localPersist = new IndexeddbPersistence(`olpdf-${documentId}`, ydoc);
     ydocRef.current = ydoc;
 
+    const collabWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || "ws://localhost:1234";
     const supabase = createSupabaseBrowserClient();
-    const clientID = Math.floor(Math.random() * 0xffffff);
 
-    const channel = supabase.channel(`doc-collab:${documentId}`, {
-      config: { broadcast: { self: false }, presence: { key: String(clientID) } },
+    const wsProvider = new WebsocketProvider(
+      collabWsUrl,
+      `olpdf-doc-${documentId}`,
+      ydoc,
+      { connect: false }
+    );
+
+    wsProvider.on("status", (event: { status: string }) => {
+      setConnected(event.status === "connected");
     });
 
-    const awareness = new SupabaseAwareness(channel, clientID);
-    providerRef.current = { awareness };
-
-    // Sync Y.js updates via broadcast
-    channel.on("broadcast", { event: "y-update" }, ({ payload }) => {
-      try {
-        Y.applyUpdate(ydoc, new Uint8Array(payload.update as number[]));
-      } catch { /* ignore malformed updates */ }
+    supabase.auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token;
+      if (token) {
+        const displayName =
+          data.session?.user?.user_metadata?.full_name ??
+          data.session?.user?.email ??
+          "Collaborator";
+        wsProvider.awareness.setLocalStateField("user", {
+          name: displayName,
+          color: generateColor(String(wsProvider.awareness.clientID)),
+        });
+        wsProvider.connect();
+      }
     });
 
-    const updateHandler = (update: Uint8Array) => {
-      void channel.send({
-        type: "broadcast",
-        event: "y-update",
-        payload: { update: Array.from(update) },
-      });
-    };
-
-    ydoc.on("update", updateHandler);
-
-    void channel.subscribe(async (status) => {
-      if (status !== "SUBSCRIBED") return;
-      const { data } = await supabase.auth.getSession();
-      const displayName =
-        data.session?.user?.user_metadata?.full_name ??
-        data.session?.user?.email ??
-        "Collaborator";
-      awareness.setLocalStateField("user", {
-        name: displayName,
-        color: generateColor(String(clientID)),
-        selectedBlockId: null,
-      });
-    });
+    providerRef.current = wsProvider;
 
     return () => {
-      ydoc.off("update", updateHandler);
-      void supabase.removeChannel(channel);
+      wsProvider.disconnect();
+      wsProvider.destroy();
       void localPersist.destroy();
       ydoc.destroy();
       providerRef.current = null;
     };
   }, [documentId]);
 
-  return { ydocRef, providerRef };
+  return { ydocRef, providerRef, connected };
 }

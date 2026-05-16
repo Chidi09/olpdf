@@ -1,0 +1,16 @@
+{
+  "name": "collab-server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
+    "ws": "^8.18.1",
+    "y-leveldb": "^0.1.2",
+    "y-websocket": "^2.0.0",
+    "yjs": "^13.6.24"
+  }
+}

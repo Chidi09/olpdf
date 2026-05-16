@@ -8,7 +8,7 @@ import pdfplumber
 from ...core.supabase_client import supabase
 from ...core.security import sanitize_document_model
 from ...engine.extractor import extract_page_blocks_from_pdf
-from ...services.ocr_service import ocr_pages_with_gemini
+from ...services.ocr_service import ocr_document
 
 logger = logging.getLogger("olpdf-api.import")
 
@@ -122,11 +122,11 @@ async def _route_pdf_import_inner(
     vision_blocks: List[Dict[str, Any]] = []
     if pages_needing_vision:
         logger.info(
-            "document %s: %d pages need Gemini Vision OCR: %s",
+            "document %s: %d pages need OCR: %s",
             document_id, len(pages_needing_vision), pages_needing_vision,
         )
         _safe_update_document(document_id, {"import_progress": 82})
-        vision_blocks = await ocr_pages_with_gemini(file_bytes, pages_needing_vision)
+        vision_blocks = await ocr_document(file_bytes, document_id, pages_needing_vision)
 
     # ── Phase 3: Merge blocks in page order and persist ───────────────────────
     all_blocks = sorted(

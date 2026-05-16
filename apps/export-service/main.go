@@ -19,8 +19,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/go-pdf/fpdf"
 )
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -68,6 +66,7 @@ type Block struct {
 	Alignment   string      `json:"alignment"`
 	ZIndex      int         `json:"z_index"`
 	TableData   *TableData  `json:"table_data"`
+	AltText     string      `json:"alt_text,omitempty"`
 }
 
 type TableData struct {
@@ -143,7 +142,6 @@ func hexToRGB(hex string) (int, int, int) {
 	return r, g, b
 }
 
-// normalizeFontFamily maps any font name to one of fpdf's built-in core fonts.
 func normalizeFontFamily(family string) string {
 	f := strings.ToLower(family)
 	switch {
@@ -188,34 +186,15 @@ func blockAlign(alignment string) string {
 	}
 }
 
-func pageSize(dims map[int]PageDimension, idx int) fpdf.SizeType {
+func pageSize(dims map[int]PageDimension, idx int) (float64, float64) {
 	if d, ok := dims[idx]; ok && d.Width > 0 {
-		return fpdf.SizeType{Wd: d.Width, Ht: d.Height}
+		return d.Width, d.Height
 	}
-	return fpdf.SizeType{Wd: 595.28, Ht: 841.89} // A4 default
-}
-
-func setTextColor(pdf *fpdf.Fpdf, fm *FontMeta) {
-	if fm == nil || fm.Color == "" {
-		pdf.SetTextColor(0, 0, 0)
-		return
-	}
-	r, g, b := hexToRGB(fm.Color)
-	pdf.SetTextColor(r, g, b)
-}
-
-func setFont(pdf *fpdf.Fpdf, fm *FontMeta) {
-	family := "Helvetica"
-	if fm != nil && fm.Family != "" {
-		family = normalizeFontFamily(fm.Family)
-	}
-	pdf.SetFont(family, fontStyle(fm), fontSize(fm))
+	return 595.28, 841.89 // A4 default
 }
 
 // ── Font metrics helpers ──────────────────────────────────────────────────────
 
-// cssFontKey builds the CSS font string used as key in the browser FontMetricsTable.
-// Matches the _cssFont() format from apps/web/engine/fontMetrics.ts.
 func cssFontKey(family string, isBold, isItalic bool, size float64) string {
 	style := "normal"
 	if isItalic {
@@ -228,8 +207,6 @@ func cssFontKey(family string, isBold, isItalic bool, size float64) string {
 	return fmt.Sprintf(`%s %s %gpx "%s"`, style, weight, size, family)
 }
 
-// measureWithMetrics returns a word's width in PDF points using the browser-measured
-// font metric table, or -1 when the key or any character is missing (caller falls back).
 func measureWithMetrics(text string, key string, metrics map[string]map[string]float64) float64 {
 	if len(metrics) == 0 {
 		return -1
@@ -246,7 +223,7 @@ func measureWithMetrics(text string, key string, metrics map[string]map[string]f
 		}
 		total += w
 	}
-	return total * 0.75 // convert browser px (96 dpi) → PDF pts (72 dpi)
+	return total * 0.75
 }
 
 // ── Rich span tokeniser ───────────────────────────────────────────────────────
@@ -270,182 +247,14 @@ func tokenizeText(s string) []string {
 	return tokens
 }
 
-// renderRichSpans renders inline-formatted text using per-span font settings.
-// Falls back to pdf.MultiCell when RichSpans is empty.
-// Returns true if spans were rendered, false if the caller should fall back.
-func renderRichSpans(pdf *fpdf.Fpdf, spans []RichSpan, x0, y0, cellW, lh float64, defaultFM *FontMeta, align string, metrics map[string]map[string]float64) bool {
-	if len(spans) == 0 {
-		return false
-	}
-
-	curX := x0
-	curY := y0
-	firstOnLine := true
-
-	for _, span := range spans {
-		if span.Text == "" {
-			continue
-		}
-
-		// Determine per-span font attributes
-		style := ""
-		isBold := span.Bold || (defaultFM != nil && defaultFM.IsBold)
-		isItalic := span.Italic || (defaultFM != nil && defaultFM.IsItalic)
-		if isBold {
-			style += "B"
-		}
-		if isItalic {
-			style += "I"
-		}
-		if span.Underline {
-			style += "U"
-		}
-
-		rawFamily := "Helvetica"
-		if span.FontFamily != "" {
-			rawFamily = span.FontFamily
-		} else if defaultFM != nil && defaultFM.Family != "" {
-			rawFamily = defaultFM.Family
-		}
-		family := normalizeFontFamily(rawFamily)
-
-		sz := fontSize(defaultFM)
-		if span.FontSize > 0 {
-			sz = span.FontSize
-		}
-
-		pdf.SetFont(family, style, sz)
-
-		col := "#111111"
-		if span.Color != "" {
-			col = span.Color
-		} else if defaultFM != nil && defaultFM.Color != "" {
-			col = defaultFM.Color
-		}
-		r, g, b := hexToRGB(col)
-		pdf.SetTextColor(r, g, b)
-
-		metricsKey := cssFontKey(rawFamily, isBold, isItalic, sz)
-		spaceW := pdf.GetStringWidth(" ")
-		if mw := measureWithMetrics(" ", metricsKey, metrics); mw >= 0 {
-			spaceW = mw
-		}
-		tokens := tokenizeText(span.Text)
-
-		for _, tok := range tokens {
-			isSpace := strings.TrimSpace(tok) == ""
-			if isSpace {
-				if !firstOnLine {
-					tokSpW := pdf.GetStringWidth(tok)
-					if mw := measureWithMetrics(tok, metricsKey, metrics); mw >= 0 {
-						tokSpW = mw
-					}
-					curX += tokSpW
-				}
-				continue
-			}
-
-			tokW := pdf.GetStringWidth(tok)
-			if mw := measureWithMetrics(tok, metricsKey, metrics); mw >= 0 {
-				tokW = mw
-			}
-			// Line-wrap: if the word doesn't fit and we're not at the start of the line
-			if !firstOnLine && curX+spaceW+tokW > x0+cellW {
-				curX = x0
-				curY += lh
-				firstOnLine = true
-			}
-
-			if !firstOnLine {
-				curX += spaceW
-			}
-
-			pdf.SetXY(curX, curY)
-			// Always use pdf.GetStringWidth for the actual cell width (rendering)
-			renderW := pdf.GetStringWidth(tok)
-			pdf.CellFormat(renderW, lh, tok, "", 0, "L", false, 0, "")
-			curX += tokW
-			firstOnLine = false
-		}
-	}
-	return true
-}
-
-// ── Table renderer ────────────────────────────────────────────────────────────
-
-func renderTable(pdf *fpdf.Fpdf, td *TableData, x0, y0, tableW, tableH float64) {
-	if td == nil {
-		return
-	}
-	allRows := [][]string{}
-	if len(td.Headers) > 0 {
-		allRows = append(allRows, td.Headers)
-	}
-	allRows = append(allRows, td.Rows...)
-	if len(allRows) == 0 {
-		return
-	}
-
-	numRows := len(allRows)
-	numCols := 0
-	for _, row := range allRows {
-		if len(row) > numCols {
-			numCols = len(row)
-		}
-	}
-	if numCols == 0 {
-		return
-	}
-
-	cellW := tableW / float64(numCols)
-	cellH := tableH / float64(numRows)
-	if cellH < 10 {
-		cellH = 10
-	}
-
-	for rowIdx, row := range allRows {
-		isHeader := rowIdx == 0 && len(td.Headers) > 0
-		for colIdx := 0; colIdx < numCols; colIdx++ {
-			cx := x0 + float64(colIdx)*cellW
-			cy := y0 + float64(rowIdx)*cellH
-
-			pdf.SetDrawColor(148, 163, 184)
-			if isHeader {
-				pdf.SetFillColor(226, 232, 240)
-			} else {
-				pdf.SetFillColor(255, 255, 255)
-			}
-			pdf.Rect(cx, cy, cellW, cellH, "FD")
-
-			cell := ""
-			if colIdx < len(row) {
-				cell = row[colIdx]
-			}
-			if cell == "" {
-				continue
-			}
-			pdf.SetTextColor(17, 24, 39)
-			style := ""
-			if isHeader {
-				style = "B"
-			}
-			pdf.SetFont("Helvetica", style, 8)
-			pdf.SetXY(cx+2, cy+cellH/2-4)
-			pdf.CellFormat(cellW-4, 8, cell, "", 0, "L", false, 0, "")
-		}
-	}
-}
-
 // ── Fidelity export (coordinate-based — preserves exact bounding boxes) ───────
 
 func exportFidelity(model DocumentModel, metrics map[string]map[string]float64) ([]byte, error) {
-	// Build page dimension index
 	dims := map[int]PageDimension{}
 	for _, d := range model.PageDimensions {
 		dims[d.PageIndex] = d
 	}
 
-	// Group content blocks by page
 	byPage := map[int][]Block{}
 	for _, b := range model.Blocks {
 		if b.Type != "table" && b.Type != "shape" && strings.TrimSpace(b.Content) == "" {
@@ -459,18 +268,19 @@ func exportFidelity(model DocumentModel, metrics map[string]map[string]float64) 
 		pages = []int{0}
 	}
 
-	first := pageSize(dims, pages[0])
-	pdf := fpdf.NewCustom(&fpdf.InitType{UnitStr: "pt", Size: first})
-	pdf.SetTitle(model.Meta.Title, false)
-	pdf.SetAuthor(model.Meta.Author, false)
-	pdf.SetCreator("OLPDF Export Service", false)
+	pw, ph := pageSize(dims, pages[0])
+	pdf, err := newPDFWriter(pw, ph)
+	if err != nil {
+		return nil, fmt.Errorf("create pdf: %w", err)
+	}
+	pdf.setTitle(model.Meta.Title)
+	pdf.setAuthor(model.Meta.Author)
+	pdf.setCreator("OLPDF Export Service")
 
 	for i, pi := range pages {
-		sz := pageSize(dims, pi)
-		if i == 0 {
-			pdf.AddPageFormat("P", sz)
-		} else {
-			pdf.AddPageFormat("P", sz)
+		if i > 0 {
+			pw, ph = pageSize(dims, pi)
+			pdf.addPage(pw, ph)
 		}
 
 		blocks := byPage[pi]
@@ -495,7 +305,7 @@ func exportFidelity(model DocumentModel, metrics map[string]map[string]float64) 
 			y1 := block.BoundingBox[3]
 
 			if block.Type == "shape" {
-				renderShape(pdf, block, x0, y0, x1, y1)
+				pdf.renderShape(block, x0, y0, x1, y1)
 				continue
 			}
 
@@ -503,59 +313,36 @@ func exportFidelity(model DocumentModel, metrics map[string]map[string]float64) 
 				tableW := x1 - x0
 				tableH := y1 - y0
 				if tableW <= 0 {
-					tableW = sz.Wd - x0 - 36
+					tableW = pw - x0 - 36
 				}
 				if tableH <= 0 {
 					tableH = 80
 				}
-				renderTable(pdf, block.TableData, x0, y0, tableW, tableH)
+				pdf.renderTable(block.TableData, x0, y0, tableW, tableH)
 				continue
 			}
 
 			cellW := x1 - x0
 			if cellW <= 0 {
-				cellW = sz.Wd - x0 - 36
+				cellW = pw - x0 - 36
 			}
 
-			setFont(pdf, block.FontMeta)
-			setTextColor(pdf, block.FontMeta)
+			pdf.applyFont(block.FontMeta)
+			pdf.applyTextColor(block.FontMeta)
 
 			lh := fontSize(block.FontMeta) * 1.25
 			if block.Spacing != nil && block.Spacing.LineHeight > 0 {
 				lh = block.Spacing.LineHeight
 			}
 
-			if !renderRichSpans(pdf, block.RichSpans, x0, y0, cellW, lh, block.FontMeta, block.Alignment, metrics) {
-				pdf.SetXY(x0, y0)
-				pdf.MultiCell(cellW, lh, block.Content, "", blockAlign(block.Alignment), false)
+			if !pdf.renderRichSpans(block.RichSpans, x0, y0, cellW, lh, block.FontMeta, block.Alignment, metrics) {
+				pdf.setXY(x0, y0)
+				pdf.multiCell(cellW, lh, block.Content, "", blockAlign(block.Alignment), false)
 			}
 		}
 	}
 
-	var buf bytes.Buffer
-	if err := pdf.Output(&buf); err != nil {
-		return nil, fmt.Errorf("fidelity output: %w", err)
-	}
-	return buf.Bytes(), nil
-}
-
-// ── Shape rendering ────────────────────────────────────────────────────────────
-
-func renderShape(pdf *fpdf.Fpdf, block Block, x0, y0, x1, y1 float64) {
-	w := x1 - x0
-	h := y1 - y0
-	if w <= 0 || h <= 0 {
-		return
-	}
-
-	r, g, b := 200, 200, 200
-	if block.FontMeta != nil && block.FontMeta.Color != "" {
-		r, g, b = hexToRGB(block.FontMeta.Color)
-	}
-
-	pdf.SetDrawColor(r, g, b)
-	pdf.SetFillColor(r, g, b)
-	pdf.Rect(x0, y0, w, h, "D")
+	return pdf.output()
 }
 
 // ── Flow export (reading order — used for PDF/A and Tagged PDF) ───────────────
@@ -573,26 +360,21 @@ func exportFlow(model DocumentModel, mode string, metrics map[string]map[string]
 		dims[d.PageIndex] = d
 	}
 
-	first := pageSize(dims, 0)
-	pdf := fpdf.NewCustom(&fpdf.InitType{UnitStr: "pt", Size: first})
-
-	pdf.SetTitle(model.Meta.Title, false)
-	pdf.SetAuthor(model.Meta.Author, false)
-	pdf.SetCreator("OLPDF Export Service", false)
-	pdf.SetSubject("OLPDF "+strings.ToUpper(mode)+" Export", false)
-
-	if mode == "pdfa" {
-		// Embed XMP metadata stub for PDF/A-1b conformance marker
-		pdf.SetProducer("OLPDF PDF/A-1b", false)
+	pw, ph := pageSize(dims, 0)
+	pdf, err := newPDFWriter(pw, ph)
+	if err != nil {
+		return nil, fmt.Errorf("create pdf: %w", err)
 	}
 
-	pdf.SetMargins(marginL, marginT, marginR)
-	pdf.SetAutoPageBreak(true, marginB)
-	pdf.AddPage()
+	pdf.setTitle(model.Meta.Title)
+	pdf.setAuthor(model.Meta.Author)
+	pdf.setCreator("OLPDF Export Service")
+	pdf.setSubject("OLPDF " + strings.ToUpper(mode) + " Export")
+	pdf.setMargins(marginL, marginT, marginR)
+	pdf.setAutoPageBreak(true, marginB)
 
-	usableW := first.Wd - marginL - marginR
+	usableW := pw - marginL - marginR
 
-	// Sort all content blocks by page then y
 	sorted := make([]Block, 0, len(model.Blocks))
 	for _, b := range model.Blocks {
 		if b.Type != "table" && b.Type != "shape" && strings.TrimSpace(b.Content) == "" {
@@ -620,11 +402,10 @@ func exportFlow(model DocumentModel, mode string, metrics map[string]map[string]
 
 	for _, block := range sorted {
 		if block.Type == "shape" && len(block.BoundingBox) >= 4 {
-			renderShape(pdf, block, block.BoundingBox[0], block.BoundingBox[1], block.BoundingBox[2], block.BoundingBox[3])
+			pdf.renderShape(block, block.BoundingBox[0], block.BoundingBox[1], block.BoundingBox[2], block.BoundingBox[3])
 			continue
 		}
 		if block.Type == "table" && block.TableData != nil {
-			// Estimate table height: min 10pt per row, up to page usable height
 			numRows := len(block.TableData.Rows)
 			if len(block.TableData.Headers) > 0 {
 				numRows++
@@ -633,14 +414,14 @@ func exportFlow(model DocumentModel, mode string, metrics map[string]map[string]
 				numRows = 1
 			}
 			tableH := float64(numRows) * 14.0
-			x, y := pdf.GetXY()
-			renderTable(pdf, block.TableData, x, y, usableW, tableH)
-			pdf.SetY(y + tableH + 8)
+			x, y := pdf.getXY()
+			pdf.renderTable(block.TableData, x, y, usableW, tableH)
+			pdf.setY(y + tableH + 8)
 			continue
 		}
 
-		setFont(pdf, block.FontMeta)
-		setTextColor(pdf, block.FontMeta)
+		pdf.applyFont(block.FontMeta)
+		pdf.applyTextColor(block.FontMeta)
 
 		lh := fontSize(block.FontMeta) * 1.25
 		if block.Spacing != nil && block.Spacing.LineHeight > 0 {
@@ -651,39 +432,46 @@ func exportFlow(model DocumentModel, mode string, metrics map[string]map[string]
 			marginAfter = block.Spacing.MarginBottom
 		}
 
-		x, y := pdf.GetXY()
-		if !renderRichSpans(pdf, block.RichSpans, x, y, usableW, lh, block.FontMeta, block.Alignment, metrics) {
-			pdf.MultiCell(usableW, lh, block.Content, "", blockAlign(block.Alignment), false)
+		x, y := pdf.getXY()
+		if !pdf.renderRichSpans(block.RichSpans, x, y, usableW, lh, block.FontMeta, block.Alignment, metrics) {
+			pdf.multiCell(usableW, lh, block.Content, "", blockAlign(block.Alignment), false)
 		} else {
-			// After span rendering, move the cursor past the block
-			_, curY := pdf.GetXY()
-			pdf.SetY(curY + lh)
+			_, curY := pdf.getXY()
+			pdf.setY(curY + lh)
 		}
-		pdf.Ln(marginAfter)
+		pdf.ln(marginAfter)
 	}
 
-	var buf bytes.Buffer
-	if err := pdf.Output(&buf); err != nil {
-		return nil, fmt.Errorf("flow output: %w", err)
+	raw, err := pdf.output()
+	if err != nil {
+		return nil, err
 	}
-	return buf.Bytes(), nil
+
+	if mode == "tagged" {
+		taggedBuf, err := InjectPDFUA(bytes.NewBuffer(raw))
+		if err != nil {
+			return nil, fmt.Errorf("tagged pdf: %w", err)
+		}
+		return taggedBuf.Bytes(), nil
+	}
+
+	return raw, nil
 }
 
 // ── Image export (per-page JPEG → ZIP) ───────────────────────────────────────
 
-// blockColor returns a fill colour keyed by block type for rasterised pages.
 func blockColor(blockType string) color.RGBA {
 	switch blockType {
 	case "heading":
-		return color.RGBA{30, 41, 59, 255}    // dark slate
+		return color.RGBA{30, 41, 59, 255}
 	case "table":
-		return color.RGBA{226, 232, 240, 255} // light blue-gray
+		return color.RGBA{226, 232, 240, 255}
 	case "image":
-		return color.RGBA{199, 210, 254, 255} // indigo tint
+		return color.RGBA{199, 210, 254, 255}
 	case "form_field":
-		return color.RGBA{167, 243, 208, 255} // mint
+		return color.RGBA{167, 243, 208, 255}
 	default:
-		return color.RGBA{51, 51, 51, 255}    // near-black for body text
+		return color.RGBA{51, 51, 51, 255}
 	}
 }
 
@@ -691,14 +479,13 @@ func exportImages(model DocumentModel, dpi int) ([]byte, error) {
 	if dpi <= 0 {
 		dpi = 96
 	}
-	scale := float64(dpi) / 72.0 // PDF points → pixels
+	scale := float64(dpi) / 72.0
 
 	dims := map[int]PageDimension{}
 	for _, d := range model.PageDimensions {
 		dims[d.PageIndex] = d
 	}
 
-	// Collect unique page indices present in the model.
 	pageSet := map[int]bool{0: true}
 	for _, b := range model.Blocks {
 		pageSet[b.PageIndex] = true
@@ -713,9 +500,9 @@ func exportImages(model DocumentModel, dpi int) ([]byte, error) {
 	zw := zip.NewWriter(&zipBuf)
 
 	for _, pi := range pageIndices {
-		sz := pageSize(dims, pi)
-		imgW := int(sz.Wd * scale)
-		imgH := int(sz.Ht * scale)
+		pw, ph := pageSize(dims, pi)
+		imgW := int(pw * scale)
+		imgH := int(ph * scale)
 		if imgW <= 0 {
 			imgW = int(595.28 * scale)
 		}
@@ -726,7 +513,6 @@ func exportImages(model DocumentModel, dpi int) ([]byte, error) {
 		img := image.NewRGBA(image.Rect(0, 0, imgW, imgH))
 		draw.Draw(img, img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
 
-		// Sort blocks by z_index so stacking order is correct.
 		pageBlocks := make([]Block, 0)
 		for _, b := range model.Blocks {
 			if b.PageIndex == pi {
@@ -753,10 +539,8 @@ func exportImages(model DocumentModel, dpi int) ([]byte, error) {
 			blockRect := image.Rect(x0, y0, x1, y1)
 
 			if block.Type == "table" || block.Type == "image" || block.Type == "form_field" {
-				// Solid fill for non-text blocks.
 				draw.Draw(img, blockRect, &image.Uniform{fc}, image.Point{}, draw.Src)
 			} else if strings.TrimSpace(block.Content) != "" {
-				// Simulate text lines as filled rectangles.
 				lineH := int(fontSize(block.FontMeta) * scale * 1.25)
 				if lineH < 3 {
 					lineH = 3
@@ -927,7 +711,6 @@ func main() {
 	mux.HandleFunc("/export/images",   handleImages)
 	mux.HandleFunc("/export/layout",   handleLayoutExport)
 
-	// Toolkit operations (routed from BFF when Go service is available)
 	mux.HandleFunc("/toolkit/merge",          handleMerge)
 	mux.HandleFunc("/toolkit/split",          handleSplit)
 	mux.HandleFunc("/toolkit/compress",       handleCompress)

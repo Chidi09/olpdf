@@ -59,6 +59,30 @@ export interface WasmBridgeOutput {
   }>;
 }
 
+export function normalizeStreamingBlock(
+  block: WasmBridgeOutput["blocks"][number],
+): PdfNativeObject {
+  return {
+    id: block.object_id,
+    pageIndex: block.page_index,
+    type: block.type === "list_item" ? "list_item" : "text",
+    bbox: block.bounding_box,
+    text: block.content,
+    fontFamily: block.font_meta?.family,
+    fontSize: block.font_meta?.size,
+    color: block.font_meta?.color,
+    zIndex: block.z_index,
+    sourceRef: block.source_ref,
+    rich_spans: block.rich_spans.map(s => ({
+      ...s,
+      vertical_align: s.vertical_align as "super" | "sub" | undefined
+    })),
+    bullet: block.bullet,
+    is_invisible: block.is_invisible,
+    alignment: block.alignment as "left" | "center" | "right" | "justify",
+  };
+}
+
 export function normalizeWasmResult(result: WasmBridgeOutput, documentId: string, originalObjectKey: string): PdfEditSession {
   if (result.metrics) {
     console.info("[pdf-wasm] parse metrics:", {

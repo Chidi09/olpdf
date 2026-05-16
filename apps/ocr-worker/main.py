@@ -16,7 +16,7 @@ import cv2
 import fitz  # PyMuPDF
 import httpx
 import numpy as np
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from paddleocr import PaddleOCR
 from supabase import create_client
@@ -237,6 +237,89 @@ async def process_ocr(request: Request, background_tasks: BackgroundTasks) -> di
 
     background_tasks.add_task(_process_ocr_pages, document_id, [int(p) for p in page_indices])
     return {"status": "accepted"}
+
+
+@app.post("/worker/ocr-sync")
+async def ocr_sync(
+    request: Request,
+    document_id: str = Form(""),
+    page_indices: str = Form("[]"),
+    pdf: UploadFile = File(...),
+) -> dict:
+    """Synchronous OCR endpoint — accepts PDF upload and returns blocks inline.
+
+    Uses multipart form data:
+      - pdf: the PDF file
+      - document_id: string identifier (for logging)
+      - page_indices: JSON array of page indices to process
+    """
+    if not _verify_secret(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    indices: list[int] = json.loads(page_indices) if page_indices else []
+    if not isinstance(indices, list) or not indices:
+        return {"status": "completed", "document_id": document_id, "blocks": [], "failed_pages": []}
+
+    pdf_bytes = await pdf.read()
+    pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    zoom = 2.0
+    ocr_blocks: list[dict] = []
+    failed_pages: list[int] = []
+
+    for idx in indices:
+        if idx < 0 or idx >= len(pdf_doc):
+            continue
+        try:
+            page = pdf_doc[idx]
+            pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
+            if pix.n == 3:
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            elif pix.n == 4:
+                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+
+            result = ocr_engine.ocr(img, cls=True)
+            if not result or not result[0]:
+                continue
+
+            for line_idx, line in enumerate(result[0]):
+                box = line[0]
+                text = str(line[1][0]).strip()
+                confidence = float(line[1][1])
+                if not text:
+                    continue
+
+                xs = [p[0] for p in box]
+                ys = [p[1] for p in box]
+                bbox = [min(xs) / zoom, min(ys) / zoom, max(xs) / zoom, max(ys) / zoom]
+
+                ocr_blocks.append({
+                    "id": f"blk_ocr_{idx}_{line_idx}",
+                    "type": _infer_block_type(text, bbox),
+                    "content": text,
+                    "confidence_score": confidence,
+                    "needs_review": confidence < 0.8,
+                    "bounding_box": bbox,
+                    "style_overrides": {},
+                    "font_meta": _estimate_font_meta(bbox),
+                    "z_index": 0,
+                    "page_index": idx,
+                })
+        except Exception as e:
+            logger.error("Page %d OCR sync failed for document %s: %s", idx, document_id, e, exc_info=True)
+            failed_pages.append(idx)
+
+    pdf_doc.close()
+    logger.info(
+        "OCR sync: document %s pages=%d blocks=%d failed=%d",
+        document_id, len(indices), len(ocr_blocks), len(failed_pages),
+    )
+    return {
+        "status": "completed",
+        "document_id": document_id,
+        "blocks": ocr_blocks,
+        "failed_pages": failed_pages,
+    }
 
 
 @app.get("/health")

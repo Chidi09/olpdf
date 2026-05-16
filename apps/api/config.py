@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     # Monitoring
     sentry_dsn: str = ""
 
+    # OCR
+    ocr_worker_url: str = ""
+    ocr_confidence_threshold: float = 0.85
+    ocr_batch_page_threshold: int = 50
+    ocr_paddle_timeout: int = 120
+    ocr_gemini_max_concurrency: int = 8
+
     # Dev
     olpdf_dev_mode: bool = False
 

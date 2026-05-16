@@ -128,4 +128,9 @@ export class PdfDocument {
   serializeIncremental(original: ArrayBuffer): Uint8Array {
     return this.handle.serialize_incremental(new Uint8Array(original)) as Uint8Array;
   }
+
+  static async preflightStreaming(bytes: ArrayBuffer): Promise<{ totalPages: number; chunkSize: number }> {
+    const wasm = await getWasm();
+    return wasm.preflight_streaming(new Uint8Array(bytes)) as { totalPages: number; chunkSize: number };
+  }
 }

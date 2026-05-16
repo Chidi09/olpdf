@@ -6,80 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/go-pdf/fpdf"
 )
-
-// renderLayoutObjects renders layout objects onto a new PDF page.
-func renderLayoutObjects(pdf *fpdf.Fpdf, page LayoutPage) error {
-	for _, obj := range page.Objects {
-		if err := renderLayoutObject(pdf, obj); err != nil {
-			return fmt.Errorf("render object %s: %w", obj.ID, err)
-		}
-	}
-	return nil
-}
-
-func renderLayoutObject(pdf *fpdf.Fpdf, obj LayoutObject) error {
-	switch obj.Type {
-	case "text":
-		family := normalizeFontFamily(obj.FontFamily)
-		style := ""
-		size := obj.FontSize
-		if size <= 0 {
-			size = 11
-		}
-		pdf.SetFont(family, style, size)
-		r, g, b := hexToRGB(obj.Fill)
-		if obj.Fill == "" {
-			r, g, b = 0, 0, 0
-		}
-		pdf.SetTextColor(r, g, b)
-		pdf.SetXY(obj.X, obj.Y)
-		cellW := obj.Width
-		if cellW <= 0 {
-			cellW = 200
-		}
-		pdf.MultiCell(cellW, size*1.25, pdf.UnicodeTranslatorFromDescriptor("")(obj.Content), "", "", false)
-
-	case "rect", "roundedRect":
-		pdf.SetDrawColor(0, 0, 0)
-		pdf.SetFillColor(255, 255, 255)
-		if obj.Stroke != "" {
-			r, g, b := hexToRGB(obj.Stroke)
-			pdf.SetDrawColor(r, g, b)
-		}
-		if obj.Fill != "" && obj.Fill != "transparent" {
-			r, g, b := hexToRGB(obj.Fill)
-			pdf.SetFillColor(r, g, b)
-			pdf.Rect(obj.X, obj.Y, obj.Width, obj.Height, "FD")
-		} else {
-			pdf.Rect(obj.X, obj.Y, obj.Width, obj.Height, "D")
-		}
-
-	case "ellipse":
-		pdf.SetDrawColor(0, 0, 0)
-		pdf.SetFillColor(255, 255, 255)
-		if obj.Stroke != "" {
-			r, g, b := hexToRGB(obj.Stroke)
-			pdf.SetDrawColor(r, g, b)
-		}
-		if obj.Fill != "" && obj.Fill != "transparent" {
-			r, g, b := hexToRGB(obj.Fill)
-			pdf.SetFillColor(r, g, b)
-		}
-		pdf.Ellipse(obj.X+obj.Width/2, obj.Y+obj.Height/2, obj.Width/2, obj.Height/2, 0, "FD")
-
-	case "line", "arrow":
-		pdf.SetDrawColor(0, 0, 0)
-		if obj.Stroke != "" {
-			r, g, b := hexToRGB(obj.Stroke)
-			pdf.SetDrawColor(r, g, b)
-		}
-		pdf.Line(obj.X, obj.Y, obj.X+obj.Width, obj.Y+obj.Height)
-	}
-	return nil
-}
 
 func handleLayoutExport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -105,39 +32,53 @@ func handleLayoutExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pdf := fpdf.New("P", "pt", "", "")
-
-	for _, page := range req.LayoutPayload.Pages {
-		pw := page.Width
-		ph := page.Height
-		if pw <= 0 {
-			pw = 595.28
+	pw := 595.28
+	ph := 841.89
+	if len(req.LayoutPayload.Pages) > 0 {
+		p := req.LayoutPayload.Pages[0]
+		if p.Width > 0 {
+			pw = p.Width
 		}
-		if ph <= 0 {
-			ph = 841.89
+		if p.Height > 0 {
+			ph = p.Height
 		}
-		pdf.AddPageFormat("", fpdf.SizeType{Wd: pw, Ht: ph})
+	}
 
-		if err := renderLayoutObjects(pdf, page); err != nil {
+	pdf, err := newPDFWriter(pw, ph)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("PDF init failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if r.URL.Query().Get("tagged") == "true" {
+		pdf.setTagged(true)
+	}
+
+	for i, page := range req.LayoutPayload.Pages {
+		if i > 0 {
+			pw2 := page.Width
+			ph2 := page.Height
+			if pw2 <= 0 {
+				pw2 = 595.28
+			}
+			if ph2 <= 0 {
+				ph2 = 841.89
+			}
+			pdf.addPage(pw2, ph2)
+		}
+
+		if err := pdf.renderLayoutObjects(page); err != nil {
 			http.Error(w, fmt.Sprintf("Render error: %v", err), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	outputPath := fmt.Sprintf("/tmp/layout-export-%d.pdf", os.Getpid())
-	if err := pdf.OutputFileAndClose(outputPath); err != nil {
+	pdfBytes, err := pdf.output()
+	if err != nil {
 		http.Error(w, fmt.Sprintf("PDF generation failed: %v", err), http.StatusInternalServerError)
 		return
 	}
-	defer os.Remove(outputPath)
 
-	pdfBytes, err := os.ReadFile(outputPath)
-	if err != nil {
-		http.Error(w, "Failed to read output", http.StatusInternalServerError)
-		return
-	}
-
-	// If async requested, handle via job system
 	async := r.URL.Query().Get("async")
 	if async == "true" {
 		jobID := r.URL.Query().Get("job_id")

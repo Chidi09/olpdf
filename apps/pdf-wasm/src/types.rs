@@ -189,6 +189,12 @@ pub struct PreflightResult {
     pub page_dimensions: Vec<WasmPageDimension>,
 }
 
+#[derive(Serialize)]
+pub struct StreamingMetrics {
+    pub total_pages: usize,
+    pub chunk_size: usize,
+}
+
 pub struct PageFontInfo {
     pub unicode_map: HashMap<u16, char>,
     pub widths: Vec<f64>,

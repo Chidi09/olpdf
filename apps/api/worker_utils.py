@@ -252,36 +252,40 @@ async def route_pdf_import(file_bytes: bytes, document_id: str, layout_mode: str
             "status": "partial" if pages_needing_ocr else "ready"
         })
 
-    # Dispatch OCR jobs via QStash if needed
+    # Run OCR via smart router (PaddleOCR for simple pages, Gemini for complex)
     if pages_needing_ocr:
-        qstash_token = os.environ.get("QSTASH_TOKEN")
-        worker_url = os.environ.get("MODAL_WORKER_URL")
-        
-        if qstash_token and worker_url:
-            import httpx
-            # QStash v2: destination URL is appended to the publish endpoint
-            destination = f"{worker_url.rstrip('/')}/worker/process-ocr"
-            headers = {
-                "Authorization": f"Bearer {qstash_token}", 
-                "Content-Type": "application/json",
-                "Upstash-Idempotency-Key": f"ocr-{document_id}"
-            }
-            if request_id:
-                headers["Upstash-Forward-X-Request-ID"] = request_id
-                
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    f"https://qstash.upstash.io/v2/publish/{destination}",
-                    headers=headers,
-                    json={
-                        "document_id": document_id,
-                        "page_indices": pages_needing_ocr,
-                        "source": "qstash",
-                    }
-                )
+        from .services.ocr_service import ocr_document
 
-    final_status = "partial" if pages_needing_ocr else "ready"
-    _safe_update_document(document_id, {"status": final_status, "import_progress": 100})
+        logger.info(
+            "document %s: %d pages need OCR via smart router",
+            document_id, len(pages_needing_ocr),
+        )
+        _safe_update_document(document_id, {"import_progress": 85})
+        ocr_blocks = await ocr_document(file_bytes, document_id, pages_needing_ocr)
+        if ocr_blocks:
+            all_blocks = sorted(
+                native_blocks + ocr_blocks,
+                key=lambda b: (b.get("page_index", 0), b.get("id", "")),
+            )
+            try:
+                existing_doc = supabase.table("documents").select("document_model").eq("id", document_id).single().execute()
+                existing_model = existing_doc.data.get("document_model") or {}
+            except Exception:
+                existing_model = {}
+            merged_model = merge_import_model(
+                existing_model,
+                {"blocks": all_blocks, "page_dimensions": page_dimensions},
+                final_status="ready",
+            )
+            sanitized_model = sanitize_document_model(merged_model)
+            _safe_update_document(document_id, {
+                "document_model": sanitized_model,
+                "status": "ready",
+                "import_progress": 95,
+            })
+            pages_needing_ocr = []
+
+    final_status = "ready" if not pages_needing_ocr else "partial"
 
     # Auto-summary on completed imports (best-effort)
     if final_status == "ready":
