@@ -29,8 +29,10 @@ const ready = (async () => {
   preflightFn = mod.preflight_pdf as ParseFn;
   parsePageByIndexFn = mod.parse_page_by_index as StreamingParseFn;
   preflightStreamingFn = mod.preflight_streaming as StreamingPreflightFn;
+  self.postMessage({ type: "init_ok" });
 })().catch((e) => {
   console.error("[pdf-wasm worker] init failed:", e);
+  self.postMessage({ type: "init_error", error: String(e) });
 });
 
 self.onmessage = async (e: MessageEvent<{ id: string; buffer: ArrayBuffer; type?: string; pageIndex?: number }>) => {

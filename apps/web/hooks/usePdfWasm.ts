@@ -20,6 +20,7 @@ export function usePdfWasm() {
   const workerRef = useRef<Worker | null>(null);
   const pending = useRef<Map<string, Resolver>>(new Map());
   const [ready, setReady] = useState(false);
+  const [wasmError, setWasmError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -29,10 +30,15 @@ export function usePdfWasm() {
       { type: "module" }
     );
     workerRef.current = worker;
-    setReady(true);
 
-    worker.onmessage = (e: MessageEvent<{ id: string; result?: unknown; error?: string }>) => {
-      const { id, result, error } = e.data;
+    worker.onmessage = (e: MessageEvent<{ id?: string; type?: string; result?: unknown; error?: string }>) => {
+      const { id, type, result, error } = e.data;
+
+      // Init lifecycle signals — not job responses
+      if (type === "init_ok") { setReady(true); return; }
+      if (type === "init_error") { setWasmError(error ?? "WASM failed to initialise"); return; }
+
+      if (!id) return;
       const p = pending.current.get(id);
       if (!p) return;
       pending.current.delete(id);
@@ -40,7 +46,8 @@ export function usePdfWasm() {
     };
 
     worker.onerror = (err) => {
-      for (const [id, p] of pending.current) {
+      setWasmError(`Worker error: ${err.message}`);
+      for (const [, p] of pending.current) {
         p.reject(new Error(`Worker error: ${err.message}`));
       }
       pending.current.clear();
@@ -50,6 +57,7 @@ export function usePdfWasm() {
       worker.terminate();
       workerRef.current = null;
       setReady(false);
+      setWasmError(null);
     };
   }, []);
 
@@ -83,5 +91,5 @@ export function usePdfWasm() {
     return send(arrayBuffer, "preflight") as Promise<{ page_count: number; page_dimensions: Array<{ page_index: number; width: number; height: number }> }>;
   }, [send]);
 
-  return { parsePdf, preflightPdf, ready };
+  return { parsePdf, preflightPdf, ready, wasmError };
 }
