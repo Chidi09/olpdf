@@ -4,6 +4,7 @@ import type { AiApplyPhase } from "./aiApplyState";
 
 interface AIStatusHelperProps {
   phase: AiApplyPhase;
+  toolLabels?: string;
   onApply?: () => void;
   onViewDiff?: () => void;
   onUndo?: () => void;
@@ -12,9 +13,9 @@ interface AIStatusHelperProps {
 
 const phaseLabels: Record<AiApplyPhase, string> = {
   idle: "",
-  streaming: "AI is generating…",
+  streaming: "AI is generating\u2026",
   staging: "Review suggestion",
-  applying: "Applying edit…",
+  applying: "Applying edit\u2026",
   applied: "Edit applied",
   reverted: "Edit reverted",
 };
@@ -30,6 +31,7 @@ const phaseAccents: Record<AiApplyPhase, string> = {
 
 export default function AIStatusHelper({
   phase,
+  toolLabels,
   onApply,
   onViewDiff,
   onUndo,
@@ -38,6 +40,13 @@ export default function AIStatusHelper({
   if (phase === "idle") return null;
 
   const isActive = phase === "applying" || phase === "streaming";
+  const label = phaseLabels[phase];
+  const detail =
+    phase === "staging" && toolLabels
+      ? toolLabels
+      : phase === "streaming" && toolLabels
+        ? toolLabels
+        : "";
 
   return (
     <div
@@ -47,7 +56,12 @@ export default function AIStatusHelper({
         {isActive && (
           <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" />
         )}
-        <span className="font-medium text-[#ccc]">{phaseLabels[phase]}</span>
+        <span className="font-medium text-[#ccc]">
+          {label}
+          {detail && (
+            <span className="ml-1.5 font-normal text-[#666]">\u2014 {detail}</span>
+          )}
+        </span>
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
@@ -80,7 +94,7 @@ export default function AIStatusHelper({
             onClick={onDismiss}
             className="rounded px-1.5 py-1 text-[10px] text-[#555] transition-colors hover:text-white"
           >
-            ✕
+            \u2715
           </button>
         )}
       </div>

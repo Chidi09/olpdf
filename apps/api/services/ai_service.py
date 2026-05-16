@@ -7,6 +7,7 @@ import google.generativeai as genai
 
 from ..core.supabase_client import supabase
 from .ai_providers import get_provider_for_user, ToolCall as _ToolCall
+from .css_theme_translator import CSSThemeTranslator
 
 GENAI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GENAI_API_KEY:
@@ -31,6 +32,8 @@ _TOOL_DECLARATIONS = [{"function_declarations": [
     {"name": "GenerateTable", "description": "Create a new table block with markdown content after a given block.", "parameters": {"type": "OBJECT", "properties": {"after_block_id": {"type": "STRING"}, "table_markdown": {"type": "STRING"}}, "required": ["after_block_id", "table_markdown"]}},
     {"name": "SetDocMetadata", "description": "Update document-level metadata (title, author).", "parameters": {"type": "OBJECT", "properties": {"title": {"type": "STRING"}, "author": {"type": "STRING"}}, "required": []}},
     {"name": "InsertTOC", "description": "Scan heading blocks and insert a table of contents at the top.", "parameters": {"type": "OBJECT", "properties": {}, "required": []}},
+    {"name": "ApplyTheme", "description": "Apply CSS style rules to all matching block types. Use standard CSS selectors (h1, p, .callout, *). Affects font, color, spacing, alignment document-wide.", "parameters": {"type": "OBJECT", "properties": {"css": {"type": "STRING"}, "theme_name": {"type": "STRING"}}, "required": ["css"]}},
+    {"name": "ReadPageMetrics", "description": "Returns page dimensions and block positions so you can reason spatially before styling.", "parameters": {"type": "OBJECT", "properties": {}, "required": []}},
 ]}]
 
 
@@ -289,6 +292,46 @@ async def apply_tool_call(
                             b["content"] = result
                     except Exception:
                         pass
+
+    elif name == "ApplyTheme":
+        css_text = args.get("css", "")
+        theme_name = args.get("theme_name", "")
+        translator = CSSThemeTranslator()
+        theme_map = translator.translate(css_text)
+        global_rules = theme_map.pop("_global", {})
+        for block in blocks:
+            block_type = block.get("type", "paragraph")
+            rules = dict(global_rules)
+            type_rules = theme_map.get(block_type, {})
+            rules.update(type_rules)
+            if not rules:
+                continue
+            if "font_meta" in rules:
+                existing_fm = block.get("font_meta") or {}
+                existing_fm.update(rules["font_meta"])
+                block["font_meta"] = existing_fm
+            if "alignment" in rules:
+                block["alignment"] = rules["alignment"]
+            if "style_overrides" in rules:
+                existing_so = block.get("style_overrides") or {}
+                existing_so.update(rules["style_overrides"])
+                block["style_overrides"] = existing_so
+        if theme_name:
+            document.setdefault("styles", {})["active_theme"] = theme_name
+
+    elif name == "ReadPageMetrics":
+        metrics = []
+        for b in blocks:
+            metrics.append({
+                "id": b.get("id"),
+                "type": b.get("type"),
+                "page_index": b.get("page_index", 0),
+                "bounding_box": b.get("bounding_box"),
+            })
+        document["_page_metrics"] = {
+            "blocks": metrics,
+            "page_dimensions": document.get("page_dimensions", []),
+        }
 
     return reflow_document(document)
 

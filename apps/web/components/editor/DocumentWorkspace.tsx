@@ -10,6 +10,7 @@ import AiHistoryPanel from "@/components/editor/AiHistoryPanel";
 import { useDocumentQuery, useSaveDocumentMutation } from "@/hooks/useDocumentQueries";
 import { useInstalledPlugins } from "@/hooks/usePlugins";
 import { PluginHost } from "./PluginHost";
+import ThemePanel from "@/components/editor/ThemePanel";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useToastStore } from "@/store/useToastStore";
 import { normalizeDocumentBlocks } from "@/lib/documentTransformers";
@@ -132,6 +133,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     }
   }, [documentQuery.data, documentId, setCurrentModel]);
 
+  const [isChatMode, setIsChatMode] = useState(false);
   const canRunAi = instruction.trim().length > 0 && !isRunningAi;
 
   const runAi = async () => {
@@ -189,6 +191,78 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
     }
   };
 
+  const runSummarize = async () => {
+    setIsRunningAi(true);
+    dispatchAi({ type: "START_STREAMING" });
+    try {
+      const response = await fetch(`/api/bff/ai/documents/${documentId}/summarise`, { method: "POST" });
+      if (!response.ok) throw new Error("Summarize failed");
+      const data = await response.json();
+      const summaryText = data.summary || data.updated_model?.blocks?.[0]?.content || "";
+      if (data.log_id) {
+        setActiveAiLog({
+          id: data.log_id,
+          instruction: "Summarize document",
+          status: "pending_review",
+          created_at: new Date().toISOString(),
+          tool_calls: data.tool_calls || [{ name: "RewriteBlock", args: {} }],
+          diff_snapshot: data.diff_snapshot,
+        });
+      } else if (summaryText) {
+        toast(summaryText, "info");
+      }
+      dispatchAi({ type: "FINISH_STREAMING" });
+    } finally {
+      setIsRunningAi(false);
+    }
+  };
+
+  const runDetectPii = async () => {
+    dispatchAi({ type: "START_STREAMING" });
+    try {
+      const response = await fetch(`/api/bff/ai/documents/${documentId}/detect-pii`, { method: "POST" });
+      if (!response.ok) throw new Error("PII detection failed");
+      const data = await response.json();
+      const count = data.count || data.findings?.length || 0;
+      if (count > 0) {
+        toast(`PII detected in ${count} block${count !== 1 ? "s" : ""}. Check document.`, "info");
+      } else {
+        toast("No PII detected.", "info");
+      }
+    } finally {
+      dispatchAi({ type: "RESET" });
+    }
+  };
+
+  const toolCallSummary = useMemo(() => {
+    if (!activeAiLog?.tool_calls?.length) return "";
+    const names = activeAiLog.tool_calls.map((tc) => {
+      const n = tc.name;
+      if (n === "RewriteBlock") return "Rewrite";
+      if (n === "InsertBlock") return "Insert";
+      if (n === "DeleteBlock") return "Delete";
+      if (n === "ReorderBlocks") return "Reorder";
+      if (n === "ApplyTheme") return "Theme";
+      if (n === "TranslateBlocks") return "Translate";
+      if (n === "MergeBlocks") return "Merge";
+      if (n === "SplitBlock") return "Split";
+      if (n === "DuplicateBlock") return "Duplicate";
+      if (n === "CompressContent") return "Compress";
+      if (n === "ExpandContent") return "Expand";
+      if (n === "ChangeBlockType") return "Change type";
+      if (n === "SetBlockStyle") return "Style";
+      if (n === "SetInlineFormat") return "Format";
+      if (n === "InsertTOC") return "TOC";
+      if (n === "GenerateTable") return "Table";
+      return n;
+    });
+    const counts: Record<string, number> = {};
+    names.forEach((n) => { counts[n] = (counts[n] || 0) + 1; });
+    return Object.entries(counts)
+      .map(([k, v]) => (v > 1 ? `${k} x${v}` : k))
+      .join(", ");
+  }, [activeAiLog?.tool_calls]);
+
   const aiDiff = useMemo(() => {
     if (!activeAiLog?.diff_snapshot) return null;
     return activeAiLog.diff_snapshot;
@@ -231,7 +305,8 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   );
   const [leftTab, setLeftTab] = useState<"outline" | "pages">("outline");
   const [isOutlineOpen, setIsOutlineOpen] = useState(false);
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeRightTab, setActiveRightTab] = useState<"assistant" | "themes">("assistant");
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
   const editorContentRef = useRef<HTMLDivElement>(null);
@@ -537,16 +612,24 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           }
           rightSlot={
             <>
-              <GlassTooltip label={isAssistantOpen ? "Hide assistant" : "Show assistant"}>
+              <GlassTooltip label={isSidebarOpen ? "Hide assistant" : "Show assistant"}>
                 <button
-                  onClick={() => setIsAssistantOpen((open) => !open)}
+                  onClick={() => setIsSidebarOpen((open) => !open)}
                   className={`flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
-                    isAssistantOpen
+                    isSidebarOpen
                       ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
                       : "border-[#333] bg-[#0A0A0A] text-[#888] hover:bg-[#111] hover:text-white"
                   }`}
                 >
                   <SparklesIcon className="h-3.5 w-3.5" /> AI
+                </button>
+              </GlassTooltip>
+              <GlassTooltip label="Scan for PII">
+                <button
+                  onClick={runDetectPii}
+                  className="flex h-8 items-center gap-1 rounded-md border border-[#333] bg-[#0A0A0A] px-2 text-[11px] text-[#888] transition-colors hover:bg-[#111] hover:text-white active:scale-[0.98]"
+                >
+                  PII
                 </button>
               </GlassTooltip>
               <GlassTooltip label="Share" shortcut="⌘S">
@@ -566,6 +649,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         <div className="mx-auto w-full max-w-[1200px] px-4 pt-2">
           <AIStatusHelper
             phase={aiState.phase}
+            toolLabels={toolCallSummary}
             onApply={() => void acceptAi()}
             onViewDiff={() => {}}
             onUndo={() => dispatchAi({ type: "REVERT" })}
@@ -600,59 +684,143 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
 
       <aside
         className={`z-20 flex shrink-0 flex-col border-l border-white/[0.08] bg-[#050505]/90 backdrop-blur-xl transition-[width] duration-300 ${
-          isAssistantOpen ? "w-[300px]" : "w-10"
+          isSidebarOpen ? "w-[300px]" : "w-10"
         }`}
       >
-        {!isAssistantOpen ? (
+        {!isSidebarOpen ? (
           <button
-            onClick={() => setIsAssistantOpen(true)}
+            onClick={() => { setIsSidebarOpen(true); setActiveRightTab("assistant"); }}
             className="flex h-full w-full items-start justify-center px-2 pt-4 text-[#777] transition-colors hover:bg-white/[0.03] hover:text-white"
-            aria-label="Open Gemini assistant"
+            aria-label="Open sidebar"
           >
             <SparklesIcon className="h-4 w-4 text-orange-500/80" />
           </button>
         ) : (
           <>
-        <div className="flex h-12 items-center border-b border-white/[0.06] px-3">
-          <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-          <span className="ml-2 text-xs font-medium text-white/85">Assistant</span>
+        <div className="flex h-12 items-center border-b border-white/[0.06] px-2">
           <button
-            onClick={() => setIsAssistantOpen(false)}
+            onClick={() => setActiveRightTab("assistant")}
+            className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors ${
+              activeRightTab === "assistant"
+                ? "text-white"
+                : "text-[#555] hover:text-white/70"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+            Assistant
+          </button>
+          <button
+            onClick={() => setActiveRightTab("themes")}
+            className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+              activeRightTab === "themes"
+                ? "text-white"
+                : "text-[#555] hover:text-white/70"
+            }`}
+          >
+            Themes
+          </button>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
             className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.04] hover:text-white"
-            aria-label="Collapse Gemini assistant"
+            aria-label="Collapse sidebar"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="space-y-3">
-            <textarea
-              value={instruction}
-              onChange={(e) => setInstruction(e.target.value)}
-              placeholder="Rewrite, summarize, format..."
-              className="min-h-28 w-full resize-none rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2.5 text-sm text-[#ededed] outline-none transition-all placeholder:text-[#555] focus:border-orange-500/50 focus:bg-white/[0.04]"
-            />
+        {activeRightTab === "assistant" ? (
+          <div className="flex-1 overflow-y-auto p-3">
+            <div className="space-y-3">
+              <div className="flex gap-1 rounded-lg border border-white/[0.08] p-0.5">
+                <button
+                  onClick={() => setIsChatMode(false)}
+                  className={`flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors ${
+                    !isChatMode ? "bg-white/10 text-white" : "text-[#555] hover:text-white/70"
+                  }`}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => setIsChatMode(true)}
+                  className={`flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors ${
+                    isChatMode ? "bg-white/10 text-white" : "text-[#555] hover:text-white/70"
+                  }`}
+                >
+                  Q&A
+                </button>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={runAi}
-                disabled={!canRunAi}
-                className="flex-1 rounded-md bg-white px-3 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isRunningAi ? "Generating..." : "Run"}
-              </button>
-              <button
-                onClick={() => setShowHistory(true)}
-                className="rounded-md border border-white/10 px-3 py-2 text-xs font-medium text-[#777] transition-colors hover:border-white/20 hover:text-white"
-              >
-                History
-              </button>
+              <textarea
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value)}
+                placeholder={isChatMode ? "Ask a question about the document..." : "Rewrite, translate, format..."}
+                className="min-h-28 w-full resize-none rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2.5 text-sm text-[#ededed] outline-none transition-all placeholder:text-[#555] focus:border-orange-500/50 focus:bg-white/[0.04]"
+              />
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={isChatMode ? async () => {
+                    setIsRunningAi(true);
+                    try {
+                      const res = await fetch(`/api/bff/ai/documents/${documentId}/chat`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ instruction }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        toast(data.reply || "No response", "info");
+                      }
+                      setInstruction("");
+                    } finally {
+                      setIsRunningAi(false);
+                    }
+                  } : runAi}
+                  disabled={!canRunAi}
+                  className="flex-1 rounded-md bg-white px-3 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isRunningAi ? "Generating..." : isChatMode ? "Ask" : "Run"}
+                </button>
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="rounded-md border border-white/10 px-3 py-2 text-xs font-medium text-[#777] transition-colors hover:border-white/20 hover:text-white"
+                >
+                  History
+                </button>
+              </div>
+
+              {!isChatMode && (
+                <button
+                  onClick={runSummarize}
+                  disabled={isRunningAi}
+                  className="w-full rounded-md border border-white/[0.08] px-3 py-2 text-xs font-medium text-[#777] transition-colors hover:border-white/20 hover:text-white disabled:opacity-40"
+                >
+                  Summarize document
+                </button>
+              )}
+
+              <p className="text-[11px] leading-relaxed text-[#555]">
+                {isChatMode
+                  ? "Ask questions about the document content. No edits are made."
+                  : "AI changes open in review before they touch your document."}
+              </p>
             </div>
-
-            <p className="text-[11px] leading-relaxed text-[#555]">AI changes open in review before they touch your document.</p>
           </div>
-        </div>
+        ) : (
+          <ThemePanel
+            documentId={documentId}
+            currentModel={currentModel}
+            onThemeApplied={(logId) => {
+              setActiveAiLog({
+                id: logId,
+                instruction: "Apply theme",
+                status: "pending_review",
+                created_at: new Date().toISOString(),
+                tool_calls: [{ name: "ApplyTheme", args: {} }],
+              });
+            }}
+          />
+        )}
           </>
         )}
       </aside>
