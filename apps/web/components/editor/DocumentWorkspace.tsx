@@ -42,7 +42,6 @@ import {
 import { InlineSpinner } from "@/components/ui/MicroUI";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
 import EditorCommandBar from "@/components/editor/EditorCommandBar";
-import PdfToolPalette from "@/components/editor/PdfToolPalette";
 
 const CollaborativeEditor = dynamic(() => import("@/components/CollaborativeEditor"), {
   ssr: false,
@@ -655,11 +654,6 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             onUndo={() => dispatchAi({ type: "REVERT" })}
             onDismiss={() => dispatchAi({ type: "RESET" })}
           />
-          {editorSurface === "pdf_canvas" && (
-            <div className="mb-2">
-              <PdfToolPalette mode="editable" />
-            </div>
-          )}
         </div>
 
         <AIApplyEffectsLayer phase={aiState.phase} profile={animationProfile} />
@@ -669,7 +663,7 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               Loading editor
             </div>
           ) : editorSurface === "pdf_canvas" || layoutMode === "fidelity" ? (
-            <FidelityCanvas documentId={documentId} model={currentModel} layoutDocument={layoutDocument ?? undefined} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
+            <FidelityCanvas documentId={documentId} model={currentModel} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
           ) : (
             <CollaborativeEditor
               documentId={documentId}
