@@ -12,9 +12,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download PaddleOCR models so first request isn't cold
-RUN python -c "from paddleocr import PaddleOCR; PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)"
-
 COPY main.py .
 
 EXPOSE 8001
