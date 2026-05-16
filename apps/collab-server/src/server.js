@@ -2,7 +2,7 @@ require('dotenv').config();
 const http = require('http');
 const jwt = require('jsonwebtoken');
 const { WebSocketServer } = require('ws');
-const { setPersistence } = require('y-websocket/bin/utils');
+const { setPersistence, setupWSConnection } = require('y-websocket/bin/utils');
 const { setupPersistence } = require('y-leveldb');
 
 const JWT_SECRET = process.env.JWT_SECRET || '';
@@ -29,9 +29,7 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
-wss.on('connection', (ws, request) => {
-  wss.emit('connection', ws, request);
-});
+wss.on('connection', setupWSConnection);
 
 const LEVELDB_PATH = process.env.LEVELDB_PATH || './data';
 const persistence = setupPersistence(LEVELDB_PATH);

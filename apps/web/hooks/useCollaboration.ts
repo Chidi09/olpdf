@@ -43,20 +43,22 @@ export function useCollaboration(documentId: string, model: DocumentModel) {
     const collabWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || "ws://localhost:1234";
     const supabase = createSupabaseBrowserClient();
 
-    const wsProvider = new WebsocketProvider(
-      collabWsUrl,
-      `olpdf-doc-${documentId}`,
-      ydoc,
-      { connect: false }
-    );
-
-    wsProvider.on("status", (event: { status: string }) => {
-      setConnected(event.status === "connected");
-    });
+    let wsProvider: WebsocketProvider | null = null;
 
     supabase.auth.getSession().then(({ data }) => {
       const token = data.session?.access_token;
       if (token) {
+        wsProvider = new WebsocketProvider(
+          collabWsUrl,
+          `olpdf-doc-${documentId}`,
+          ydoc,
+          { connect: false, params: { token } }
+        );
+
+        wsProvider.on("status", (event: { status: string }) => {
+          setConnected(event.status === "connected");
+        });
+
         const displayName =
           data.session?.user?.user_metadata?.full_name ??
           data.session?.user?.email ??
@@ -66,14 +68,13 @@ export function useCollaboration(documentId: string, model: DocumentModel) {
           color: generateColor(String(wsProvider.awareness.clientID)),
         });
         wsProvider.connect();
+        providerRef.current = wsProvider;
       }
     });
 
-    providerRef.current = wsProvider;
-
     return () => {
-      wsProvider.disconnect();
-      wsProvider.destroy();
+      wsProvider?.disconnect();
+      wsProvider?.destroy();
       void localPersist.destroy();
       ydoc.destroy();
       providerRef.current = null;
