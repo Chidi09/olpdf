@@ -18,7 +18,10 @@ type PdfImage = { name: string; width?: number; height?: number; data: string };
 type PdfMetadata = Record<string, PdfObjectJson>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type WasmModule = { PdfDocument: new (data: Uint8Array) => any };
+type WasmModule = {
+  PdfDocument: new (data: Uint8Array) => any;
+  preflight_streaming: (data: Uint8Array) => { totalPages: number; chunkSize: number };
+};
 
 let wasmModule: WasmModule | undefined;
 

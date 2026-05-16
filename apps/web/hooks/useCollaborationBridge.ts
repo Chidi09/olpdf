@@ -18,7 +18,7 @@ function getOverlays(canvas: Canvas): Map<number, HTMLDivElement> {
   return overlays;
 }
 
-function renderCursors(canvas: Canvas, awareness: Y.Awareness, localID: number) {
+function renderCursors(canvas: Canvas, awareness: WebsocketProvider["awareness"], localID: number) {
   const overlays = getOverlays(canvas);
   const active = new Set<number>();
 
