@@ -621,7 +621,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, onMo
     void fetchExport();
   }, [exportRequest, documentId, onExportComplete, onExportError]);
 
-  useCollaborationBridge(ydocRef, fabricCanvasesRef, scale, saveDebounced);
+  useCollaborationBridge(ydocRef, providerRef, fabricCanvasesRef, scale, saveDebounced);
 
   // ── Apply format commands from the FormatBar ─────────────────────────────
 
