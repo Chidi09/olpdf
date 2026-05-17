@@ -79,6 +79,7 @@ import { reconcileFabricCanvas } from "@/lib/canvas/reconcileFabricCanvas";
 import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
 import { shouldEditFabricTextInPlace } from "@/components/editor/canvasTextEditing";
 import { getActiveToolAfterToolbarClick, shouldInsertToolImmediately } from "@/components/editor/canvasToolBehavior";
+import { applyCommand } from "@/lib/canvas/canvasCommands";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -238,6 +239,8 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
       width: Math.max(right - left, 20),
       height: Math.max(bottom - top, 20),
       stroke, fill, strokeWidth,
+      rx: (fabricData as Record<string, unknown>).rx as number | undefined ?? 0,
+      ry: (fabricData as Record<string, unknown>).ry as number | undefined ?? 0,
     });
   }
   (shape as FabricObjectWithMeta).data = { blockId: block.id, blockType: "shape", shapeType: objType, ...fabricData };
@@ -1268,6 +1271,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   const createCanvasBlockId = () => `blk_canvas_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const addShape = (pageIndex: number, tool: ShapeTool = activeTool) => {
+    if (readOnly) return;
     const canvas = fabricCanvasesRef.current.get(pageIndex);
     if (!canvas || tool === "select" || tool === "draw") return;
 
@@ -1320,95 +1324,135 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       return;
     }
 
+    // ── Insert via model pipeline (document coordinates) ──
+
+    const dispatchBlock = (block: DocumentBlock) => {
+      const nextModel = applyCommand(currentModelRef.current, { type: "insert_block", block });
+      pushToHistory(nextModel);
+      saveDebounced.current(nextModel);
+      currentModelRef.current = nextModel;
+      onModelChange?.(nextModel);
+    };
+
     if (tool === "header_footer") {
-      const header = new Textbox("Header", {
-        left: 72,
-        top: 28,
-        width: 300,
-        fontSize: 11 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
+      const pageH = pageDimensions[pageIndex]?.height ?? primaryPage.height;
+      dispatchBlock({
+        id: createCanvasBlockId(),
+        type: "paragraph",
+        content: "Header",
+        bounding_box: [72, 28, 372, 42],
+        font_meta: { family: "Georgia, serif", size: 11, color: "#111111", is_bold: false, is_italic: false },
+        style_overrides: {},
+        z_index: 0,
+        page_index: pageIndex,
+        confidence_score: 1,
+        needs_review: false,
+        float: "none",
       });
-      (header as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      const footer = new Textbox("Footer", {
-        left: 72,
-        top: Math.max((pageDimensions[pageIndex]?.height ?? primaryPage.height) * scale - 52, 28),
-        width: 300,
-        fontSize: 11 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
+      dispatchBlock({
+        id: createCanvasBlockId(),
+        type: "paragraph",
+        content: "Footer",
+        bounding_box: [72, pageH - 52, 372, pageH - 38],
+        font_meta: { family: "Georgia, serif", size: 11, color: "#111111", is_bold: false, is_italic: false },
+        style_overrides: {},
+        z_index: 1,
+        page_index: pageIndex,
+        confidence_score: 1,
+        needs_review: false,
+        float: "none",
       });
-      (footer as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      canvas.add(header, footer);
-      canvas.setActiveObject(header);
-      canvas.renderAll();
       return;
     }
 
     if (tool === "page_number") {
-      const pageWidth = (pageDimensions[pageIndex]?.width ?? primaryPage.width) * scale;
-      const pageHeight = (pageDimensions[pageIndex]?.height ?? primaryPage.height) * scale;
-      const pageNumber = new Textbox(`Page ${pageIndex + 1}`, {
-        left: Math.max(pageWidth - 140, 72),
-        top: Math.max(pageHeight - 52, 28),
-        width: 90,
-        fontSize: 10 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
-        textAlign: "right",
+      const pageW = pageDimensions[pageIndex]?.width ?? primaryPage.width;
+      const pageH = pageDimensions[pageIndex]?.height ?? primaryPage.height;
+      dispatchBlock({
+        id: createCanvasBlockId(),
+        type: "paragraph",
+        content: `Page ${pageIndex + 1}`,
+        bounding_box: [Math.max(pageW - 140, 72), Math.max(pageH - 52, 28), Math.max(pageW - 50, 162), Math.max(pageH - 38, 42)],
+        font_meta: { family: "Georgia, serif", size: 10, color: "#111111", is_bold: false, is_italic: false },
+        alignment: "right",
+        style_overrides: {},
+        z_index: 0,
+        page_index: pageIndex,
+        confidence_score: 1,
+        needs_review: false,
+        float: "none",
       });
-      (pageNumber as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      canvas.add(pageNumber);
-      canvas.setActiveObject(pageNumber);
-      canvas.renderAll();
       return;
     }
 
-    let shape;
+    let block: DocumentBlock;
+
     if (tool === "rect") {
-      shape = new Rect({ left: 70, top: 70, width: 140, height: 90, fill: "rgba(14,165,233,0.12)", stroke: "#0284c7", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "rect", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [70, 70, 210, 160],
+        fabric_data: { type: "rect", fill: "rgba(14,165,233,0.12)", stroke: "#0284c7", strokeWidth: 2 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "roundedRect") {
-      shape = new Rect({ left: 80, top: 80, width: 160, height: 96, rx: 16, ry: 16, fill: "rgba(99,102,241,0.12)", stroke: "#4f46e5", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "rounded-rect", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [80, 80, 240, 176],
+        fabric_data: { type: "rect", rx: 16, ry: 16, fill: "rgba(99,102,241,0.12)", stroke: "#4f46e5", strokeWidth: 2 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "ellipse") {
-      shape = new Ellipse({ left: 90, top: 90, rx: 70, ry: 45, fill: "rgba(34,197,94,0.12)", stroke: "#16a34a", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "ellipse", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [20, 45, 160, 135],
+        fabric_data: { type: "ellipse", fill: "rgba(34,197,94,0.12)", stroke: "#16a34a", strokeWidth: 2 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "arrow") {
-      shape = new Line([120, 120, 290, 220], { stroke: "#dc2626", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28, layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [120, 120, 290, 220],
+        fabric_data: { type: "arrow", stroke: "#dc2626", strokeWidth: 3, arrowHeadLength: 14, arrowHeadAngle: 28 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "line") {
-      shape = new Line([120, 120, 290, 220], { stroke: "#f97316", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "line", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [120, 120, 290, 220],
+        fabric_data: { type: "line", stroke: "#f97316", strokeWidth: 3 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "sticky") {
-      shape = new IText("Sticky note", { left: 120, top: 140, fill: "#3f3f46", fontSize: 16, fontFamily: "Georgia", backgroundColor: "#fff59d" });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "Sticky note",
+        bounding_box: [120, 140, 400, 180],
+        fabric_data: { type: "sticky-note", fill: "#fff59d", noteFill: "#fff59d", textColor: "#3f3f46", fontSize: 16, fontFamily: "Georgia" },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else {
-      // activeTool === "text" — add a new text block
-      const tb = new Textbox("New text", {
-        left: 120, top: 140, width: 300,
-        fontSize: 14 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
-        borderColor: "#f97316",
-        cornerColor: "#f97316",
-        cornerSize: 8,
-        transparentCorners: false,
-      });
-      (tb as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      canvas.add(tb);
-      canvas.setActiveObject(tb);
-      canvas.renderAll();
-      return;
+      block = {
+        id: createCanvasBlockId(),
+        type: "paragraph", content: "New text",
+        bounding_box: [120, 140, 420, 160],
+        font_meta: { family: "Georgia, serif", size: 14, color: "#111111", is_bold: false, is_italic: false },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     }
 
-    canvas.add(shape);
-    canvas.setActiveObject(shape);
-    canvas.renderAll();
+    dispatchBlock(block);
   };
 
   const getToolbarTargetPageIndex = () => {
@@ -1420,6 +1464,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   };
 
   const handleToolbarToolClick = (tool: ShapeTool) => {
+    if (readOnly) return;
     setActiveTool(tool);
     if (!shouldInsertToolImmediately(tool)) return;
     addShape(getToolbarTargetPageIndex(), tool);
