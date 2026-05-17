@@ -361,34 +361,22 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   const primaryPage = pageDimensions[0] ?? DEFAULT_PAGE;
   const scale = Math.max(0.4, Math.min(3, (containerWidth / primaryPage.width) * userZoom));
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      const nextImages = { ...pageImages };
-      let changed = false;
-      const pagesToFetch = pageDimensions.filter((dim) => !nextImages[dim.page_index]);
-
-      await Promise.all(
-        pagesToFetch.map(async (dim) => {
-          try {
-            const res = await fetch(`/api/bff/documents/${documentId}/page/${dim.page_index}/image`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.url) {
-                nextImages[dim.page_index] = data.url;
-                changed = true;
-              }
-            }
-          } catch (e) {
-            // best effort
-          }
-        })
-      );
-      if (changed) {
-        setPageImages(nextImages);
+  const ensurePageImage = useCallback(async (pageIndex: number) => {
+    try {
+      const res = await fetch(`/api/bff/documents/${documentId}/page/${pageIndex}/image`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          setPageImages((prev) => {
+            if (prev[pageIndex]) return prev;
+            return { ...prev, [pageIndex]: data.url };
+          });
+        }
       }
-    };
-    void fetchImages();
-  }, [documentId, pageDimensions]);
+    } catch {
+      // silent
+    }
+  }, [documentId]);
 
   const saveDebounced = useRef(
     debounce((m: DocumentModel) => void saveMutation.mutateAsync(m), 700)
@@ -1282,6 +1270,8 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       fcanvas.bringObjectToFront(highlightRect);
     }
     fcanvas.renderAll();
+
+    ensurePageImage(pageIndex);
   };
 
   const destroyFabricCanvas = (pageIndex: number) => {
