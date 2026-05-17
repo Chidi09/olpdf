@@ -1007,18 +1007,21 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       const layoutId = target?.data?.layoutObjectId;
       if (layoutId) {
         const { getState } = usePageLayoutStore;
-        const { document: layoutDoc, activePageId } = getState();
+        const { document: layoutDoc } = getState();
         if (layoutDoc) {
-          const pageId = `page-${pageIndex}`;
-          const obj = e.target as any;
-          const left = (obj.left ?? 0) / scale;
-          const top = (obj.top ?? 0) / scale;
-          const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
-          const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
-          getState().moveObject(pageId, layoutId, left, top);
-          getState().resizeObject(pageId, layoutId, w, h);
+          const existsInLayout = layoutDoc.pages?.some((p) => p.objects?.some((o) => o.id === layoutId));
+          if (existsInLayout) {
+            const pageId = `page-${pageIndex}`;
+            const obj = e.target as any;
+            const left = (obj.left ?? 0) / scale;
+            const top = (obj.top ?? 0) / scale;
+            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
+            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+            getState().moveObject(pageId, layoutId, left, top);
+            getState().resizeObject(pageId, layoutId, w, h);
+            return;
+          }
         }
-        return;
       }
 
       if (suggestModeRef.current && e.target) {
