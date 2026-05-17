@@ -68,6 +68,7 @@ import type { PdfEditOperation } from "@/types/nativePdf";
 import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
 import type { PageLayoutDocument } from "@/types/pageLayout";
 import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
+import { shouldEditFabricTextInPlace } from "@/components/editor/canvasTextEditing";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -1014,17 +1015,15 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
         addShape(pageIndex);
         return;
       }
-      if (target.type !== "textbox") return;
-      const blockId = (target as FabricObjectWithMeta).data?.blockId;
-      if (!blockId) return;
-      // Hide all textboxes on this page — DocumentFlowEditor overlays them all
-      for (const obj of fcanvas.getObjects()) {
-        if (obj.type === "textbox") {
-          obj.set({ opacity: 0, evented: false, selectable: false });
-        }
+      if (!shouldEditFabricTextInPlace(target.type)) return;
+      fcanvas.setActiveObject(target);
+      if ("enterEditing" in target && typeof target.enterEditing === "function") {
+        target.enterEditing();
+      }
+      if ("selectAll" in target && typeof target.selectAll === "function") {
+        target.selectAll();
       }
       fcanvas.renderAll();
-      setDocumentEdit({ pageIndex, blockId, cursorTarget: "end" });
     });
     fcanvas.on("mouse:down", (e) => {
       const raw = (e as unknown as FabricMouseEvent).e;
