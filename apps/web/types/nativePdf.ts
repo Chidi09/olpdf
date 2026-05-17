@@ -53,9 +53,48 @@ export type WasmGlyphPayload = {
   page_index: number;
 };
 
+export type WasmRawBlock = {
+  id: string;
+  object_id?: string;
+  source_ref?: string;
+  type: string;
+  content?: string;
+  rich_spans?: WasmRichSpan[];
+  page_index: number;
+  bounding_box: PdfRect;
+  font_meta?: { family?: string; size?: number; color?: string; is_bold?: boolean; is_italic?: boolean };
+  alignment?: "left" | "center" | "right" | "justify";
+  z_index?: number;
+  is_invisible?: boolean;
+  confidence_score?: number;
+  needs_review?: boolean;
+  column_index?: number;
+  style_overrides?: Record<string, unknown>;
+};
+
+export type WasmRawLayoutObject = {
+  id: string;
+  type: string;
+  page_index: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  z_index: number;
+  source_ref?: string;
+  original_pdf_object_id?: string;
+  content?: string;
+  font_family?: string;
+  font_size?: number;
+  color?: string;
+  text_align?: string;
+};
+
 export type WasmParseResult = {
-  blocks: PdfNativeObject[];
+  blocks: WasmRawBlock[];
   glyphs?: WasmGlyphPayload[];
+  layout_objects?: WasmRawLayoutObject[];
   page_dimensions: Array<{ page_index: number; width: number; height: number }>;
   metrics: ParseMetrics;
 };
@@ -183,6 +222,7 @@ export type PdfEditSession = {
   originalObjectKey: string;
   pages: Array<{ pageIndex: number; width: number; height: number; previewUrl?: string }>;
   objects: PdfNativeObject[];
+  glyphs?: PdfGlyph[];
   layoutObjects?: WasmLayoutObject[];
   operations: PdfEditOperation[];
   status?: PdfEditSessionStatus;
