@@ -132,6 +132,46 @@ describe("pageLayoutFromDocumentModel", () => {
     expect(layout.pages[0].objects[0]).toMatchObject({ id: "layout-1", content: "Layout", x: 72 });
   });
 
+  it("converts native session object bbox from corners to size", () => {
+    const model = {
+      id: "doc-corners",
+      meta: {
+        native_pdf_session: {
+          documentId: "doc-corners",
+          originalObjectKey: "objects/doc.pdf",
+          pages: [{ pageIndex: 0, width: 612, height: 792 }],
+          objects: [
+            {
+              id: "obj-corners",
+              pageIndex: 0,
+              type: "text",
+              bbox: [72, 100, 400, 130],
+              text: "Corner bbox",
+              fontFamily: "Inter",
+              fontSize: 12,
+              color: "#111",
+            },
+          ],
+          operations: [],
+          status: "ready",
+          source: "wasm",
+        },
+      },
+      page_dimensions: [{ page_index: 0, width: 612, height: 792 }],
+      blocks: [],
+      styles: {},
+    } as unknown as DocumentModel;
+
+    const layout = pageLayoutFromDocumentModel(model);
+
+    expect(layout.pages[0].objects[0]).toMatchObject({
+      x: 72,
+      y: 100,
+      width: 328,
+      height: 30,
+    });
+  });
+
   it("handles null model gracefully", () => {
     const layout = pageLayoutFromDocumentModel(null);
     expect(layout.pages).toHaveLength(1);

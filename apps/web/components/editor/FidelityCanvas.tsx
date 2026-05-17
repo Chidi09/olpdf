@@ -22,6 +22,13 @@ import {
   MagnifyingGlassPlusIcon,
   MagnifyingGlassMinusIcon,
   EllipsisHorizontalIcon,
+  PhotoIcon,
+  TableCellsIcon,
+  VariableIcon,
+  ChatBubbleLeftRightIcon,
+  SunIcon,
+  DocumentTextIcon,
+  HashtagIcon,
 } from "@heroicons/react/24/outline";
 import { GlassTooltip } from "@/components/ui/GlassTooltip";
 import * as Y from "yjs";
@@ -69,6 +76,7 @@ import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
 import type { PageLayoutDocument } from "@/types/pageLayout";
 import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
 import { shouldEditFabricTextInPlace } from "@/components/editor/canvasTextEditing";
+import { getActiveToolAfterToolbarClick, shouldInsertToolImmediately } from "@/components/editor/canvasToolBehavior";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -323,6 +331,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   // pageImages[i] = presigned PNG URL for page i, or undefined while loading
   const [pageImages, setPageImages] = useState<Record<number, string>>({});
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const lastInteractedPageIndexRef = useRef(0);
 
   // Store destructure must precede suggestModeRef — suggestMode is a const binding.
   const { activeTool, setActiveTool, selectedBlock, setSelectedBlock, pendingFormat, clearPendingFormat, suggestMode, toggleSuggestMode, formMode, toggleFormMode } = useFidelityCanvasStore();
@@ -846,6 +855,8 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
             layoutObjectId: obj.id,
             layoutObjectType: obj.type,
             pageId: pageLayout.id,
+            blockId: obj.id,
+            blockType: obj.type,
           });
           if (fabricObj) fcanvas.add(fabricObj);
         }
@@ -1010,6 +1021,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     fcanvas.on("object:removed", sync);
     fcanvas.on("path:created", sync);
     fcanvas.on("mouse:dblclick", (e) => {
+      lastInteractedPageIndexRef.current = pageIndex;
       const target = e.target;
       if (!target) {
         addShape(pageIndex);
@@ -1026,6 +1038,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       fcanvas.renderAll();
     });
     fcanvas.on("mouse:down", (e) => {
+      lastInteractedPageIndexRef.current = pageIndex;
       const raw = (e as unknown as FabricMouseEvent).e;
       if (!(raw instanceof MouseEvent) || raw.button !== 2) return;
       const target = e.target;
@@ -1055,6 +1068,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       setContainerWidth(nextWidth);
     });
     fcanvas.on("mouse:down", () => {
+      lastInteractedPageIndexRef.current = pageIndex;
       longPressTimer = setTimeout(() => {
         const obj = fcanvas.getActiveObject();
         const blockId = (obj as FabricObjectWithMeta | undefined)?.data?.blockId ?? null;
@@ -1067,6 +1081,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (longPressTimer) clearTimeout(longPressTimer);
     });
     fcanvas.on("selection:created", () => {
+      lastInteractedPageIndexRef.current = pageIndex;
       handleSelection(fcanvas);
       const obj = fcanvas.getActiveObject();
       const blockId = (obj as FabricObjectWithMeta | undefined)?.data?.blockId ?? null;
@@ -1076,6 +1091,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       });
     });
     fcanvas.on("selection:updated", () => {
+      lastInteractedPageIndexRef.current = pageIndex;
       handleSelection(fcanvas);
       const obj = fcanvas.getActiveObject();
       const blockId = (obj as FabricObjectWithMeta | undefined)?.data?.blockId ?? null;
@@ -1116,6 +1132,8 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       layoutObjectId: obj.id,
       layoutObjectType: obj.type,
       pageId,
+      blockId: obj.id,
+      blockType: obj.type,
     });
     if (fabricObj) {
       canvas.add(fabricObj);
@@ -1124,11 +1142,13 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     }
   }, []);
 
-  const addShape = (pageIndex: number) => {
-    const canvas = fabricCanvasesRef.current.get(pageIndex);
-    if (!canvas || activeTool === "select" || activeTool === "draw") return;
+  const createCanvasBlockId = () => `blk_canvas_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    if (activeTool === "image") {
+  const addShape = (pageIndex: number, tool: ShapeTool = activeTool) => {
+    const canvas = fabricCanvasesRef.current.get(pageIndex);
+    if (!canvas || tool === "select" || tool === "draw") return;
+
+    if (tool === "image") {
       if (!imageInputRef.current) {
         const input = document.createElement("input");
         input.type = "file";
@@ -1152,50 +1172,97 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       return;
     }
 
-    if (activeTool === "table") {
+    if (tool === "table") {
       canvasInsertLayoutObject(canvas, pageIndex, createDefaultTableFrame(70, 70));
       return;
     }
 
-    if (activeTool === "symbol") {
+    if (tool === "symbol") {
       canvasInsertLayoutObject(canvas, pageIndex, createSymbolFrame("✓", 70, 70));
       return;
     }
 
-    if (activeTool === "highlight") {
+    if (tool === "highlight") {
       canvasInsertLayoutObject(canvas, pageIndex, createHighlightFrame(70, 70, 200, 30));
       return;
     }
 
-    if (activeTool === "comment") {
+    if (tool === "comment") {
       canvasInsertLayoutObject(canvas, pageIndex, createCommentFrame(70, 70, "Comment", "You"));
       return;
     }
 
-    if (activeTool === "signature") {
+    if (tool === "signature") {
       canvasInsertLayoutObject(canvas, pageIndex, createSignatureFrame(70, 70, "Signature"));
       return;
     }
 
+    if (tool === "header_footer") {
+      const header = new Textbox("Header", {
+        left: 72,
+        top: 28,
+        width: 300,
+        fontSize: 11 * scale,
+        fontFamily: "Georgia, serif",
+        fill: "#111111",
+        editable: true,
+      });
+      (header as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
+      const footer = new Textbox("Footer", {
+        left: 72,
+        top: Math.max((pageDimensions[pageIndex]?.height ?? primaryPage.height) * scale - 52, 28),
+        width: 300,
+        fontSize: 11 * scale,
+        fontFamily: "Georgia, serif",
+        fill: "#111111",
+        editable: true,
+      });
+      (footer as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
+      canvas.add(header, footer);
+      canvas.setActiveObject(header);
+      canvas.renderAll();
+      return;
+    }
+
+    if (tool === "page_number") {
+      const pageWidth = (pageDimensions[pageIndex]?.width ?? primaryPage.width) * scale;
+      const pageHeight = (pageDimensions[pageIndex]?.height ?? primaryPage.height) * scale;
+      const pageNumber = new Textbox(`Page ${pageIndex + 1}`, {
+        left: Math.max(pageWidth - 140, 72),
+        top: Math.max(pageHeight - 52, 28),
+        width: 90,
+        fontSize: 10 * scale,
+        fontFamily: "Georgia, serif",
+        fill: "#111111",
+        editable: true,
+        textAlign: "right",
+      });
+      (pageNumber as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
+      canvas.add(pageNumber);
+      canvas.setActiveObject(pageNumber);
+      canvas.renderAll();
+      return;
+    }
+
     let shape;
-    if (activeTool === "rect") {
+    if (tool === "rect") {
       shape = new Rect({ left: 70, top: 70, width: 140, height: 90, fill: "rgba(14,165,233,0.12)", stroke: "#0284c7", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rect", layoutObjectId: `shape-${Date.now()}` };
-    } else if (activeTool === "roundedRect") {
+      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "rect", layoutObjectId: `shape-${Date.now()}` };
+    } else if (tool === "roundedRect") {
       shape = new Rect({ left: 80, top: 80, width: 160, height: 96, rx: 16, ry: 16, fill: "rgba(99,102,241,0.12)", stroke: "#4f46e5", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "rounded-rect", layoutObjectId: `shape-${Date.now()}` };
-    } else if (activeTool === "ellipse") {
+      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "rounded-rect", layoutObjectId: `shape-${Date.now()}` };
+    } else if (tool === "ellipse") {
       shape = new Ellipse({ left: 90, top: 90, rx: 70, ry: 45, fill: "rgba(34,197,94,0.12)", stroke: "#16a34a", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "ellipse", layoutObjectId: `shape-${Date.now()}` };
-    } else if (activeTool === "arrow") {
+      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "ellipse", layoutObjectId: `shape-${Date.now()}` };
+    } else if (tool === "arrow") {
       shape = new Line([120, 120, 290, 220], { stroke: "#dc2626", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28, layoutObjectId: `shape-${Date.now()}` };
-    } else if (activeTool === "line") {
+      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28, layoutObjectId: `shape-${Date.now()}` };
+    } else if (tool === "line") {
       shape = new Line([120, 120, 290, 220], { stroke: "#f97316", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "line", layoutObjectId: `shape-${Date.now()}` };
-    } else if (activeTool === "sticky") {
+      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "line", layoutObjectId: `shape-${Date.now()}` };
+    } else if (tool === "sticky") {
       shape = new IText("Sticky note", { left: 120, top: 140, fill: "#3f3f46", fontSize: 16, fontFamily: "Georgia", backgroundColor: "#fff59d" });
-      (shape as FabricObjectWithMeta).data = { blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46", layoutObjectId: `shape-${Date.now()}` };
+      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46", layoutObjectId: `shape-${Date.now()}` };
     } else {
       // activeTool === "text" — add a new text block
       const tb = new Textbox("New text", {
@@ -1209,7 +1276,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
         cornerSize: 8,
         transparentCorners: false,
       });
-      (tb as FabricObjectWithMeta).data = { blockType: "paragraph", shapeType: "textbox" };
+      (tb as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
       canvas.add(tb);
       canvas.setActiveObject(tb);
       canvas.renderAll();
@@ -1219,6 +1286,21 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     canvas.add(shape);
     canvas.setActiveObject(shape);
     canvas.renderAll();
+  };
+
+  const getToolbarTargetPageIndex = () => {
+    for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
+      if (canvas.getActiveObject()) return pageIndex;
+    }
+    if (fabricCanvasesRef.current.has(lastInteractedPageIndexRef.current)) return lastInteractedPageIndexRef.current;
+    return Array.from(fabricCanvasesRef.current.keys()).sort((a, b) => a - b)[0] ?? 0;
+  };
+
+  const handleToolbarToolClick = (tool: ShapeTool) => {
+    setActiveTool(tool);
+    if (!shouldInsertToolImmediately(tool)) return;
+    addShape(getToolbarTargetPageIndex(), tool);
+    setActiveTool(getActiveToolAfterToolbarClick(tool));
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -1241,7 +1323,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
           ] as { tool: ShapeTool; Icon: React.FC<React.SVGProps<SVGSVGElement>>; label: string; shortcut: string }[]).map(({ tool, Icon, label, shortcut }) => (
             <GlassTooltip key={tool} label={label} shortcut={shortcut} placement="bottom">
               <button
-                onClick={() => setActiveTool(tool)}
+                onClick={() => handleToolbarToolClick(tool)}
                 aria-label={label}
                 aria-pressed={activeTool === tool}
                 className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
@@ -1270,7 +1352,36 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
           <div className="mx-1 h-5 w-px shrink-0 bg-white/10" />
 
-          {/* ── Group 2: Modes ── */}
+          {/* ── Group 2: Insert and annotation tools ── */}
+          {([
+            { tool: "image", Icon: PhotoIcon, label: "Image" },
+            { tool: "table", Icon: TableCellsIcon, label: "Table" },
+            { tool: "symbol", Icon: VariableIcon, label: "Symbol" },
+            { tool: "highlight", Icon: SunIcon, label: "Highlight" },
+            { tool: "comment", Icon: ChatBubbleLeftRightIcon, label: "Comment" },
+            { tool: "signature", Icon: PencilSquareIcon, label: "Signature" },
+            { tool: "header_footer", Icon: DocumentTextIcon, label: "Header/Footer" },
+            { tool: "page_number", Icon: HashtagIcon, label: "Page number" },
+          ] as { tool: ShapeTool; Icon: React.FC<React.SVGProps<SVGSVGElement>>; label: string }[]).map(({ tool, Icon, label }) => (
+            <GlassTooltip key={tool} label={label} placement="bottom">
+              <button
+                onClick={() => handleToolbarToolClick(tool)}
+                aria-label={label}
+                aria-pressed={activeTool === tool}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  activeTool === tool
+                    ? "bg-white/10 text-white ring-1 ring-white/20"
+                    : "text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            </GlassTooltip>
+          ))}
+
+          <div className="mx-1 h-5 w-px shrink-0 bg-white/10" />
+
+          {/* ── Group 3: Modes ── */}
           <GlassTooltip label="Suggest mode" placement="bottom">
             <button
               onClick={() => { toggleSuggestMode(); trackEdit("suggest_mode_toggled", { enabled: !suggestMode }); }}
@@ -1304,7 +1415,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
           <div className="mx-1 h-5 w-px shrink-0 bg-white/10" />
 
-          {/* ── Group 3: Actions ── */}
+          {/* ── Group 4: Actions ── */}
           <GlassTooltip label="AI summarise" placement="bottom">
             <button
               onClick={() => void summariseDoc()}

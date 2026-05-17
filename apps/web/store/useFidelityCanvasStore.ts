@@ -15,7 +15,9 @@ export type ShapeTool =
   | "symbol"
   | "highlight"
   | "comment"
-  | "signature";
+  | "signature"
+  | "header_footer"
+  | "page_number";
 
 export interface SelectedBlockMeta {
   blockId: string;

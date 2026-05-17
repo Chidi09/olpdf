@@ -64,4 +64,32 @@ describe("fabricSpecFromLayoutObject", () => {
     expect(spec.options.stroke).toBe("#ff0000");
     expect(spec.options.fill).toBe("#00ff00");
   });
+
+  it("maps highlight annotations to translucent rect specs", () => {
+    const spec = fabricSpecFromLayoutObject({
+      ...baseText,
+      type: "annotation" as const,
+      annotationType: "highlight" as const,
+      color: "#ffeb3b",
+      opacity: 0.4,
+    });
+
+    expect(spec.kind).toBe("rect");
+    expect(spec.options.fill).toBe("#ffeb3b");
+    expect(spec.options.opacity).toBe(0.4);
+  });
+
+  it("maps symbols to visible textbox specs", () => {
+    const spec = fabricSpecFromLayoutObject({
+      ...baseText,
+      type: "symbol" as const,
+      symbolId: "✓",
+      color: "#111111",
+      size: 24,
+    });
+
+    expect(spec.kind).toBe("textbox");
+    expect(spec.options.content).toBe("✓");
+    expect(spec.options.fill).toBe("#111111");
+  });
 });

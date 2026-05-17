@@ -5,6 +5,8 @@ export type FabricObjectMeta = {
   layoutObjectId: string;
   layoutObjectType: string;
   pageId?: string;
+  blockId?: string;
+  blockType?: string;
 };
 
 export type FabricObjectSpec =
@@ -116,6 +118,65 @@ export function fabricSpecFromLayoutObject(obj: LayoutObject, pageId?: string): 
         stroke: obj.stroke,
         strokeWidth: obj.strokeWidth,
         fill: obj.fill,
+        selectable: !obj.locked,
+        evented: !obj.locked,
+        opacity: obj.opacity,
+        angle: obj.rotation,
+      },
+    };
+  }
+
+  if (obj.type === "symbol") {
+    return {
+      kind: "textbox",
+      data: baseData,
+      options: {
+        left: obj.x,
+        top: obj.y,
+        width: obj.width,
+        height: obj.height,
+        content: obj.symbolId,
+        fontSize: obj.size,
+        fill: obj.color,
+        selectable: !obj.locked,
+        evented: !obj.locked,
+        opacity: obj.opacity,
+        angle: obj.rotation,
+      },
+    };
+  }
+
+  if (obj.type === "annotation") {
+    if (obj.annotationType === "highlight") {
+      return {
+        kind: "rect",
+        data: baseData,
+        options: {
+          left: obj.x,
+          top: obj.y,
+          width: obj.width,
+          height: obj.height,
+          fill: obj.color,
+          strokeWidth: 0,
+          selectable: !obj.locked,
+          evented: !obj.locked,
+          opacity: obj.opacity,
+          angle: obj.rotation,
+        },
+      };
+    }
+
+    return {
+      kind: "textbox",
+      data: baseData,
+      options: {
+        left: obj.x,
+        top: obj.y,
+        width: obj.width,
+        height: obj.height,
+        content: obj.annotationType === "signature" ? obj.signerName : obj.annotationType === "comment" ? obj.text : obj.content ?? "",
+        fontSize: obj.annotationType === "comment" ? 12 : 18,
+        fill: obj.annotationType === "comment" ? "#f97316" : "#111111",
         selectable: !obj.locked,
         evented: !obj.locked,
         opacity: obj.opacity,

@@ -8,6 +8,8 @@ const A4_HEIGHT = 841.89;
 
 function nativeObjectToLayoutObject(obj: PdfEditSession["objects"][0]): LayoutObject {
   const bbox = obj.bbox;
+  const width = bbox[2] > bbox[0] && bbox[3] > bbox[1] ? bbox[2] - bbox[0] : bbox[2];
+  const height = bbox[2] > bbox[0] && bbox[3] > bbox[1] ? bbox[3] - bbox[1] : bbox[3];
   const base = {
     id: obj.id,
     visible: !obj.is_invisible,
@@ -16,8 +18,8 @@ function nativeObjectToLayoutObject(obj: PdfEditSession["objects"][0]): LayoutOb
     opacity: 1,
     x: bbox[0],
     y: bbox[1],
-    width: bbox[2],
-    height: bbox[3],
+    width,
+    height,
     rotation: 0,
     originalPdfObjectId: obj.id,
   };
