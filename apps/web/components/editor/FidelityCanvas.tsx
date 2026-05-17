@@ -640,7 +640,44 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     void fetchExport();
   }, [exportRequest, documentId, onExportComplete, onExportError]);
 
-  useCollaborationBridge(ydocRef, provider, fabricCanvasesRef, scale, saveDebounced);
+  useCollaborationBridge(
+    ydocRef,
+    provider,
+    fabricCanvasesRef,
+    scale,
+    saveDebounced,
+    useCallback((remoteBlocks: DocumentBlock[]) => {
+      const currentBlocks = currentModelRef.current.blocks ?? [];
+      const remoteMap = new Map(remoteBlocks.map((b) => [b.id, b]));
+
+      const merged = currentBlocks.map((b) => remoteMap.get(b.id) ?? b);
+      const currentIds = new Set(currentBlocks.map((b) => b.id));
+      for (const b of remoteBlocks) {
+        if (!currentIds.has(b.id)) merged.push(b);
+      }
+
+      const nextModel = { ...currentModelRef.current, blocks: merged };
+      currentModelRef.current = nextModel;
+      onModelChange?.(nextModel);
+
+      for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
+        const pageBlocks = merged
+          .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
+          .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
+        reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
+          const btype = (block as any).type ?? "paragraph";
+          if (btype === "table") return createTableBlock(block, s);
+          if (btype === "field") return createFieldBlock(block, s);
+          if (btype === "shape") return createShapeBlock(block, s);
+          if (btype === "image") {
+            loadImageBlock(block, s, canvas);
+            return null;
+          }
+          return createTextBlock(block, s);
+        });
+      }
+    }, [scale, onModelChange]),
+  );
 
   // ── Apply format commands from the FormatBar ─────────────────────────────
 
