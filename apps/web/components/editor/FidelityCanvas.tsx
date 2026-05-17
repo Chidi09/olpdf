@@ -58,6 +58,7 @@ import { useAiTools } from "@/hooks/useAiTools";
 import { useEditorToolbarActions } from "@/hooks/useEditorToolbarActions";
 import { useModelSyncAndReflow } from "@/hooks/useModelSyncAndReflow";
 import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TableData } from "@/types/editor";
+import { rectFromCanvasObjectBounds, documentRectToCanvasRect, type RectX0Y0X1Y1 } from "@/lib/geometry/rect";
 import type { LayoutObject } from "@/types/pageLayout";
 import { fabricSpecFromLayoutObject, createFabricObject } from "@/components/editor/pageLayoutFabric";
 import { createDefaultTableFrame } from "@/lib/pageLayout/table";
@@ -109,7 +110,8 @@ const DEFAULT_PAGE = { page_index: 0, width: 595.28, height: 841.89 };
 // ── Fabric object factory ─────────────────────────────────────────────────────
 
 function createTextBlock(block: DocumentBlock, scale: number) {
-  const bbox = block.bounding_box ?? [72, 72, 540, 86];
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 540, 86]) as RectX0Y0X1Y1, scale);
+  const width = Math.max(right - left, 20);
   const fm = (block.font_meta ?? {}) as Partial<{
     family: string;
     size: number;
@@ -117,9 +119,6 @@ function createTextBlock(block: DocumentBlock, scale: number) {
     is_italic: boolean;
     color: string;
   }>;
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
-  const width = Math.max((bbox[2] - bbox[0]) * scale, 20);
   const fontSize = Math.max(((fm.size as number) || 11) * scale, 8);
 
   const tb = new Textbox(block.content || "", {
@@ -149,11 +148,9 @@ function createTextBlock(block: DocumentBlock, scale: number) {
 
 function createTableBlock(block: DocumentBlock, scale: number): Group {
   const tableData = (block.table_data ?? { headers: [], rows: [] }) as TableData;
-  const bbox = block.bounding_box ?? [72, 72, 400, 200];
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
-  const tableW = Math.max((bbox[2] - bbox[0]) * scale, 80);
-  const tableH = Math.max((bbox[3] - bbox[1]) * scale, 40);
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 400, 200]) as RectX0Y0X1Y1, scale);
+  const tableW = Math.max(right - left, 80);
+  const tableH = Math.max(bottom - top, 40);
 
   const headers = tableData.headers ?? [];
   const allRows: string[][] = headers.length > 0
@@ -210,9 +207,7 @@ function createTableBlock(block: DocumentBlock, scale: number): Group {
 
 function createShapeBlock(block: DocumentBlock, scale: number) {
   const fabricData = block.fabric_data ?? {};
-  const bbox = block.bounding_box ?? [72, 72, 140, 120];
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 140, 120]) as RectX0Y0X1Y1, scale);
   const objType = String(fabricData.type || "rect").toLowerCase();
   const stroke = String(fabricData.stroke || "#111111");
   const fill = String(fabricData.fill || "rgba(0,0,0,0)");
@@ -222,12 +217,12 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
   if (objType === "ellipse" || objType === "circle") {
     shape = new Ellipse({
       left, top,
-      rx: Math.max((bbox[2] - bbox[0]) * scale * 0.5, 8),
-      ry: Math.max((bbox[3] - bbox[1]) * scale * 0.5, 8),
+      rx: Math.max((right - left) * 0.5, 8),
+      ry: Math.max((bottom - top) * 0.5, 8),
       stroke, fill, strokeWidth,
     });
   } else if (objType === "line" || objType === "arrow") {
-    shape = new Line([left, top, bbox[2] * scale, bbox[3] * scale], { stroke, strokeWidth });
+    shape = new Line([left, top, right, bottom], { stroke, strokeWidth });
   } else if (["textbox", "text", "i-text", "sticky-note", "sticky_note"].includes(objType)) {
     shape = new IText(String(fabricData.text || block.content || "Text"), {
       left, top,
@@ -239,8 +234,8 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
   } else {
     shape = new Rect({
       left, top,
-      width: Math.max((bbox[2] - bbox[0]) * scale, 20),
-      height: Math.max((bbox[3] - bbox[1]) * scale, 20),
+      width: Math.max(right - left, 20),
+      height: Math.max(bottom - top, 20),
       stroke, fill, strokeWidth,
     });
   }
@@ -249,17 +244,12 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
 }
 
 function createFieldBlock(block: DocumentBlock, scale: number): Rect {
-  const bbox = block.bounding_box ?? [72, 72, 240, 100];
-  const x0 = bbox[0];
-  const y0 = bbox[1];
-  const x1 = bbox[2];
-  const y1 = bbox[3];
-  const w = (x1 - x0) * scale;
-  const h = Math.max((y1 - y0) * scale, 24);
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 240, 100]) as RectX0Y0X1Y1, scale);
+  const w = right - left;
+  const h = Math.max(bottom - top, 24);
 
   const fieldRect = new Rect({
-    left: x0 * scale,
-    top: y0 * scale,
+    left, top,
     width: w,
     height: h,
     fill: "rgba(249,115,22,0.06)",
@@ -279,11 +269,9 @@ function createFieldBlock(block: DocumentBlock, scale: number): Rect {
 }
 
 function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
-  const bbox = block.bounding_box ?? [0, 0, 100, 100];
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
-  const w = (bbox[2] - bbox[0]) * scale;
-  const h = (bbox[3] - bbox[1]) * scale;
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [0, 0, 100, 100]) as RectX0Y0X1Y1, scale);
+  const w = right - left;
+  const h = bottom - top;
 
   if (block.src) {
     FabricImage.fromURL(block.src, { crossOrigin: "anonymous" }).then((img) => {
@@ -734,16 +722,15 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (!canvas) continue;
       const block = model.blocks?.find((b) => b.id === match.blockId);
       if (!block) continue;
-      const bbox = block.bounding_box ?? [0, 0, 0, 0];
-      const [x0, y0, x1, y1] = bbox;
+      const [hLeft, hTop, hRight, hBottom] = documentRectToCanvasRect((block.bounding_box ?? [0, 0, 0, 0]) as RectX0Y0X1Y1, scale);
       const isCurrent =
         matches[currentMatchIndex]?.blockId === match.blockId &&
         matches[currentMatchIndex]?.startOffset === match.startOffset;
       const highlightRect = new Rect({
-        left: x0 * scale,
-        top: y0 * scale,
-        width: (x1 - x0) * scale,
-        height: (y1 - y0) * scale,
+        left: hLeft,
+        top: hTop,
+        width: hRight - hLeft,
+        height: hBottom - hTop,
         fill: isCurrent ? "rgba(249,115,22,0.35)" : "rgba(253,224,71,0.35)",
         selectable: false,
         evented: false,
@@ -944,15 +931,16 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
           const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
           if (existing) {
             const obj = e.target;
-            const left = (obj.left ?? 0) / scale;
-            const top = (obj.top ?? 0) / scale;
-            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
-            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+            const canvasBbox = rectFromCanvasObjectBounds(
+              obj.left ?? 0, obj.top ?? 0,
+              (obj.width ?? 0) * (obj.scaleX ?? 1), (obj.height ?? 0) * (obj.scaleY ?? 1),
+              scale
+            );
             captureChange({
               blockId,
               field: "bounding_box",
               oldValue: existing.bounding_box,
-              newValue: [left, top, left + w, top + h],
+              newValue: canvasBbox,
             });
             if (obj.type === "textbox") {
               captureChange({
@@ -984,12 +972,11 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
                 pageIndex,
                 targetObjectId: blockId,
                 before: { text: beforeText, bbox: beforeBlock.bounding_box },
-                after: { text: afterText, bbox: [
-                  (tb.left ?? 0) / scale,
-                  (tb.top ?? 0) / scale,
-                  ((tb.left ?? 0) + (tb.width ?? 0) * (tb.scaleX ?? 1)) / scale,
-                  ((tb.top ?? 0) + (tb.height ?? 0) * (tb.scaleY ?? 1)) / scale,
-                ]},
+                after: { text: afterText, bbox: rectFromCanvasObjectBounds(
+                  tb.left ?? 0, tb.top ?? 0,
+                  (tb.width ?? 0) * (tb.scaleX ?? 1), (tb.height ?? 0) * (tb.scaleY ?? 1),
+                  scale
+                )},
                 createdAt: new Date().toISOString(),
               };
               opStore.applyOperation(nativeOp);
@@ -1007,12 +994,13 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
           const yBlock = yBlocks.get(blockId);
           if (yBlock) {
             const obj = e.target;
-            const left = (obj.left ?? 0) / scale;
-            const top = (obj.top ?? 0) / scale;
-            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
-            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+            const yjsBbox = rectFromCanvasObjectBounds(
+              obj.left ?? 0, obj.top ?? 0,
+              (obj.width ?? 0) * (obj.scaleX ?? 1), (obj.height ?? 0) * (obj.scaleY ?? 1),
+              scale
+            );
             ydocRef.current.transact(() => {
-              yBlock.set("bounding_box", [left, top, left + w, top + h]);
+              yBlock.set("bounding_box", yjsBbox);
               if (obj.type === "textbox") yBlock.set("content", (obj as Textbox).text ?? "");
             });
           }

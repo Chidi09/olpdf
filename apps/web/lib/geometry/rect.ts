@@ -18,6 +18,10 @@ export function canvasRectToDocumentRect(rect: RectX0Y0X1Y1, scale: number): Rec
   return [rect[0] / scale, rect[1] / scale, rect[2] / scale, rect[3] / scale];
 }
 
+export function rectFromCanvasObjectBounds(left: number, top: number, width: number, height: number, scale: number): RectX0Y0X1Y1 {
+  return canvasRectToDocumentRect([left, top, left + width, top + height], scale);
+}
+
 export function normalizeRect(rect: number[] | undefined, fallback: RectX0Y0X1Y1): RectX0Y0X1Y1 {
   if (!rect || rect.length !== 4 || rect.some((v) => typeof v !== "number" || !Number.isFinite(v))) return fallback;
   return [rect[0], rect[1], rect[2], rect[3]];

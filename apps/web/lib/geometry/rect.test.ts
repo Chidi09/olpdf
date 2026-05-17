@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canvasRectToDocumentRect, documentRectToCanvasRect, rectFromXYWH, rectToXYWH } from "./rect";
+import { canvasRectToDocumentRect, documentRectToCanvasRect, rectFromCanvasObjectBounds, rectFromXYWH, rectToXYWH } from "./rect";
 
 describe("rect geometry", () => {
   it("converts document rects to canvas rects", () => {
@@ -16,5 +16,9 @@ describe("rect geometry", () => {
 
   it("converts x0y0x1y1 into xywh", () => {
     expect(rectToXYWH([10, 20, 110, 70])).toEqual({ x: 10, y: 20, width: 100, height: 50 });
+  });
+
+  it("converts Fabric object bounds to document rects", () => {
+    expect(rectFromCanvasObjectBounds(20, 40, 200, 100, 2)).toEqual([10, 20, 110, 70]);
   });
 });
