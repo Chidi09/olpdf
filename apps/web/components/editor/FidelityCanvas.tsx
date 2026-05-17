@@ -632,7 +632,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   // ── Read-only mode ─────────────────────────────────────────────────────
   useEffect(() => {
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-      applyCanvasInteractionState(canvas, readOnly ?? false, activeTool);
+      applyCanvasInteractionState(canvas, Boolean(readOnly), activeTool);
       canvas.renderAll();
     }
   }, [readOnly]);
@@ -891,7 +891,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
   useEffect(() => {
     for (const canvas of fabricCanvasesRef.current.values()) {
-      applyCanvasInteractionState(canvas, readOnly ?? false, activeTool);
+      applyCanvasInteractionState(canvas, Boolean(readOnly), activeTool);
       if (activeTool === "draw") {
         canvas.freeDrawingBrush = new PencilBrush(canvas);
         canvas.freeDrawingBrush.width = 2;
@@ -1254,7 +1254,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
     fabricCanvasesRef.current.set(pageIndex, fcanvas);
 
-    applyCanvasInteractionState(fcanvas, readOnly ?? false, activeTool);
+    applyCanvasInteractionState(fcanvas, Boolean(readOnly), activeTool);
 
     // Apply any already-loaded comment indicators to this newly-live canvas.
     renderCommentIndicators(fcanvas, comments, pageIndex, scale, setOpenCommentThread);
