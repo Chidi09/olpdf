@@ -1,6 +1,6 @@
 export type PdfNativeObjectType = "text" | "image" | "path" | "shape" | "annotation" | "form_field" | "list_item";
 
-/** 4-element tuple: [left, top, width, height] in PDF coordinate space */
+/** 4-element tuple: [x0, y0, x1, y1] in document/PDF page coordinates */
 export type PdfRect = [number, number, number, number];
 
 export type WasmRichSpan = {
