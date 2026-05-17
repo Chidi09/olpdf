@@ -67,6 +67,19 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
           setState("live");
           return;
         }
+        if (!entry.isIntersecting && stateRef.current === "live") {
+          const node = canvasRef.current;
+          if (node) {
+            captureThumbnail(node, (url) => {
+              setThumbnailUrl(url);
+              thumbnailCacheRef.current.set(dim.page_index, url);
+              cacheThumbnail(dim.page_index, url);
+            });
+          }
+          setState("placeholder");
+          onCanvasDestroy(dim.page_index);
+          return;
+        }
       },
       {
         rootMargin: "200% 0px",
