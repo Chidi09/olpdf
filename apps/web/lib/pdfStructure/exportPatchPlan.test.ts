@@ -55,9 +55,11 @@ describe("planExportPatch", () => {
   it("creates patch_text_operator plan for safe text replace with source refs", () => {
     const plan = planExportPatch(textBlock, replaceOp);
     expect(plan.kind).toBe("patch_text_operator");
-    expect(plan.sourceRef).toBe("12 0 R");
-    expect(plan.before).toBe("Hello world");
-    expect(plan.after).toBe("Goodbye world");
+    if (plan.kind === "patch_text_operator") {
+      expect(plan.sourceRef).toBe("12 0 R");
+      expect(plan.before).toBe("Hello world");
+      expect(plan.after).toBe("Goodbye world");
+    }
   });
 
   it("creates overlay_text plan for text replace without source refs", () => {
@@ -84,6 +86,8 @@ describe("planExportPatch", () => {
     };
     const plan = planExportPatch(imageBlock, replaceImageOp);
     expect(plan.kind).toBe("replace_image_xobject");
-    expect(plan.sourceRef).toBe("20 0 R");
+    if (plan.kind === "replace_image_xobject") {
+      expect(plan.sourceRef).toBe("20 0 R");
+    }
   });
 });
