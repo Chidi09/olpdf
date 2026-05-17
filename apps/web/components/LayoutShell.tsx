@@ -9,6 +9,7 @@ import { DragDropOverlay } from "@/components/DragDropOverlay";
 import { useRef, useState } from "react";
 import { usePdfWasm } from "@/hooks/usePdfWasm";
 import { normalizeWasmResult } from "@/lib/nativePdf/normalizeWasmPdf";
+import { buildNativeImportPayload } from "@/lib/nativePdf/importPayload";
 import type { PdfEditSession } from "@/types/nativePdf";
 
 // Pages that render with absolutely no chrome
@@ -69,28 +70,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       });
       const importPayload: Record<string, unknown> = { documentId: created.id, fileBytes: base64, layout_mode: "fidelity" };
       if (session) {
-        importPayload.client_model = {
-          blocks: session.objects.map((obj) => ({
-            id: obj.id,
-            type: "paragraph",
-            content: obj.text || "",
-            rich_spans: [],
-            page_index: obj.pageIndex,
-            bounding_box: obj.bbox,
-            z_index: obj.zIndex,
-            column_index: 0,
-            alignment: "left",
-            confidence_score: 1.0,
-            needs_review: false,
-            style_overrides: {},
-            font_meta: obj.fontFamily ? { family: obj.fontFamily, size: obj.fontSize, color: obj.color, is_bold: false, is_italic: false } : undefined,
-          })),
-          page_dimensions: session.pages.map((p) => ({
-            page_index: p.pageIndex,
-            width: p.width,
-            height: p.height,
-          })),
-        };
+        Object.assign(importPayload, buildNativeImportPayload(created.id, base64, session));
       }
       const importRes = await fetch("/api/bff/import/start", {
         method: "POST",
