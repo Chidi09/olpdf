@@ -76,6 +76,7 @@ import type { PdfEditOperation } from "@/types/nativePdf";
 import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
 import type { PageLayoutDocument } from "@/types/pageLayout";
 import { reconcileFabricCanvas } from "@/lib/canvas/reconcileFabricCanvas";
+import { shouldPersistFabricObject } from "@/lib/canvas/fabricDocumentObject";
 import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
 import { shouldEditFabricTextInPlace } from "@/components/editor/canvasTextEditing";
 import { getActiveToolAfterToolbarClick, shouldInsertToolImmediately } from "@/components/editor/canvasToolBehavior";
@@ -299,6 +300,20 @@ function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
     (placeholder as any).data = { blockId: block.id, blockType: "image" };
     canvas.add(placeholder);
   }
+}
+
+function applyCanvasInteractionState(canvas: Canvas, readOnly: boolean, activeTool: ShapeTool) {
+  canvas.selection = !readOnly;
+  canvas.isDrawingMode = !readOnly && activeTool === "draw";
+  canvas.getObjects().forEach((obj) => {
+    const data = (obj as FabricObjectWithMeta).data ?? {};
+    if (data.isHighlight || data.isCommentIndicator || data.isOcrBadge) return;
+    obj.selectable = !readOnly;
+    obj.evented = !readOnly;
+    if (obj.type === "textbox") {
+      (obj as Textbox).editable = !readOnly;
+    }
+  });
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -617,8 +632,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   // ── Read-only mode ─────────────────────────────────────────────────────
   useEffect(() => {
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-      canvas.selection = !readOnly;
-      canvas.getObjects().forEach((obj) => { obj.selectable = !readOnly; obj.evented = !readOnly; });
+      applyCanvasInteractionState(canvas, readOnly ?? false, activeTool);
       canvas.renderAll();
     }
   }, [readOnly]);
@@ -877,7 +891,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
   useEffect(() => {
     for (const canvas of fabricCanvasesRef.current.values()) {
-      canvas.isDrawingMode = activeTool === "draw";
+      applyCanvasInteractionState(canvas, readOnly ?? false, activeTool);
       if (activeTool === "draw") {
         canvas.freeDrawingBrush = new PencilBrush(canvas);
         canvas.freeDrawingBrush.width = 2;
@@ -982,6 +996,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     }, 100);
 
     fcanvas.on("object:added", (e) => {
+      if (e.target && !shouldPersistFabricObject(e.target as FabricObjectWithMeta)) return;
       if (suggestModeRef.current && e.target) {
         const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
         if (blockId) {
@@ -1239,8 +1254,34 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
     fabricCanvasesRef.current.set(pageIndex, fcanvas);
 
+    applyCanvasInteractionState(fcanvas, readOnly ?? false, activeTool);
+
     // Apply any already-loaded comment indicators to this newly-live canvas.
     renderCommentIndicators(fcanvas, comments, pageIndex, scale, setOpenCommentThread);
+
+    // Apply existing find highlights to this newly-live canvas.
+    for (const match of matches) {
+      if (match.pageIndex !== pageIndex) continue;
+      const block = model.blocks?.find((b) => b.id === match.blockId);
+      if (!block) continue;
+      const [hLeft, hTop, hRight, hBottom] = documentRectToCanvasRect((block.bounding_box ?? [0, 0, 0, 0]) as RectX0Y0X1Y1, scale);
+      const isCurrent =
+        matches[currentMatchIndex]?.blockId === match.blockId &&
+        matches[currentMatchIndex]?.startOffset === match.startOffset;
+      const highlightRect = new Rect({
+        left: hLeft,
+        top: hTop,
+        width: hRight - hLeft,
+        height: hBottom - hTop,
+        fill: isCurrent ? "rgba(249,115,22,0.35)" : "rgba(253,224,71,0.35)",
+        selectable: false,
+        evented: false,
+      });
+      (highlightRect as FabricObjectWithMeta).data = { isHighlight: true };
+      fcanvas.add(highlightRect);
+      fcanvas.bringObjectToFront(highlightRect);
+    }
+    fcanvas.renderAll();
   };
 
   const destroyFabricCanvas = (pageIndex: number) => {
