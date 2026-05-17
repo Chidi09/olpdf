@@ -175,9 +175,21 @@ pub struct ParseMetrics {
     pub is_likely_scanned: bool,
 }
 
+#[derive(Serialize, Clone)]
+pub struct WasmGlyph {
+    pub id: String,
+    pub char: String,
+    pub bbox: [f64; 4],
+    pub font_family: String,
+    pub font_size: f64,
+    pub color: String,
+    pub page_index: usize,
+}
+
 #[derive(Serialize)]
 pub struct ParseResult {
     pub blocks: Vec<WasmBlock>,
+    pub glyphs: Vec<WasmGlyph>,
     pub layout_objects: Vec<WasmLayoutObject>,
     pub page_dimensions: Vec<WasmPageDimension>,
     pub metrics: ParseMetrics,

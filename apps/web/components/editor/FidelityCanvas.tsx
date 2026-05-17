@@ -1307,7 +1307,8 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
   const canvasToolbar = (
       <div className="sticky top-4 z-40 mx-auto mb-4 w-full min-w-[760px] max-w-[1200px]">
-        <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[var(--bg-elevated)] px-2 py-1.5 shadow-[0_1px_0_inset_rgb(255_255_255/6%),0_8px_24px_-8px_rgb(0_0_0/50%)] backdrop-blur-xl">
+        <div className="rounded-2xl border border-white/10 bg-[var(--bg-elevated)] shadow-[0_1px_0_inset_rgb(255_255_255/6%),0_8px_24px_-8px_rgb(0_0_0/50%)] backdrop-blur-xl">
+          <div className="flex items-center gap-1 px-2 py-1.5">
 
           {/* ── Group 1: Drawing tools ── */}
           {([
@@ -1542,7 +1543,9 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
             </div>
           </div>
 
-        </div>{/* end toolbar row */}
+          </div>{/* end toolbar row */}
+          <FormatBar embedded />
+        </div>
       </div>
   );
 
@@ -1557,8 +1560,6 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
       {renderedCanvasToolbar}
 
-      {/* Format Bar — appears when a text block is selected */}
-      <FormatBar />
       <FindReplaceBar
         model={model}
         onModelChange={(nextModel) => {

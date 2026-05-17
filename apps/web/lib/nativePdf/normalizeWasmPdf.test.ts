@@ -1,126 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { normalizeWasmResult } from "./normalizeWasmPdf";
+import type { WasmGlyphPayload } from "@/types/nativePdf";
+import { normalizeWasmGlyphs } from "./normalizeWasmPdf";
 
-describe("normalizeWasmResult", () => {
-  it("creates a ready wasm native edit session with parse metrics", () => {
-    const session = normalizeWasmResult({
-      metrics: {
-        duration_ms: 12,
-        total_blocks: 1,
-        unmapped_chars: 0,
-        pages_failed: 0,
-        warnings: [],
-        image_count: 0,
-        missing_fonts_count: 0,
-        is_likely_scanned: false,
-      },
-      blocks: [{
-        id: "blk-1",
-        object_id: "obj-1",
-        source_ref: "12 0 R",
-        type: "text",
-        content: "Hello",
-        rich_spans: [],
+describe("normalizeWasmGlyphs", () => {
+  it("converts a WasmGlyphPayload to PdfGlyph with correct fields", () => {
+    const wasmGlyphs: WasmGlyphPayload[] = [
+      {
+        id: "glyph-0-0",
+        char: "H",
+        bbox: [10.0, 100.0, 17.0, 112.0],
+        font_family: "Helvetica",
+        font_size: 12.0,
+        color: "#111111",
         page_index: 0,
-        bounding_box: [72, 72, 120, 18],
-        font_meta: { family: "Helvetica", size: 12, color: "#000000", is_bold: false, is_italic: false },
-        z_index: 0,
-        bullet: undefined as unknown as string,
-        alignment: "left",
-        is_invisible: false,
-      }],
-      page_dimensions: [{ page_index: 0, width: 612, height: 792 }],
-    }, "doc-1", "documents/doc-1.pdf");
-
-    expect(session.status).toBe("ready");
-    expect(session.source).toBe("wasm");
-    expect(session.parseMetrics?.total_blocks).toBe(1);
-  });
-
-  it("marks session as partial when pages failed", () => {
-    const session = normalizeWasmResult({
-      metrics: {
-        duration_ms: 5,
-        total_blocks: 0,
-        unmapped_chars: 0,
-        pages_failed: 2,
-        warnings: ["page 3 failed"],
-        image_count: 0,
-        missing_fonts_count: 0,
-        is_likely_scanned: false,
       },
-      blocks: [],
-      page_dimensions: [],
-    }, "doc-1", "documents/doc-1.pdf");
+    ];
 
-    expect(session.status).toBe("partial");
-  });
+    const result = normalizeWasmGlyphs(wasmGlyphs);
 
-  it("preserves layout objects emitted by wasm", () => {
-    const session = normalizeWasmResult({
-      metrics: {
-        duration_ms: 12,
-        total_blocks: 1,
-        unmapped_chars: 0,
-        pages_failed: 0,
-        warnings: [],
-        image_count: 0,
-        missing_fonts_count: 0,
-        is_likely_scanned: false,
-      },
-      blocks: [],
-      page_dimensions: [{ page_index: 0, width: 612, height: 792 }],
-      layout_objects: [
-        {
-          id: "text_p0_abcd",
-          type: "text",
-          page_index: 0,
-          x: 72,
-          y: 96,
-          width: 120,
-          height: 24,
-          rotation: 0,
-          z_index: 3,
-          source_ref: "page:0:content:1",
-          original_pdf_object_id: "text_p0_abcd",
-          content: "Hello",
-          font_family: "Helvetica",
-          font_size: 12,
-          color: "#111111",
-          text_align: "left",
-        },
-      ],
-    }, "doc-1", "objects/doc.pdf");
-
-    expect(session.layoutObjects).toBeDefined();
-    expect(session.layoutObjects).toHaveLength(1);
-    expect(session.layoutObjects![0]).toMatchObject({
-      id: "text_p0_abcd",
-      type: "text",
-      pageIndex: 0,
-      x: 72,
-      y: 96,
-      content: "Hello",
-    });
-  });
-
-  it("omits layoutObjects when empty", () => {
-    const session = normalizeWasmResult({
-      metrics: {
-        duration_ms: 5,
-        total_blocks: 0,
-        unmapped_chars: 0,
-        pages_failed: 0,
-        warnings: [],
-        image_count: 0,
-        missing_fonts_count: 0,
-        is_likely_scanned: false,
-      },
-      blocks: [],
-      page_dimensions: [],
-      layout_objects: [],
-    }, "doc-1", "objects/doc.pdf");
-
-    expect(session.layoutObjects).toBeUndefined();
+    expect(result).toHaveLength(1);
+    expect(result[0].char).toBe("H");
+    expect(result[0].bbox).toEqual([10, 100, 17, 112]);
+    expect(result[0].baseline).toBeCloseTo(112, 0);
+    expect(result[0].fontFamily).toBe("Helvetica");
+    expect(result[0].fontSize).toBe(12);
+    expect(result[0].color).toBe("#111111");
+    expect(result[0].sourceRef.pageIndex).toBe(0);
   });
 });

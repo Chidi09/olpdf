@@ -68,7 +68,11 @@ function NumInput({ value, min, max, step = 1, title, onChange, width = "w-14" }
   );
 }
 
-export default function FormatBar() {
+type FormatBarProps = {
+  embedded?: boolean;
+};
+
+export default function FormatBar({ embedded = false }: FormatBarProps) {
   const { selectedBlock, applyFormat } = useFidelityCanvasStore();
 
   if (!selectedBlock) return null;
@@ -76,8 +80,8 @@ export default function FormatBar() {
   const fmt = (cmd: Partial<FormatCommand>) => applyFormat(cmd as FormatCommand);
 
   return (
-    <div className="mx-auto mb-3 w-full max-w-[1200px] sticky top-[60px] z-30">
-      <div className="flex items-center gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-1.5 shadow-md flex-wrap">
+    <div className={embedded ? "border-t border-white/10 px-2 py-1.5" : "mx-auto mb-3 w-full max-w-[1200px] sticky top-[60px] z-30"}>
+      <div className={embedded ? "flex items-center gap-1 overflow-x-auto" : "flex items-center gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-1.5 shadow-md flex-wrap"}>
 
         {/* Block type badge */}
         <span className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded mr-1 shrink-0">

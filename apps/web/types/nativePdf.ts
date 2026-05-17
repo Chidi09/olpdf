@@ -43,8 +43,19 @@ export type ParseMetrics = {
   is_likely_scanned: boolean;
 };
 
+export type WasmGlyphPayload = {
+  id: string;
+  char: string;
+  bbox: [number, number, number, number];
+  font_family: string;
+  font_size: number;
+  color: string;
+  page_index: number;
+};
+
 export type WasmParseResult = {
   blocks: PdfNativeObject[];
+  glyphs?: WasmGlyphPayload[];
   page_dimensions: Array<{ page_index: number; width: number; height: number }>;
   metrics: ParseMetrics;
 };
@@ -81,6 +92,90 @@ export type WasmLayoutObject = {
   fontSize?: number;
   color?: string;
   textAlign?: string;
+};
+
+export type PdfAllowedOperation = "replace_text" | "format_text" | "move" | "resize" | "replace_image" | "overlay_text" | "ocr" | "delete";
+
+export type PdfEditabilityMode = "flow_text" | "atomic_text" | "replaceable_image" | "atomic_vector" | "raster" | "unsupported";
+
+export type PdfEditability = {
+  mode: PdfEditabilityMode;
+  confidence: number;
+  reasons: string[];
+  allowedOperations: PdfAllowedOperation[];
+};
+
+export type PdfSourceRef = {
+  pageIndex: number;
+  objectRef?: string;
+  streamRef?: string;
+  operatorIndex?: number;
+  byteRange?: [number, number];
+};
+
+export type PdfGlyph = {
+  id: string;
+  char: string;
+  glyphId?: number;
+  bbox: PdfRect;
+  baseline: number;
+  fontRef?: string;
+  fontFamily?: string;
+  fontSize: number;
+  color?: string;
+  sourceRef: PdfSourceRef;
+};
+
+export type PdfTextRun = {
+  id: string;
+  text: string;
+  bbox: PdfRect;
+  baseline: number;
+  fontFamily?: string;
+  fontSize: number;
+  color?: string;
+  glyphs: PdfGlyph[];
+  sourceRefs: PdfSourceRef[];
+};
+
+export type PdfTextLine = {
+  id: string;
+  bbox: PdfRect;
+  baseline: number;
+  runs: PdfTextRun[];
+};
+
+export type PdfStructuredBlock = {
+  id: string;
+  kind: "flow_text" | "atomic_text" | "image" | "vector" | "raster" | "unsupported";
+  pageIndex: number;
+  bbox: PdfRect;
+  confidence: number;
+  editability: PdfEditability;
+  lines?: PdfTextLine[];
+  sourceRefs: PdfSourceRef[];
+};
+
+export type PdfStructuredPage = {
+  pageIndex: number;
+  width: number;
+  height: number;
+  blocks: PdfStructuredBlock[];
+};
+
+export type PdfDocumentOperation = {
+  id: string;
+  type: string;
+  blockId: string;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type PdfDocumentTree = {
+  documentId: string;
+  pages: PdfStructuredPage[];
+  operations: PdfDocumentOperation[];
 };
 
 export type PdfEditSession = {

@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::window;
 
 use layout::reconstruct_paragraphs;
-use types::{FontMeta, ParseMetrics, ParseResult, PreflightResult, WasmBlock, WasmLayoutObject, WasmPageDimension};
+use types::{FontMeta, ParseMetrics, ParseResult, PreflightResult, WasmBlock, WasmGlyph, WasmLayoutObject, WasmPageDimension};
 
 #[wasm_bindgen(start)]
 pub fn init_hooks() {
@@ -54,6 +54,7 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
         .map_err(|e| JsValue::from_str(&format!("Page count error: {e}")))?;
 
     let mut all_blocks = Vec::new();
+    let mut all_glyphs: Vec<WasmGlyph> = Vec::new();
     let mut all_layout_objects: Vec<WasmLayoutObject> = Vec::new();
     let mut page_dimensions: Vec<WasmPageDimension> = Vec::new();
     let mut warnings: Vec<String> = Vec::new();
@@ -71,14 +72,15 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
 
         let mut vector_paths: Vec<[f64; 4]> = Vec::new();
 
-        let page_blocks = match parse_page_blocks(&doc, page_index, height, &mut total_image_count, &mut warnings) {
-            Ok(blocks) => blocks,
+        let (page_blocks, page_glyphs) = match parse_page_blocks(&doc, page_index, height, &mut total_image_count, &mut warnings) {
+            Ok(result) => result,
             Err(e) => {
                 warnings.push(format!("Page {page_index} parse error: {e}"));
                 pages_failed += 1;
                 continue;
             }
         };
+        all_glyphs.extend(page_glyphs);
 
         if page_blocks.is_empty() { pages_failed += 1; }
 
@@ -117,6 +119,7 @@ pub fn parse_pdf(data: &[u8]) -> Result<JsValue, JsValue> {
 
     serde_wasm_bindgen::to_value(&ParseResult {
         blocks: all_blocks,
+        glyphs: all_glyphs,
         layout_objects: all_layout_objects,
         page_dimensions,
         metrics,
@@ -130,7 +133,7 @@ fn parse_page_blocks(
     _page_height: f64,
     image_count: &mut usize,
     _warnings: &mut Vec<String>,
-) -> Result<Vec<WasmBlock>, String> {
+) -> Result<(Vec<WasmBlock>, Vec<WasmGlyph>), String> {
     let chars = doc.extract_chars(page_index)
         .map_err(|e| format!("extract_chars failed: {e}"))?;
     let images = doc.extract_images(page_index)
@@ -138,7 +141,9 @@ fn parse_page_blocks(
     *image_count += images.len();
 
     let mut blocks: Vec<WasmBlock> = Vec::new();
+    let mut glyphs: Vec<WasmGlyph> = Vec::new();
     let mut block_idx = 0usize;
+    let mut glyph_idx = 0usize;
     let mut current_text = String::new();
     let mut current_font = String::new();
     let mut current_size = 12.0_f64;
@@ -184,10 +189,23 @@ fn parse_page_blocks(
             }
         }
 
+        let ch_color = format!("#{:02X}{:02X}{:02X}", (ch.color.r * 255.0) as u8, (ch.color.g * 255.0) as u8, (ch.color.b * 255.0) as u8);
+        let gw = ch.font_size as f64 * 0.6;
+        glyphs.push(WasmGlyph {
+            id: format!("glyph_{page_index}_{glyph_idx}"),
+            char: ch.char.to_string(),
+            bbox: [ch.bbox.x as f64, ch.bbox.y as f64, ch.bbox.x as f64 + gw, ch.bbox.y as f64 + ch.font_size as f64],
+            font_family: ch.font_name.clone(),
+            font_size: ch.font_size as f64,
+            color: ch_color.clone(),
+            page_index,
+        });
+        glyph_idx += 1;
+
         current_text.push(ch.char);
         current_font = ch.font_name.clone();
         current_size = ch.font_size as f64;
-        current_color = format!("#{:02X}{:02X}{:02X}", (ch.color.r * 255.0) as u8, (ch.color.g * 255.0) as u8, (ch.color.b * 255.0) as u8);
+        current_color = ch_color;
         prev_x = ch.bbox.x as f64;
         prev_y = ch.bbox.y as f64;
     }
@@ -222,7 +240,7 @@ fn parse_page_blocks(
         });
     }
 
-    Ok(blocks)
+    Ok((blocks, glyphs))
 }
 
 fn block_to_layout_object(block: &WasmBlock) -> WasmLayoutObject {
@@ -257,7 +275,7 @@ pub fn parse_page_by_index(data: &[u8], page_index: usize) -> Result<JsValue, Js
         .map_err(|e| JsValue::from_str(&format!("PDF load error: {e}")))?;
     let mut image_count = 0usize;
     let mut warnings = Vec::new();
-    let blocks = parse_page_blocks(&doc, page_index, 0.0, &mut image_count, &mut warnings)
+    let (blocks, _glyphs) = parse_page_blocks(&doc, page_index, 0.0, &mut image_count, &mut warnings)
         .map_err(|e| JsValue::from_str(&e))?;
     serde_wasm_bindgen::to_value(&blocks)
         .map_err(|e| JsValue::from_str(&format!("Serialize error: {e}")))
