@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@olpdf/vue",
   "version": "0.1.0",
   "description": "Vue 3 / Nuxt component wrapper for @olpdf/embed",

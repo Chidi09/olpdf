@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@olpdf/svelte",
   "version": "0.1.0",
   "description": "Svelte component wrapper for @olpdf/embed",

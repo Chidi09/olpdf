@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@olpdf/react",
   "version": "0.1.0",
   "description": "React component wrapper for @olpdf/embed",

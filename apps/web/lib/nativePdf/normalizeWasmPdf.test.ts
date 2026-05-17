@@ -130,10 +130,11 @@ describe("normalizeWasmResult", () => {
   });
 
 it("handles missing metrics gracefully", () => {
-  const result = normalizeWasmResult({
+  const payload = {
     blocks: [],
     page_dimensions: [{ page_index: 0, width: 612, height: 792 }],
-  } as WasmParseResult, "doc-1", "ready");
+  } as unknown as WasmParseResult;
+  const result = normalizeWasmResult(payload, "doc-1", "ready");
   expect(result.parseMetrics).toBeUndefined();
 });
 
@@ -167,7 +168,7 @@ it("maintains source refs through normalization", () => {
       page_index: 0,
     }],
     page_dimensions: [{ page_index: 0, width: 612, height: 792 }],
-  } as WasmParseResult, "doc-5", "ready");
+  } as unknown as WasmParseResult, "doc-5", "ready");
   expect(result.objects[0].sourceRef).toBe("page:0:oxide:0");
   expect(result.glyphs![0].sourceRef).toEqual({ pageIndex: 0 });
 });
