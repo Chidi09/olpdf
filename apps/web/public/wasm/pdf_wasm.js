@@ -1,5 +1,7 @@
 /* @ts-self-types="./pdf_wasm.d.ts" */
 
+//#region exports
+
 /**
  * Horizontal-alignment enum shared by `textInRect`, buffered `table`, and
  * `streamingTable`. Maps 1:1 onto [`crate::writer::TextAlign`] /
@@ -46,7 +48,9 @@ export class ArtifactStyle {
      * @returns {ArtifactStyle}
      */
     bold() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         const ret = wasm.wasmartifactstyle_bold(ptr);
         return ArtifactStyle.__wrap(ret);
     }
@@ -58,7 +62,9 @@ export class ArtifactStyle {
      * @returns {ArtifactStyle}
      */
     color(r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         const ret = wasm.wasmartifactstyle_color(ptr, r, g, b);
         return ArtifactStyle.__wrap(ret);
     }
@@ -69,7 +75,9 @@ export class ArtifactStyle {
      * @returns {ArtifactStyle}
      */
     font(name, size) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmartifactstyle_font(ptr, ptr0, len0, size);
@@ -125,12 +133,17 @@ export class PdfDocument {
      * @param {number} _page_num
      */
     delete_page(_page_num) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(_page_num);
         const ret = wasm.pdfdocument_delete_page(this.__wbg_ptr, _page_num);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
         }
     }
     flatten_form() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.pdfdocument_flatten_form(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -141,6 +154,9 @@ export class PdfDocument {
      * @returns {any}
      */
     get_annotations(page_num) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_num);
         const ret = wasm.pdfdocument_get_annotations(this.__wbg_ptr, page_num);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -152,6 +168,9 @@ export class PdfDocument {
      * @returns {any}
      */
     get_form_field_layout_objects(_page_num) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(_page_num);
         const ret = wasm.pdfdocument_get_form_field_layout_objects(this.__wbg_ptr, _page_num);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -162,6 +181,8 @@ export class PdfDocument {
      * @returns {any}
      */
     get_form_fields() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.pdfdocument_get_form_fields(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -173,6 +194,9 @@ export class PdfDocument {
      * @returns {any}
      */
     get_images(_page_num) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(_page_num);
         const ret = wasm.pdfdocument_get_images(this.__wbg_ptr, _page_num);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -183,6 +207,8 @@ export class PdfDocument {
      * @returns {any}
      */
     get_metadata() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.pdfdocument_get_metadata(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -195,6 +221,9 @@ export class PdfDocument {
      * @param {number} _height
      */
     insert_blank_page(_after_page, _width, _height) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(_after_page);
         const ret = wasm.pdfdocument_insert_blank_page(this.__wbg_ptr, _after_page, _width, _height);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -218,6 +247,8 @@ export class PdfDocument {
      * @returns {number}
      */
     page_count() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.pdfdocument_page_count(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -229,6 +260,9 @@ export class PdfDocument {
      * @returns {any}
      */
     page_size(page_num) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_num);
         const ret = wasm.pdfdocument_page_size(this.__wbg_ptr, page_num);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -239,6 +273,8 @@ export class PdfDocument {
      * @param {Uint32Array} _new_order
      */
     reorder_pages(_new_order) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArray32ToWasm0(_new_order, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.pdfdocument_reorder_pages(this.__wbg_ptr, ptr0, len0);
@@ -251,6 +287,10 @@ export class PdfDocument {
      * @param {number} _degrees
      */
     rotate_page(_page_num, _degrees) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(_page_num);
+        _assertNum(_degrees);
         const ret = wasm.pdfdocument_rotate_page(this.__wbg_ptr, _page_num, _degrees);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -260,6 +300,8 @@ export class PdfDocument {
      * @returns {Uint8Array}
      */
     serialize() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.pdfdocument_serialize(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -273,6 +315,8 @@ export class PdfDocument {
      * @returns {Uint8Array}
      */
     serialize_incremental(_original) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArray8ToWasm0(_original, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.pdfdocument_serialize_incremental(this.__wbg_ptr, ptr0, len0);
@@ -288,6 +332,9 @@ export class PdfDocument {
      * @param {string} _value
      */
     set_field_value(_field_obj_num, _value) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(_field_obj_num);
         const ptr0 = passStringToWasm0(_value, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.pdfdocument_set_field_value(this.__wbg_ptr, _field_obj_num, ptr0, len0);
@@ -299,6 +346,8 @@ export class PdfDocument {
      * @param {any} _meta
      */
     set_metadata(_meta) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.pdfdocument_set_metadata(this.__wbg_ptr, _meta);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -319,6 +368,9 @@ if (Symbol.dispose) PdfDocument.prototype[Symbol.dispose] = PdfDocument.prototyp
  * cross the wasm-bindgen boundary.
  */
 export class StreamingTable {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(StreamingTable.prototype);
         obj.__wbg_ptr = ptr;
@@ -340,6 +392,8 @@ export class StreamingTable {
      * @returns {number}
      */
     batchCount() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.streamingtable_batchCount(this.__wbg_ptr);
         return ret >>> 0;
     }
@@ -348,6 +402,8 @@ export class StreamingTable {
      * @returns {number}
      */
     columnCount() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.streamingtable_columnCount(this.__wbg_ptr);
         return ret >>> 0;
     }
@@ -358,6 +414,8 @@ export class StreamingTable {
      * throws.
      */
     finish() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.streamingtable_finish(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -368,6 +426,8 @@ export class StreamingTable {
      * Called automatically when `batch_size` rows accumulate.
      */
     flush() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         wasm.streamingtable_flush(this.__wbg_ptr);
     }
     /**
@@ -375,6 +435,8 @@ export class StreamingTable {
      * @returns {number}
      */
     pendingRowCount() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.streamingtable_pendingRowCount(this.__wbg_ptr);
         return ret >>> 0;
     }
@@ -385,6 +447,8 @@ export class StreamingTable {
      * @param {string[]} cells
      */
     pushRow(cells) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArrayJsValueToWasm0(cells, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.streamingtable_pushRow(this.__wbg_ptr, ptr0, len0);
@@ -399,6 +463,8 @@ export class StreamingTable {
      * @param {any} cells
      */
     pushRowSpan(cells) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.streamingtable_pushRowSpan(this.__wbg_ptr, cells);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -475,7 +541,9 @@ export class WasmArtifact {
      * @returns {WasmArtifact}
      */
     withOffset(offset) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         const ret = wasm.wasmartifact_withOffset(ptr, offset);
         return WasmArtifact.__wrap(ret);
     }
@@ -485,8 +553,13 @@ export class WasmArtifact {
      * @returns {WasmArtifact}
      */
     withStyle(style) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         _assertClass(style, ArtifactStyle);
+        if (style.__wbg_ptr === 0) {
+            throw new Error('Attempt to use a moved value');
+        }
         const ret = wasm.wasmartifact_withStyle(ptr, style.__wbg_ptr);
         return WasmArtifact.__wrap(ret);
     }
@@ -499,6 +572,9 @@ if (Symbol.dispose) WasmArtifact.prototype[Symbol.dispose] = WasmArtifact.protot
  * / `serial` / `validity` / `isValid` getters only.
  */
 export class WasmCertificate {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(WasmCertificate.prototype);
         obj.__wbg_ptr = ptr;
@@ -521,6 +597,8 @@ export class WasmCertificate {
      * @returns {boolean}
      */
     get isValid() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmcertificate_isValid(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -535,6 +613,8 @@ export class WasmCertificate {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmcertificate_issuer(this.__wbg_ptr);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -609,6 +689,8 @@ export class WasmCertificate {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmcertificate_serial(this.__wbg_ptr);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -631,6 +713,8 @@ export class WasmCertificate {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmcertificate_subject(this.__wbg_ptr);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -651,6 +735,8 @@ export class WasmCertificate {
      * @returns {BigInt64Array}
      */
     get validity() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmcertificate_validity(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -689,6 +775,8 @@ export class WasmDocumentBuilder {
      * @returns {WasmFluentPageBuilder}
      */
     a4Page() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmdocumentbuilder_a4Page(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -700,6 +788,8 @@ export class WasmDocumentBuilder {
      * @param {string} author
      */
     author(author) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(author, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmdocumentbuilder_author(this.__wbg_ptr, ptr0, len0);
@@ -713,6 +803,8 @@ export class WasmDocumentBuilder {
      * @returns {Uint8Array}
      */
     build() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmdocumentbuilder_build(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -733,7 +825,12 @@ export class WasmDocumentBuilder {
      * @param {WasmFluentPageBuilder} page
      */
     commitPage(page) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         _assertClass(page, WasmFluentPageBuilder);
+        if (page.__wbg_ptr === 0) {
+            throw new Error('Attempt to use a moved value');
+        }
         const ret = wasm.wasmdocumentbuilder_commitPage(this.__wbg_ptr, page.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -744,6 +841,8 @@ export class WasmDocumentBuilder {
      * @param {string} creator
      */
     creator(creator) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(creator, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmdocumentbuilder_creator(this.__wbg_ptr, ptr0, len0);
@@ -756,6 +855,8 @@ export class WasmDocumentBuilder {
      * @param {string} keywords
      */
     keywords(keywords) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(keywords, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmdocumentbuilder_keywords(this.__wbg_ptr, ptr0, len0);
@@ -770,6 +871,8 @@ export class WasmDocumentBuilder {
      * @param {string} lang
      */
     language(lang) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(lang, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmdocumentbuilder_language(this.__wbg_ptr, ptr0, len0);
@@ -782,6 +885,8 @@ export class WasmDocumentBuilder {
      * @returns {WasmFluentPageBuilder}
      */
     letterPage() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmdocumentbuilder_letterPage(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -804,6 +909,8 @@ export class WasmDocumentBuilder {
      * @param {string} script
      */
     onOpen(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmdocumentbuilder_onOpen(this.__wbg_ptr, ptr0, len0);
@@ -819,6 +926,8 @@ export class WasmDocumentBuilder {
      * @returns {WasmFluentPageBuilder}
      */
     page(width, height) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmdocumentbuilder_page(this.__wbg_ptr, width, height);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -832,9 +941,14 @@ export class WasmDocumentBuilder {
      * @param {WasmEmbeddedFont} font
      */
     registerEmbeddedFont(name, font) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         _assertClass(font, WasmEmbeddedFont);
+        if (font.__wbg_ptr === 0) {
+            throw new Error('Attempt to use a moved value');
+        }
         const ret = wasm.wasmdocumentbuilder_registerEmbeddedFont(this.__wbg_ptr, ptr0, len0, font.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -849,6 +963,8 @@ export class WasmDocumentBuilder {
      * @param {string} standard
      */
     roleMap(custom, standard) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(custom, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passStringToWasm0(standard, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -863,6 +979,8 @@ export class WasmDocumentBuilder {
      * @param {string} subject
      */
     subject(subject) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(subject, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmdocumentbuilder_subject(this.__wbg_ptr, ptr0, len0);
@@ -877,6 +995,8 @@ export class WasmDocumentBuilder {
      * and `/ViewerPreferences` in the catalog. Opt-in — no effect unless called.
      */
     taggedPdfUa1() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmdocumentbuilder_taggedPdfUa1(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -887,6 +1007,8 @@ export class WasmDocumentBuilder {
      * @param {string} title
      */
     title(title) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(title, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmdocumentbuilder_title(this.__wbg_ptr, ptr0, len0);
@@ -903,6 +1025,8 @@ export class WasmDocumentBuilder {
      * @returns {Uint8Array}
      */
     toBytesEncrypted(user_password, owner_password) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(user_password, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passStringToWasm0(owner_password, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -924,6 +1048,9 @@ if (Symbol.dispose) WasmDocumentBuilder.prototype[Symbol.dispose] = WasmDocument
  * moved into the builder and this handle becomes empty.
  */
 export class WasmEmbeddedFont {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(WasmEmbeddedFont.prototype);
         obj.__wbg_ptr = ptr;
@@ -966,6 +1093,8 @@ export class WasmEmbeddedFont {
         let deferred1_0;
         let deferred1_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmembeddedfont_name(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
@@ -983,6 +1112,9 @@ if (Symbol.dispose) WasmEmbeddedFont.prototype[Symbol.dispose] = WasmEmbeddedFon
  * instance is single-use — `done()` twice throws.
  */
 export class WasmFluentPageBuilder {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(WasmFluentPageBuilder.prototype);
         obj.__wbg_ptr = ptr;
@@ -1004,6 +1136,8 @@ export class WasmFluentPageBuilder {
      * @param {number} y
      */
     at(x, y) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_at(this.__wbg_ptr, x, y);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1021,6 +1155,9 @@ export class WasmFluentPageBuilder {
      * @param {number} h
      */
     barcode1d(barcode_type, data, x, y, w, h) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(barcode_type);
         const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_barcode1d(this.__wbg_ptr, barcode_type, ptr0, len0, x, y, w, h);
@@ -1036,6 +1173,8 @@ export class WasmFluentPageBuilder {
      * @param {number} size
      */
     barcodeQr(data, x, y, size) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_barcodeQr(this.__wbg_ptr, ptr0, len0, x, y, size);
@@ -1052,8 +1191,11 @@ export class WasmFluentPageBuilder {
      * @param {boolean} checked
      */
     checkbox(name, x, y, w, h, checked) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
+        _assertBoolean(checked);
         const ret = wasm.wasmfluentpagebuilder_checkbox(this.__wbg_ptr, ptr0, len0, x, y, w, h, checked);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1067,6 +1209,9 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     columns(column_count, gap_pt, text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(column_count);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_columns(this.__wbg_ptr, column_count, gap_pt, ptr0, len0);
@@ -1085,6 +1230,8 @@ export class WasmFluentPageBuilder {
      * @param {string | null} [selected]
      */
     comboBox(name, x, y, w, h, options, selected) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passArrayJsValueToWasm0(options, wasm.__wbindgen_malloc);
@@ -1109,7 +1256,12 @@ export class WasmFluentPageBuilder {
      * @param {WasmDocumentBuilder} builder
      */
     done(builder) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         _assertClass(builder, WasmDocumentBuilder);
+        if (builder.__wbg_ptr === 0) {
+            throw new Error('Attempt to use a moved value');
+        }
         const ret = wasm.wasmfluentpagebuilder_done(this.__wbg_ptr, builder.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1119,6 +1271,8 @@ export class WasmFluentPageBuilder {
      * @param {string} script
      */
     fieldCalculate(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_fieldCalculate(this.__wbg_ptr, ptr0, len0);
@@ -1130,6 +1284,8 @@ export class WasmFluentPageBuilder {
      * @param {string} script
      */
     fieldFormat(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_fieldFormat(this.__wbg_ptr, ptr0, len0);
@@ -1141,6 +1297,8 @@ export class WasmFluentPageBuilder {
      * @param {string} script
      */
     fieldKeystroke(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_fieldKeystroke(this.__wbg_ptr, ptr0, len0);
@@ -1152,6 +1310,8 @@ export class WasmFluentPageBuilder {
      * @param {string} script
      */
     fieldValidate(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_fieldValidate(this.__wbg_ptr, ptr0, len0);
@@ -1170,6 +1330,8 @@ export class WasmFluentPageBuilder {
      * @param {number} b
      */
     filledRect(x, y, w, h, r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_filledRect(this.__wbg_ptr, x, y, w, h, r, g, b);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1180,6 +1342,8 @@ export class WasmFluentPageBuilder {
      * @param {number} size
      */
     font(name, size) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_font(this.__wbg_ptr, ptr0, len0, size);
@@ -1194,6 +1358,8 @@ export class WasmFluentPageBuilder {
      * @param {string} note_text
      */
     footnote(ref_mark, note_text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(ref_mark, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passStringToWasm0(note_text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -1211,6 +1377,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     freeText(x, y, w, h, text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_freeText(this.__wbg_ptr, x, y, w, h, ptr0, len0);
@@ -1223,6 +1391,9 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     heading(level, text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(level);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_heading(this.__wbg_ptr, level, ptr0, len0);
@@ -1236,12 +1407,16 @@ export class WasmFluentPageBuilder {
      * @param {number} b
      */
     highlight(r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_highlight(this.__wbg_ptr, r, g, b);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
         }
     }
     horizontalRule() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_horizontalRule(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1256,6 +1431,8 @@ export class WasmFluentPageBuilder {
      * @param {number} h
      */
     imageArtifact(bytes, x, y, w, h) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_imageArtifact(this.__wbg_ptr, ptr0, len0, x, y, w, h);
@@ -1273,6 +1450,8 @@ export class WasmFluentPageBuilder {
      * @param {string} alt_text
      */
     imageWithAlt(bytes, x, y, w, h, alt_text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passStringToWasm0(alt_text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -1287,6 +1466,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     inline(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_inline(this.__wbg_ptr, ptr0, len0);
@@ -1299,6 +1480,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     inlineBold(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_inlineBold(this.__wbg_ptr, ptr0, len0);
@@ -1314,6 +1497,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     inlineColor(r, g, b, text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_inlineColor(this.__wbg_ptr, r, g, b, ptr0, len0);
@@ -1326,6 +1511,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     inlineItalic(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_inlineItalic(this.__wbg_ptr, ptr0, len0);
@@ -1341,6 +1528,8 @@ export class WasmFluentPageBuilder {
      * @param {number} y2
      */
     line(x1, y1, x2, y2) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_line(this.__wbg_ptr, x1, y1, x2, y2);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1350,6 +1539,8 @@ export class WasmFluentPageBuilder {
      * @param {string} script
      */
     linkJavascript(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_linkJavascript(this.__wbg_ptr, ptr0, len0);
@@ -1361,6 +1552,8 @@ export class WasmFluentPageBuilder {
      * @param {string} destination
      */
     linkNamed(destination) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(destination, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_linkNamed(this.__wbg_ptr, ptr0, len0);
@@ -1372,6 +1565,9 @@ export class WasmFluentPageBuilder {
      * @param {number} page
      */
     linkPage(page) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page);
         const ret = wasm.wasmfluentpagebuilder_linkPage(this.__wbg_ptr, page);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1381,6 +1577,8 @@ export class WasmFluentPageBuilder {
      * @param {string} url
      */
     linkUrl(url) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(url, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_linkUrl(this.__wbg_ptr, ptr0, len0);
@@ -1399,6 +1597,8 @@ export class WasmFluentPageBuilder {
      * @returns {number}
      */
     measure(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_measure(this.__wbg_ptr, ptr0, len0);
@@ -1410,6 +1610,8 @@ export class WasmFluentPageBuilder {
      * builder's font carries over.
      */
     newPageSameSize() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_newPageSameSize(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1419,6 +1621,8 @@ export class WasmFluentPageBuilder {
      * Advance cursorY by one line-height and reset cursorX to 72 pt.
      */
     newline() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_newline(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1428,6 +1632,8 @@ export class WasmFluentPageBuilder {
      * @param {string} script
      */
     onClose(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_onClose(this.__wbg_ptr, ptr0, len0);
@@ -1439,6 +1645,8 @@ export class WasmFluentPageBuilder {
      * @param {string} script
      */
     onOpen(script) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(script, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_onOpen(this.__wbg_ptr, ptr0, len0);
@@ -1450,6 +1658,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     paragraph(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_paragraph(this.__wbg_ptr, ptr0, len0);
@@ -1467,6 +1677,8 @@ export class WasmFluentPageBuilder {
      * @param {string} caption
      */
     pushButton(name, x, y, w, h, caption) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passStringToWasm0(caption, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -1489,6 +1701,8 @@ export class WasmFluentPageBuilder {
      * @param {string | null} [selected]
      */
     radioGroup(name, values, xs, ys, ws, hs, selected) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passArrayJsValueToWasm0(values, wasm.__wbindgen_malloc);
@@ -1516,6 +1730,8 @@ export class WasmFluentPageBuilder {
      * @param {number} h
      */
     rect(x, y, w, h) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_rect(this.__wbg_ptr, x, y, w, h);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1530,6 +1746,8 @@ export class WasmFluentPageBuilder {
      * @returns {number}
      */
     remainingSpace() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_remainingSpace(this.__wbg_ptr);
         return ret;
     }
@@ -1542,6 +1760,8 @@ export class WasmFluentPageBuilder {
      * @param {number} h
      */
     signatureField(name, x, y, w, h) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_signatureField(this.__wbg_ptr, ptr0, len0, x, y, w, h);
@@ -1553,6 +1773,8 @@ export class WasmFluentPageBuilder {
      * @param {number} points
      */
     space(points) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_space(this.__wbg_ptr, points);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1564,6 +1786,8 @@ export class WasmFluentPageBuilder {
      * @param {number} b
      */
     squiggly(r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_squiggly(this.__wbg_ptr, r, g, b);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1573,6 +1797,8 @@ export class WasmFluentPageBuilder {
      * @param {string} name
      */
     stamp(name) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_stamp(this.__wbg_ptr, ptr0, len0);
@@ -1584,6 +1810,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     stickyNote(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_stickyNote(this.__wbg_ptr, ptr0, len0);
@@ -1597,6 +1825,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     stickyNoteAt(x, y, text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_stickyNoteAt(this.__wbg_ptr, x, y, ptr0, len0);
@@ -1615,6 +1845,8 @@ export class WasmFluentPageBuilder {
      * @returns {StreamingTable}
      */
     streamingTable(spec) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_streamingTable(this.__wbg_ptr, spec);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -1627,6 +1859,8 @@ export class WasmFluentPageBuilder {
      * @param {number} b
      */
     strikeout(r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_strikeout(this.__wbg_ptr, r, g, b);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1644,6 +1878,8 @@ export class WasmFluentPageBuilder {
      * @param {number} b
      */
     strokeLine(x1, y1, x2, y2, width, r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_strokeLine(this.__wbg_ptr, x1, y1, x2, y2, width, r, g, b);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1663,6 +1899,8 @@ export class WasmFluentPageBuilder {
      * @param {number} phase
      */
     strokeLineDashed(x1, y1, x2, y2, width, r, g, b, dash, phase) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArrayF32ToWasm0(dash, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_strokeLineDashed(this.__wbg_ptr, x1, y1, x2, y2, width, r, g, b, ptr0, len0, phase);
@@ -1682,6 +1920,8 @@ export class WasmFluentPageBuilder {
      * @param {number} b
      */
     strokeRect(x, y, w, h, width, r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_strokeRect(this.__wbg_ptr, x, y, w, h, width, r, g, b);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1701,6 +1941,8 @@ export class WasmFluentPageBuilder {
      * @param {number} phase
      */
     strokeRectDashed(x, y, w, h, width, r, g, b, dash, phase) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArrayF32ToWasm0(dash, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_strokeRectDashed(this.__wbg_ptr, x, y, w, h, width, r, g, b, ptr0, len0, phase);
@@ -1727,6 +1969,8 @@ export class WasmFluentPageBuilder {
      * @param {any} spec
      */
     table(spec) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_table(this.__wbg_ptr, spec);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1736,6 +1980,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     text(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_text(this.__wbg_ptr, ptr0, len0);
@@ -1752,6 +1998,8 @@ export class WasmFluentPageBuilder {
      * @param {string | null} [default_value]
      */
     textField(name, x, y, w, h, default_value) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         var ptr1 = isLikeNone(default_value) ? 0 : passStringToWasm0(default_value, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -1773,8 +2021,11 @@ export class WasmFluentPageBuilder {
      * @param {number} align
      */
     textInRect(x, y, w, h, text, align) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
+        _assertNum(align);
         const ret = wasm.wasmfluentpagebuilder_textInRect(this.__wbg_ptr, x, y, w, h, ptr0, len0, align);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1786,6 +2037,8 @@ export class WasmFluentPageBuilder {
      * @param {number} b
      */
     underline(r, g, b) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_underline(this.__wbg_ptr, r, g, b);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -1795,6 +2048,8 @@ export class WasmFluentPageBuilder {
      * @param {string} text
      */
     watermark(text) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfluentpagebuilder_watermark(this.__wbg_ptr, ptr0, len0);
@@ -1803,12 +2058,16 @@ export class WasmFluentPageBuilder {
         }
     }
     watermarkConfidential() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_watermarkConfidential(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
         }
     }
     watermarkDraft() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmfluentpagebuilder_watermarkDraft(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2004,6 +2263,9 @@ export class WasmOcrEngine {
         let ptr3 = 0;
         if (!isLikeNone(_config)) {
             _assertClass(_config, WasmOcrConfig);
+            if (_config.__wbg_ptr === 0) {
+                throw new Error('Attempt to use a moved value');
+            }
             ptr3 = _config.__destroy_into_raw();
         }
         const ret = wasm.wasmocrengine_new(ptr0, len0, ptr1, len1, ptr2, len2, ptr3);
@@ -2043,8 +2305,13 @@ export class WasmPageTemplate {
      * @returns {WasmPageTemplate}
      */
     footer(footer) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         _assertClass(footer, WasmArtifact);
+        if (footer.__wbg_ptr === 0) {
+            throw new Error('Attempt to use a moved value');
+        }
         const ret = wasm.wasmpagetemplate_footer(ptr, footer.__wbg_ptr);
         return WasmPageTemplate.__wrap(ret);
     }
@@ -2054,8 +2321,13 @@ export class WasmPageTemplate {
      * @returns {WasmPageTemplate}
      */
     header(header) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         _assertClass(header, WasmArtifact);
+        if (header.__wbg_ptr === 0) {
+            throw new Error('Attempt to use a moved value');
+        }
         const ret = wasm.wasmpagetemplate_header(ptr, header.__wbg_ptr);
         return WasmPageTemplate.__wrap(ret);
     }
@@ -2073,7 +2345,9 @@ export class WasmPageTemplate {
      * @returns {WasmPageTemplate}
      */
     skipFirstPage() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
         const ptr = this.__destroy_into_raw();
+        _assertNum(ptr);
         const ret = wasm.wasmpagetemplate_skipFirstPage(ptr);
         return WasmPageTemplate.__wrap(ret);
     }
@@ -2090,6 +2364,9 @@ if (Symbol.dispose) WasmPageTemplate.prototype[Symbol.dispose] = WasmPageTemplat
  * ```
  */
 export class WasmPdf {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(WasmPdf.prototype);
         obj.__wbg_ptr = ptr;
@@ -2299,6 +2576,8 @@ export class WasmPdf {
      * @returns {number}
      */
     get size() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdf_size(this.__wbg_ptr);
         return ret >>> 0;
     }
@@ -2307,6 +2586,8 @@ export class WasmPdf {
      * @returns {Uint8Array}
      */
     toBytes() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdf_toBytes(this.__wbg_ptr);
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
@@ -2342,6 +2623,8 @@ export class WasmPdfDocument {
      * Apply all redactions in the document.
      */
     applyAllRedactions() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_applyAllRedactions(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2352,6 +2635,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     applyPageRedactions(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_applyPageRedactions(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2366,6 +2652,8 @@ export class WasmPdfDocument {
      * @returns {boolean}
      */
     authenticate(password) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(password, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_authenticate(this.__wbg_ptr, ptr0, len0);
@@ -2379,6 +2667,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     clearEraseRegions(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_clearEraseRegions(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2393,6 +2684,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     convertToPdfA(level) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(level, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_convertToPdfA(this.__wbg_ptr, ptr0, len0);
@@ -2409,6 +2702,8 @@ export class WasmPdfDocument {
      * @param {number} bottom
      */
     cropMargins(left, right, top, bottom) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_cropMargins(this.__wbg_ptr, left, right, top, bottom);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2419,6 +2714,9 @@ export class WasmPdfDocument {
      * @param {number} index
      */
     deletePage(index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(index);
         const ret = wasm.wasmpdfdocument_deletePage(this.__wbg_ptr, index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2429,6 +2727,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     editFooter(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_editFooter(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2439,6 +2740,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     editHeader(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_editHeader(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2453,6 +2757,8 @@ export class WasmPdfDocument {
      * @param {Uint8Array} data
      */
     embedFile(name, data) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
@@ -2469,6 +2775,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     eraseArtifacts(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_eraseArtifacts(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2483,6 +2792,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     eraseFooter(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_eraseFooter(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2497,6 +2809,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     eraseHeader(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_eraseHeader(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2511,6 +2826,9 @@ export class WasmPdfDocument {
      * @param {number} ury
      */
     eraseRegion(page_index, llx, lly, urx, ury) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_eraseRegion(this.__wbg_ptr, page_index, llx, lly, urx, ury);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2525,6 +2843,9 @@ export class WasmPdfDocument {
      * @param {Float32Array} rects
      */
     eraseRegions(page_index, rects) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ptr0 = passArrayF32ToWasm0(rects, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_eraseRegions(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2541,6 +2862,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     exportFormData(format) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         var ptr0 = isLikeNone(format) ? 0 : passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_exportFormData(this.__wbg_ptr, ptr0, len0);
@@ -2559,6 +2882,8 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmpdfdocument_extractAllText(this.__wbg_ptr);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -2586,6 +2911,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractChars(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractChars(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2602,6 +2930,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractImageBytes(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_extractImageBytes(this.__wbg_ptr, page_index);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -2621,6 +2952,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractImages(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractImages(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2642,6 +2976,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractLines(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractLines(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2663,6 +3000,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractPageText(page_index, reading_order) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(reading_order) ? 0 : passStringToWasm0(reading_order, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractPageText(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2677,6 +3017,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     extractPages(pages) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArray32ToWasm0(pages, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractPages(this.__wbg_ptr, ptr0, len0);
@@ -2698,6 +3040,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractPaths(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractPaths(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2719,6 +3064,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractRects(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractRects(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2741,6 +3089,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractSpans(page_index, region, reading_order) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         var ptr1 = isLikeNone(reading_order) ? 0 : passStringToWasm0(reading_order, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -2761,6 +3112,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractTables(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractTables(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2782,6 +3136,9 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(page_index);
             const ret = wasm.wasmpdfdocument_extractText(this.__wbg_ptr, page_index, region);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -2805,6 +3162,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractTextLines(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractTextLines(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2826,9 +3186,15 @@ export class WasmPdfDocument {
         let deferred3_0;
         let deferred3_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(_page_index);
             let ptr0 = 0;
             if (!isLikeNone(_engine)) {
                 _assertClass(_engine, WasmOcrEngine);
+                if (_engine.__wbg_ptr === 0) {
+                    throw new Error('Attempt to use a moved value');
+                }
                 ptr0 = _engine.__destroy_into_raw();
             }
             const ret = wasm.wasmpdfdocument_extractTextOcr(this.__wbg_ptr, _page_index, ptr0);
@@ -2855,6 +3221,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     extractWords(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         var ptr0 = isLikeNone(region) ? 0 : passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_extractWords(this.__wbg_ptr, page_index, ptr0, len0);
@@ -2867,6 +3236,8 @@ export class WasmPdfDocument {
      * Flatten all annotations in the document into page content.
      */
     flattenAllAnnotations() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_flattenAllAnnotations(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2878,6 +3249,8 @@ export class WasmPdfDocument {
      * After flattening, form field values become static text and are no longer editable.
      */
     flattenForms() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_flattenForms(this.__wbg_ptr);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2890,6 +3263,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     flattenFormsOnPage(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_flattenFormsOnPage(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2900,6 +3276,9 @@ export class WasmPdfDocument {
      * @param {number} page_index
      */
     flattenPageAnnotations(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_flattenPageAnnotations(this.__wbg_ptr, page_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -2915,6 +3294,8 @@ export class WasmPdfDocument {
      * @returns {string[]}
      */
     flattenWarnings() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_flattenWarnings(this.__wbg_ptr);
         var v1 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
@@ -2929,6 +3310,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     getAnnotations(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_getAnnotations(this.__wbg_ptr, page_index);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -2944,6 +3328,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     getFormFieldValue(name) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_getFormFieldValue(this.__wbg_ptr, ptr0, len0);
@@ -2968,6 +3354,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     getFormFields() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_getFormFields(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -2982,6 +3370,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     getOutline() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_getOutline(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -2993,6 +3383,8 @@ export class WasmPdfDocument {
      * @returns {boolean}
      */
     hasStructureTree() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_hasStructureTree(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3006,6 +3398,8 @@ export class WasmPdfDocument {
      * @returns {boolean}
      */
     hasXfa() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_hasXfa(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3021,6 +3415,8 @@ export class WasmPdfDocument {
      * @returns {number}
      */
     mergeFrom(data) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_mergeFrom(this.__wbg_ptr, ptr0, len0);
@@ -3038,6 +3434,10 @@ export class WasmPdfDocument {
      * @param {number} to_index
      */
     movePage(from_index, to_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(from_index);
+        _assertNum(to_index);
         const ret = wasm.wasmpdfdocument_movePage(this.__wbg_ptr, from_index, to_index);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -3112,6 +3512,8 @@ export class WasmPdfDocument {
      * @returns {number}
      */
     pageCount() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_pageCount(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3124,6 +3526,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     pageCropBox(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_pageCropBox(this.__wbg_ptr, page_index);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3138,6 +3543,9 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     pageImages(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_pageImages(this.__wbg_ptr, page_index);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3151,6 +3559,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     pageLabels() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_pageLabels(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3163,6 +3573,9 @@ export class WasmPdfDocument {
      * @returns {Float32Array}
      */
     pageMediaBox(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_pageMediaBox(this.__wbg_ptr, page_index);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3177,6 +3590,9 @@ export class WasmPdfDocument {
      * @returns {number}
      */
     pageRotation(page_index) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_pageRotation(this.__wbg_ptr, page_index);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3194,6 +3610,8 @@ export class WasmPdfDocument {
      * @returns {number}
      */
     removeArtifacts(threshold) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_removeArtifacts(this.__wbg_ptr, threshold);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3211,6 +3629,8 @@ export class WasmPdfDocument {
      * @returns {number}
      */
     removeFooters(threshold) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_removeFooters(this.__wbg_ptr, threshold);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3228,6 +3648,8 @@ export class WasmPdfDocument {
      * @returns {number}
      */
     removeHeaders(threshold) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_removeHeaders(this.__wbg_ptr, threshold);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3242,6 +3664,9 @@ export class WasmPdfDocument {
      * @param {number} y
      */
     repositionImage(page_index, name, x, y) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_repositionImage(this.__wbg_ptr, page_index, ptr0, len0, x, y);
@@ -3257,6 +3682,9 @@ export class WasmPdfDocument {
      * @param {number} height
      */
     resizeImage(page_index, name, width, height) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_resizeImage(this.__wbg_ptr, page_index, ptr0, len0, width, height);
@@ -3269,6 +3697,9 @@ export class WasmPdfDocument {
      * @param {number} degrees
      */
     rotateAllPages(degrees) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(degrees);
         const ret = wasm.wasmpdfdocument_rotateAllPages(this.__wbg_ptr, degrees);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -3280,6 +3711,10 @@ export class WasmPdfDocument {
      * @param {number} degrees
      */
     rotatePage(page_index, degrees) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
+        _assertNum(degrees);
         const ret = wasm.wasmpdfdocument_rotatePage(this.__wbg_ptr, page_index, degrees);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -3292,6 +3727,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     save() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_save(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3311,10 +3748,24 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     saveEncryptedToBytes(user_password, owner_password, allow_print, allow_copy, allow_modify, allow_annotate) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(user_password, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         var ptr1 = isLikeNone(owner_password) ? 0 : passStringToWasm0(owner_password, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len1 = WASM_VECTOR_LEN;
+        if (!isLikeNone(allow_print)) {
+            _assertBoolean(allow_print);
+        }
+        if (!isLikeNone(allow_copy)) {
+            _assertBoolean(allow_copy);
+        }
+        if (!isLikeNone(allow_modify)) {
+            _assertBoolean(allow_modify);
+        }
+        if (!isLikeNone(allow_annotate)) {
+            _assertBoolean(allow_annotate);
+        }
         const ret = wasm.wasmpdfdocument_saveEncryptedToBytes(this.__wbg_ptr, ptr0, len0, ptr1, len1, isLikeNone(allow_print) ? 0xFFFFFF : allow_print ? 1 : 0, isLikeNone(allow_copy) ? 0xFFFFFF : allow_copy ? 1 : 0, isLikeNone(allow_modify) ? 0xFFFFFF : allow_modify ? 1 : 0, isLikeNone(allow_annotate) ? 0xFFFFFF : allow_annotate ? 1 : 0);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3331,6 +3782,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     saveToBytes() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_saveToBytes(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3353,6 +3806,17 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     saveWithOptions(compress, garbage_collect, linearize) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        if (!isLikeNone(compress)) {
+            _assertBoolean(compress);
+        }
+        if (!isLikeNone(garbage_collect)) {
+            _assertBoolean(garbage_collect);
+        }
+        if (!isLikeNone(linearize)) {
+            _assertBoolean(linearize);
+        }
         const ret = wasm.wasmpdfdocument_saveWithOptions(this.__wbg_ptr, isLikeNone(compress) ? 0xFFFFFF : compress ? 1 : 0, isLikeNone(garbage_collect) ? 0xFFFFFF : garbage_collect ? 1 : 0, isLikeNone(linearize) ? 0xFFFFFF : linearize ? 1 : 0);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3379,8 +3843,22 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     search(pattern, case_insensitive, literal, whole_word, max_results) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(pattern, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
+        if (!isLikeNone(case_insensitive)) {
+            _assertBoolean(case_insensitive);
+        }
+        if (!isLikeNone(literal)) {
+            _assertBoolean(literal);
+        }
+        if (!isLikeNone(whole_word)) {
+            _assertBoolean(whole_word);
+        }
+        if (!isLikeNone(max_results)) {
+            _assertNum(max_results);
+        }
         const ret = wasm.wasmpdfdocument_search(this.__wbg_ptr, ptr0, len0, isLikeNone(case_insensitive) ? 0xFFFFFF : case_insensitive ? 1 : 0, isLikeNone(literal) ? 0xFFFFFF : literal ? 1 : 0, isLikeNone(whole_word) ? 0xFFFFFF : whole_word ? 1 : 0, isLikeNone(max_results) ? Number.MAX_SAFE_INTEGER : (max_results) >>> 0);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3398,8 +3876,23 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     searchPage(page_index, pattern, case_insensitive, literal, whole_word, max_results) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ptr0 = passStringToWasm0(pattern, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
+        if (!isLikeNone(case_insensitive)) {
+            _assertBoolean(case_insensitive);
+        }
+        if (!isLikeNone(literal)) {
+            _assertBoolean(literal);
+        }
+        if (!isLikeNone(whole_word)) {
+            _assertBoolean(whole_word);
+        }
+        if (!isLikeNone(max_results)) {
+            _assertNum(max_results);
+        }
         const ret = wasm.wasmpdfdocument_searchPage(this.__wbg_ptr, page_index, ptr0, len0, isLikeNone(case_insensitive) ? 0xFFFFFF : case_insensitive ? 1 : 0, isLikeNone(literal) ? 0xFFFFFF : literal ? 1 : 0, isLikeNone(whole_word) ? 0xFFFFFF : whole_word ? 1 : 0, isLikeNone(max_results) ? Number.MAX_SAFE_INTEGER : (max_results) >>> 0);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3411,6 +3904,8 @@ export class WasmPdfDocument {
      * @param {string} author
      */
     setAuthor(author) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(author, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_setAuthor(this.__wbg_ptr, ptr0, len0);
@@ -3427,6 +3922,8 @@ export class WasmPdfDocument {
      * @param {any} value
      */
     setFormFieldValue(name, value) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_setFormFieldValue(this.__wbg_ptr, ptr0, len0, value);
@@ -3444,6 +3941,9 @@ export class WasmPdfDocument {
      * @param {number} height
      */
     setImageBounds(page_index, name, x, y, width, height) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ptr0 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_setImageBounds(this.__wbg_ptr, page_index, ptr0, len0, x, y, width, height);
@@ -3456,6 +3956,8 @@ export class WasmPdfDocument {
      * @param {string} keywords
      */
     setKeywords(keywords) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(keywords, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_setKeywords(this.__wbg_ptr, ptr0, len0);
@@ -3472,6 +3974,9 @@ export class WasmPdfDocument {
      * @param {number} ury
      */
     setPageCropBox(page_index, llx, lly, urx, ury) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_setPageCropBox(this.__wbg_ptr, page_index, llx, lly, urx, ury);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -3486,6 +3991,9 @@ export class WasmPdfDocument {
      * @param {number} ury
      */
     setPageMediaBox(page_index, llx, lly, urx, ury) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ret = wasm.wasmpdfdocument_setPageMediaBox(this.__wbg_ptr, page_index, llx, lly, urx, ury);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -3497,6 +4005,10 @@ export class WasmPdfDocument {
      * @param {number} degrees
      */
     setPageRotation(page_index, degrees) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
+        _assertNum(degrees);
         const ret = wasm.wasmpdfdocument_setPageRotation(this.__wbg_ptr, page_index, degrees);
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
@@ -3507,6 +4019,8 @@ export class WasmPdfDocument {
      * @param {string} subject
      */
     setSubject(subject) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(subject, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_setSubject(this.__wbg_ptr, ptr0, len0);
@@ -3519,6 +4033,8 @@ export class WasmPdfDocument {
      * @param {string} title
      */
     setTitle(title) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(title, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_setTitle(this.__wbg_ptr, ptr0, len0);
@@ -3532,6 +4048,8 @@ export class WasmPdfDocument {
      * @returns {number}
      */
     signatureCount() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_signatureCount(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3545,6 +4063,8 @@ export class WasmPdfDocument {
      * @returns {WasmSignature[]}
      */
     signatures() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_signatures(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3558,6 +4078,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     toDocxBytes() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_toDocxBytes(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3582,6 +4104,18 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(page_index);
+            if (!isLikeNone(preserve_layout)) {
+                _assertBoolean(preserve_layout);
+            }
+            if (!isLikeNone(detect_headings)) {
+                _assertBoolean(detect_headings);
+            }
+            if (!isLikeNone(include_form_fields)) {
+                _assertBoolean(include_form_fields);
+            }
             const ret = wasm.wasmpdfdocument_toHtml(this.__wbg_ptr, page_index, isLikeNone(preserve_layout) ? 0xFFFFFF : preserve_layout ? 1 : 0, isLikeNone(detect_headings) ? 0xFFFFFF : detect_headings ? 1 : 0, isLikeNone(include_form_fields) ? 0xFFFFFF : include_form_fields ? 1 : 0);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -3607,6 +4141,17 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            if (!isLikeNone(preserve_layout)) {
+                _assertBoolean(preserve_layout);
+            }
+            if (!isLikeNone(detect_headings)) {
+                _assertBoolean(detect_headings);
+            }
+            if (!isLikeNone(include_form_fields)) {
+                _assertBoolean(include_form_fields);
+            }
             const ret = wasm.wasmpdfdocument_toHtmlAll(this.__wbg_ptr, isLikeNone(preserve_layout) ? 0xFFFFFF : preserve_layout ? 1 : 0, isLikeNone(detect_headings) ? 0xFFFFFF : detect_headings ? 1 : 0, isLikeNone(include_form_fields) ? 0xFFFFFF : include_form_fields ? 1 : 0);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -3637,6 +4182,18 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(page_index);
+            if (!isLikeNone(detect_headings)) {
+                _assertBoolean(detect_headings);
+            }
+            if (!isLikeNone(include_images)) {
+                _assertBoolean(include_images);
+            }
+            if (!isLikeNone(include_form_fields)) {
+                _assertBoolean(include_form_fields);
+            }
             const ret = wasm.wasmpdfdocument_toMarkdown(this.__wbg_ptr, page_index, isLikeNone(detect_headings) ? 0xFFFFFF : detect_headings ? 1 : 0, isLikeNone(include_images) ? 0xFFFFFF : include_images ? 1 : 0, isLikeNone(include_form_fields) ? 0xFFFFFF : include_form_fields ? 1 : 0);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -3662,6 +4219,17 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            if (!isLikeNone(detect_headings)) {
+                _assertBoolean(detect_headings);
+            }
+            if (!isLikeNone(include_images)) {
+                _assertBoolean(include_images);
+            }
+            if (!isLikeNone(include_form_fields)) {
+                _assertBoolean(include_form_fields);
+            }
             const ret = wasm.wasmpdfdocument_toMarkdownAll(this.__wbg_ptr, isLikeNone(detect_headings) ? 0xFFFFFF : detect_headings ? 1 : 0, isLikeNone(include_images) ? 0xFFFFFF : include_images ? 1 : 0, isLikeNone(include_form_fields) ? 0xFFFFFF : include_form_fields ? 1 : 0);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -3685,6 +4253,9 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(page_index);
             const ret = wasm.wasmpdfdocument_toPlainText(this.__wbg_ptr, page_index);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -3707,6 +4278,8 @@ export class WasmPdfDocument {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmpdfdocument_toPlainTextAll(this.__wbg_ptr);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -3726,6 +4299,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     toPptxBytes() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_toPptxBytes(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3739,6 +4314,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     toXlsxBytes() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_toXlsxBytes(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3753,6 +4330,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     validatePdfA(level) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passStringToWasm0(level, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_validatePdfA(this.__wbg_ptr, ptr0, len0);
@@ -3767,6 +4346,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     validatePdfUa(level) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         var ptr0 = isLikeNone(level) ? 0 : passStringToWasm0(level, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_validatePdfUa(this.__wbg_ptr, ptr0, len0);
@@ -3781,6 +4362,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     validatePdfX(level) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         var ptr0 = isLikeNone(level) ? 0 : passStringToWasm0(level, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_validatePdfX(this.__wbg_ptr, ptr0, len0);
@@ -3794,6 +4377,8 @@ export class WasmPdfDocument {
      * @returns {Uint8Array}
      */
     version() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_version(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
@@ -3812,6 +4397,9 @@ export class WasmPdfDocument {
      * @returns {WasmPdfPageRegion}
      */
     within(page_index, region) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
+        _assertNum(page_index);
         const ptr0 = passArrayF32ToWasm0(region, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmpdfdocument_within(this.__wbg_ptr, page_index, ptr0, len0);
@@ -3827,6 +4415,8 @@ export class WasmPdfDocument {
      * @returns {any}
      */
     xmpMetadata() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfdocument_xmpMetadata(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3840,6 +4430,9 @@ if (Symbol.dispose) WasmPdfDocument.prototype[Symbol.dispose] = WasmPdfDocument.
  * A focused view of a PDF page region for scoped extraction (v0.3.14).
  */
 export class WasmPdfPageRegion {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(WasmPdfPageRegion.prototype);
         obj.__wbg_ptr = ptr;
@@ -3861,6 +4454,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractChars() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractChars(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3872,6 +4467,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractImages() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractImages(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3883,6 +4480,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractLines() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractLines(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3894,6 +4493,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractPaths() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractPaths(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3905,6 +4506,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractRects() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractRects(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3916,6 +4519,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractTables() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractTables(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3930,6 +4535,8 @@ export class WasmPdfPageRegion {
         let deferred2_0;
         let deferred2_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmpdfpageregion_extractText(this.__wbg_ptr);
             var ptr1 = ret[0];
             var len1 = ret[1];
@@ -3949,6 +4556,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractTextLines() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractTextLines(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -3964,9 +4573,14 @@ export class WasmPdfPageRegion {
         let deferred3_0;
         let deferred3_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             let ptr0 = 0;
             if (!isLikeNone(_engine)) {
                 _assertClass(_engine, WasmOcrEngine);
+                if (_engine.__wbg_ptr === 0) {
+                    throw new Error('Attempt to use a moved value');
+                }
                 ptr0 = _engine.__destroy_into_raw();
             }
             const ret = wasm.wasmpdfpageregion_extractTextOcr(this.__wbg_ptr, ptr0);
@@ -3988,6 +4602,8 @@ export class WasmPdfPageRegion {
      * @returns {any}
      */
     extractWords() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmpdfpageregion_extractWords(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -4004,6 +4620,9 @@ if (Symbol.dispose) WasmPdfPageRegion.prototype[Symbol.dispose] = WasmPdfPageReg
  * Supported: RSA-PKCS#1 v1.5, RSA-PSS, ECDSA P-256/P-384.
  */
 export class WasmSignature {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(WasmSignature.prototype);
         obj.__wbg_ptr = ptr;
@@ -4025,6 +4644,8 @@ export class WasmSignature {
      * @returns {string | undefined}
      */
     get contactInfo() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmsignature_contactInfo(this.__wbg_ptr);
         let v1;
         if (ret[0] !== 0) {
@@ -4039,6 +4660,8 @@ export class WasmSignature {
      * @returns {boolean}
      */
     get coversWholeDocument() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmsignature_coversWholeDocument(this.__wbg_ptr);
         return ret !== 0;
     }
@@ -4047,6 +4670,8 @@ export class WasmSignature {
      * @returns {string | undefined}
      */
     get location() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmsignature_location(this.__wbg_ptr);
         let v1;
         if (ret[0] !== 0) {
@@ -4060,6 +4685,8 @@ export class WasmSignature {
      * @returns {string | undefined}
      */
     get reason() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmsignature_reason(this.__wbg_ptr);
         let v1;
         if (ret[0] !== 0) {
@@ -4073,6 +4700,8 @@ export class WasmSignature {
      * @returns {string | undefined}
      */
     get signerName() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmsignature_signerName(this.__wbg_ptr);
         let v1;
         if (ret[0] !== 0) {
@@ -4087,6 +4716,8 @@ export class WasmSignature {
      * @returns {bigint | undefined}
      */
     get signingTime() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmsignature_signingTime(this.__wbg_ptr);
         return ret[0] === 0 ? undefined : ret[1];
     }
@@ -4106,6 +4737,8 @@ export class WasmSignature {
      * @returns {boolean}
      */
     verify() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmsignature_verify(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -4129,6 +4762,8 @@ export class WasmSignature {
      * @returns {boolean}
      */
     verifyDetached(pdf_data) {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ptr0 = passArray8ToWasm0(pdf_data, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmsignature_verifyDetached(this.__wbg_ptr, ptr0, len0);
@@ -4145,6 +4780,9 @@ if (Symbol.dispose) WasmSignature.prototype[Symbol.dispose] = WasmSignature.prot
  * TSTInfo. Mirrors the C#, Go, and Python `Timestamp` surfaces.
  */
 export class WasmTimestamp {
+    constructor() {
+        throw new Error('cannot invoke `new` directly');
+    }
     static __wrap(ptr) {
         const obj = Object.create(WasmTimestamp.prototype);
         obj.__wbg_ptr = ptr;
@@ -4167,6 +4805,8 @@ export class WasmTimestamp {
      * @returns {number}
      */
     get hashAlgorithm() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmtimestamp_hashAlgorithm(this.__wbg_ptr);
         return ret;
     }
@@ -4175,6 +4815,8 @@ export class WasmTimestamp {
      * @returns {Uint8Array}
      */
     get messageImprint() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmtimestamp_messageImprint(this.__wbg_ptr);
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
@@ -4203,6 +4845,8 @@ export class WasmTimestamp {
         let deferred1_0;
         let deferred1_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmtimestamp_policyOid(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
@@ -4219,6 +4863,8 @@ export class WasmTimestamp {
         let deferred1_0;
         let deferred1_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmtimestamp_serial(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
@@ -4232,6 +4878,8 @@ export class WasmTimestamp {
      * @returns {bigint}
      */
     get time() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmtimestamp_time(this.__wbg_ptr);
         return ret;
     }
@@ -4243,6 +4891,8 @@ export class WasmTimestamp {
         let deferred1_0;
         let deferred1_1;
         try {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.wasmtimestamp_tsaName(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
@@ -4260,6 +4910,8 @@ export class WasmTimestamp {
      * @returns {boolean}
      */
     verify() {
+        if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+        _assertNum(this.__wbg_ptr);
         const ret = wasm.wasmtimestamp_verify(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
@@ -4289,6 +4941,7 @@ export function generateBarcodeSvg(barcode_type, data) {
     let deferred3_0;
     let deferred3_1;
     try {
+        _assertNum(barcode_type);
         const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.generateBarcodeSvg(barcode_type, ptr0, len0);
@@ -4321,6 +4974,8 @@ export function generateQrSvg(data, error_correction, size) {
     try {
         const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
+        _assertNum(error_correction);
+        _assertNum(size);
         const ret = wasm.generateQrSvg(ptr0, len0, error_correction, size);
         var ptr2 = ret[0];
         var len2 = ret[1];
@@ -4348,6 +5003,7 @@ export function init_hooks() {
 export function parse_page_by_index(data, page_index) {
     const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
+    _assertNum(page_index);
     const ret = wasm.parse_page_by_index(ptr0, len0, page_index);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
@@ -4439,6 +5095,9 @@ export function signPdfBytes(pdf_data, cert, reason, location) {
     const ptr0 = passArray8ToWasm0(pdf_data, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
     _assertClass(cert, WasmCertificate);
+    if (cert.__wbg_ptr === 0) {
+        throw new Error('Attempt to use a moved value');
+    }
     var ptr1 = isLikeNone(reason) ? 0 : passStringToWasm0(reason, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     var len1 = WASM_VECTOR_LEN;
     var ptr2 = isLikeNone(location) ? 0 : passStringToWasm0(location, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -4451,33 +5110,43 @@ export function signPdfBytes(pdf_data, cert, reason, location) {
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v4;
 }
+
+//#endregion
+
+//#region wasm imports
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg_Error_bce6d499ff0a4aff: function(arg0, arg1) {
+        __wbg_Error_bce6d499ff0a4aff: function() { return logError(function (arg0, arg1) {
             const ret = Error(getStringFromWasm0(arg0, arg1));
             return ret;
-        },
-        __wbg_Number_b7972a139bfbfdf0: function(arg0) {
+        }, arguments); },
+        __wbg_Number_b7972a139bfbfdf0: function() { return logError(function (arg0) {
             const ret = Number(arg0);
             return ret;
-        },
-        __wbg_String_8564e559799eccda: function(arg0, arg1) {
+        }, arguments); },
+        __wbg_String_8564e559799eccda: function() { return logError(function (arg0, arg1) {
             const ret = String(arg1);
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len1 = WASM_VECTOR_LEN;
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-        },
+        }, arguments); },
         __wbg___wbindgen_bigint_get_as_i64_410e28c7b761ad83: function(arg0, arg1) {
             const v = arg1;
             const ret = typeof(v) === 'bigint' ? v : undefined;
+            if (!isLikeNone(ret)) {
+                _assertBigInt(ret);
+            }
             getDataViewMemory0().setBigInt64(arg0 + 8 * 1, isLikeNone(ret) ? BigInt(0) : ret, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
         },
         __wbg___wbindgen_boolean_get_2304fb8c853028c8: function(arg0) {
             const v = arg0;
             const ret = typeof(v) === 'boolean' ? v : undefined;
+            if (!isLikeNone(ret)) {
+                _assertBoolean(ret);
+            }
             return isLikeNone(ret) ? 0xFFFFFF : ret ? 1 : 0;
         },
         __wbg___wbindgen_debug_string_edece8177ad01481: function(arg0, arg1) {
@@ -4489,44 +5158,56 @@ function __wbg_get_imports() {
         },
         __wbg___wbindgen_in_07056af4f902c445: function(arg0, arg1) {
             const ret = arg0 in arg1;
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_is_bigint_aeae3893f30ed54e: function(arg0) {
             const ret = typeof(arg0) === 'bigint';
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_is_function_5cd60d5cf78b4eef: function(arg0) {
             const ret = typeof(arg0) === 'function';
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_is_null_2042690d351e14f0: function(arg0) {
             const ret = arg0 === null;
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_is_object_b4593df85baada48: function(arg0) {
             const val = arg0;
             const ret = typeof(val) === 'object' && val !== null;
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_is_string_dde0fd9020db4434: function(arg0) {
             const ret = typeof(arg0) === 'string';
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_is_undefined_35bb9f4c7fd651d5: function(arg0) {
             const ret = arg0 === undefined;
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_jsval_eq_c0ed08b3e0f393b9: function(arg0, arg1) {
             const ret = arg0 === arg1;
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_jsval_loose_eq_0ad77b7717db155c: function(arg0, arg1) {
             const ret = arg0 == arg1;
+            _assertBoolean(ret);
             return ret;
         },
         __wbg___wbindgen_number_get_f73a1244370fcc2c: function(arg0, arg1) {
             const obj = arg1;
             const ret = typeof(obj) === 'number' ? obj : undefined;
+            if (!isLikeNone(ret)) {
+                _assertNum(ret);
+            }
             getDataViewMemory0().setFloat64(arg0 + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
         },
@@ -4545,14 +5226,15 @@ function __wbg_get_imports() {
             const ret = arg0.call(arg1);
             return ret;
         }, arguments); },
-        __wbg_debug_1cbb2f02cd18a348: function(arg0, arg1, arg2, arg3) {
+        __wbg_debug_1cbb2f02cd18a348: function() { return logError(function (arg0, arg1, arg2, arg3) {
             console.debug(arg0, arg1, arg2, arg3);
-        },
-        __wbg_done_54b8da57023b7ed2: function(arg0) {
+        }, arguments); },
+        __wbg_done_54b8da57023b7ed2: function() { return logError(function (arg0) {
             const ret = arg0.done;
+            _assertBoolean(ret);
             return ret;
-        },
-        __wbg_error_a6fa202b58aa1cd3: function(arg0, arg1) {
+        }, arguments); },
+        __wbg_error_a6fa202b58aa1cd3: function() { return logError(function (arg0, arg1) {
             let deferred0_0;
             let deferred0_1;
             try {
@@ -4562,52 +5244,52 @@ function __wbg_get_imports() {
             } finally {
                 wasm.__wbindgen_free(deferred0_0, deferred0_1, 1);
             }
-        },
-        __wbg_error_ff9920154b136cbb: function(arg0, arg1, arg2, arg3) {
+        }, arguments); },
+        __wbg_error_ff9920154b136cbb: function() { return logError(function (arg0, arg1, arg2, arg3) {
             console.error(arg0, arg1, arg2, arg3);
-        },
+        }, arguments); },
         __wbg_fromCodePoint_a42ea1d19a55f2d5: function() { return handleError(function (arg0) {
             const ret = String.fromCodePoint(arg0 >>> 0);
             return ret;
         }, arguments); },
-        __wbg_from_fa561fa561dc8031: function(arg0) {
+        __wbg_from_fa561fa561dc8031: function() { return logError(function (arg0) {
             const ret = Array.from(arg0);
             return ret;
-        },
+        }, arguments); },
         __wbg_getRandomValues_76dfc69825c9c552: function() { return handleError(function (arg0, arg1) {
             globalThis.crypto.getRandomValues(getArrayU8FromWasm0(arg0, arg1));
         }, arguments); },
         __wbg_getRandomValues_ef12552bf5acd2fe: function() { return handleError(function (arg0, arg1) {
             globalThis.crypto.getRandomValues(getArrayU8FromWasm0(arg0, arg1));
         }, arguments); },
-        __wbg_getTime_09f1dd40a44edb30: function(arg0) {
+        __wbg_getTime_09f1dd40a44edb30: function() { return logError(function (arg0) {
             const ret = arg0.getTime();
             return ret;
-        },
-        __wbg_getTimezoneOffset_96cfb6ddebc9e5ca: function(arg0) {
+        }, arguments); },
+        __wbg_getTimezoneOffset_96cfb6ddebc9e5ca: function() { return logError(function (arg0) {
             const ret = arg0.getTimezoneOffset();
             return ret;
-        },
+        }, arguments); },
         __wbg_get_3e9a707ab7d352eb: function() { return handleError(function (arg0, arg1) {
             const ret = Reflect.get(arg0, arg1);
             return ret;
         }, arguments); },
-        __wbg_get_98fdf51d029a75eb: function(arg0, arg1) {
+        __wbg_get_98fdf51d029a75eb: function() { return logError(function (arg0, arg1) {
             const ret = arg0[arg1 >>> 0];
             return ret;
-        },
-        __wbg_get_unchecked_1dfe6d05ad91d9b7: function(arg0, arg1) {
+        }, arguments); },
+        __wbg_get_unchecked_1dfe6d05ad91d9b7: function() { return logError(function (arg0, arg1) {
             const ret = arg0[arg1 >>> 0];
             return ret;
-        },
-        __wbg_get_with_ref_key_6412cf3094599694: function(arg0, arg1) {
+        }, arguments); },
+        __wbg_get_with_ref_key_6412cf3094599694: function() { return logError(function (arg0, arg1) {
             const ret = arg0[arg1];
             return ret;
-        },
-        __wbg_info_de0a30e0c0b6b4e9: function(arg0, arg1, arg2, arg3) {
+        }, arguments); },
+        __wbg_info_de0a30e0c0b6b4e9: function() { return logError(function (arg0, arg1, arg2, arg3) {
             console.info(arg0, arg1, arg2, arg3);
-        },
-        __wbg_instanceof_ArrayBuffer_53db37b06f6b9afe: function(arg0) {
+        }, arguments); },
+        __wbg_instanceof_ArrayBuffer_53db37b06f6b9afe: function() { return logError(function (arg0) {
             let result;
             try {
                 result = arg0 instanceof ArrayBuffer;
@@ -4615,9 +5297,10 @@ function __wbg_get_imports() {
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        },
-        __wbg_instanceof_Uint8Array_abd07d4bd221d50b: function(arg0) {
+        }, arguments); },
+        __wbg_instanceof_Uint8Array_abd07d4bd221d50b: function() { return logError(function (arg0) {
             let result;
             try {
                 result = arg0 instanceof Uint8Array;
@@ -4625,9 +5308,10 @@ function __wbg_get_imports() {
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        },
-        __wbg_instanceof_Window_faa5cf994f49cca7: function(arg0) {
+        }, arguments); },
+        __wbg_instanceof_Window_faa5cf994f49cca7: function() { return logError(function (arg0) {
             let result;
             try {
                 result = arg0 instanceof Window;
@@ -4635,166 +5319,169 @@ function __wbg_get_imports() {
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        },
-        __wbg_isArray_94898ed3aad6947b: function(arg0) {
+        }, arguments); },
+        __wbg_isArray_94898ed3aad6947b: function() { return logError(function (arg0) {
             const ret = Array.isArray(arg0);
+            _assertBoolean(ret);
             return ret;
-        },
-        __wbg_isSafeInteger_01e964d144ad3a55: function(arg0) {
+        }, arguments); },
+        __wbg_isSafeInteger_01e964d144ad3a55: function() { return logError(function (arg0) {
             const ret = Number.isSafeInteger(arg0);
+            _assertBoolean(ret);
             return ret;
-        },
-        __wbg_iterator_1441b47f341dc34f: function() {
+        }, arguments); },
+        __wbg_iterator_1441b47f341dc34f: function() { return logError(function () {
             const ret = Symbol.iterator;
             return ret;
-        },
-        __wbg_length_2591a0f4f659a55c: function(arg0) {
+        }, arguments); },
+        __wbg_length_2591a0f4f659a55c: function() { return logError(function (arg0) {
             const ret = arg0.length;
+            _assertNum(ret);
             return ret;
-        },
-        __wbg_length_56fcd3e2b7e0299d: function(arg0) {
+        }, arguments); },
+        __wbg_length_56fcd3e2b7e0299d: function() { return logError(function (arg0) {
             const ret = arg0.length;
+            _assertNum(ret);
             return ret;
-        },
-        __wbg_log_2a34598952277e1c: function(arg0, arg1, arg2, arg3) {
+        }, arguments); },
+        __wbg_log_2a34598952277e1c: function() { return logError(function (arg0, arg1, arg2, arg3) {
             console.log(arg0, arg1, arg2, arg3);
-        },
-        __wbg_new_02d162bc6cf02f60: function() {
+        }, arguments); },
+        __wbg_new_02d162bc6cf02f60: function() { return logError(function () {
             const ret = new Object();
             return ret;
-        },
-        __wbg_new_070df68d66325372: function() {
+        }, arguments); },
+        __wbg_new_070df68d66325372: function() { return logError(function () {
             const ret = new Map();
             return ret;
-        },
-        __wbg_new_0_2722fcdb71a888a6: function() {
+        }, arguments); },
+        __wbg_new_0_2722fcdb71a888a6: function() { return logError(function () {
             const ret = new Date();
             return ret;
-        },
-        __wbg_new_227d7c05414eb861: function() {
+        }, arguments); },
+        __wbg_new_227d7c05414eb861: function() { return logError(function () {
             const ret = new Error();
             return ret;
-        },
-        __wbg_new_310879b66b6e95e1: function() {
+        }, arguments); },
+        __wbg_new_310879b66b6e95e1: function() { return logError(function () {
             const ret = new Array();
             return ret;
-        },
-        __wbg_new_7ddec6de44ff8f5d: function(arg0) {
+        }, arguments); },
+        __wbg_new_7ddec6de44ff8f5d: function() { return logError(function (arg0) {
             const ret = new Uint8Array(arg0);
             return ret;
-        },
-        __wbg_new_859b9002e2668e82: function(arg0) {
+        }, arguments); },
+        __wbg_new_859b9002e2668e82: function() { return logError(function (arg0) {
             const ret = new Date(arg0);
             return ret;
-        },
-        __wbg_new_from_slice_269e35316ed2d061: function(arg0, arg1) {
+        }, arguments); },
+        __wbg_new_from_slice_269e35316ed2d061: function() { return logError(function (arg0, arg1) {
             const ret = new Uint8Array(getArrayU8FromWasm0(arg0, arg1));
             return ret;
-        },
-        __wbg_next_2a4e19f4f5083b0f: function(arg0) {
+        }, arguments); },
+        __wbg_next_2a4e19f4f5083b0f: function() { return logError(function (arg0) {
             const ret = arg0.next;
             return ret;
-        },
+        }, arguments); },
         __wbg_next_6429a146bf756f93: function() { return handleError(function (arg0) {
             const ret = arg0.next();
             return ret;
         }, arguments); },
-        __wbg_now_3cd905700d21a70b: function(arg0) {
+        __wbg_now_3cd905700d21a70b: function() { return logError(function (arg0) {
             const ret = arg0.now();
             return ret;
-        },
-        __wbg_performance_ddd4e7eeef6254f3: function(arg0) {
+        }, arguments); },
+        __wbg_performance_ddd4e7eeef6254f3: function() { return logError(function (arg0) {
             const ret = arg0.performance;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-        },
-        __wbg_prototypesetcall_5f9bdc8d75e07276: function(arg0, arg1, arg2) {
+        }, arguments); },
+        __wbg_prototypesetcall_5f9bdc8d75e07276: function() { return logError(function (arg0, arg1, arg2) {
             Uint8Array.prototype.set.call(getArrayU8FromWasm0(arg0, arg1), arg2);
-        },
-        __wbg_push_b77c476b01548d0a: function(arg0, arg1) {
+        }, arguments); },
+        __wbg_push_b77c476b01548d0a: function() { return logError(function (arg0, arg1) {
             const ret = arg0.push(arg1);
-            return ret;
-        },
-        __wbg_set_6be42768c690e380: function(arg0, arg1, arg2) {
-            arg0[arg1] = arg2;
-        },
-        __wbg_set_78ea6a19f4818587: function(arg0, arg1, arg2) {
-            arg0[arg1 >>> 0] = arg2;
-        },
-        __wbg_set_a0e911be3da02782: function() { return handleError(function (arg0, arg1, arg2) {
-            const ret = Reflect.set(arg0, arg1, arg2);
+            _assertNum(ret);
             return ret;
         }, arguments); },
-        __wbg_set_facb7a5914e0fa39: function(arg0, arg1, arg2) {
+        __wbg_set_6be42768c690e380: function() { return logError(function (arg0, arg1, arg2) {
+            arg0[arg1] = arg2;
+        }, arguments); },
+        __wbg_set_78ea6a19f4818587: function() { return logError(function (arg0, arg1, arg2) {
+            arg0[arg1 >>> 0] = arg2;
+        }, arguments); },
+        __wbg_set_a0e911be3da02782: function() { return handleError(function (arg0, arg1, arg2) {
+            const ret = Reflect.set(arg0, arg1, arg2);
+            _assertBoolean(ret);
+            return ret;
+        }, arguments); },
+        __wbg_set_facb7a5914e0fa39: function() { return logError(function (arg0, arg1, arg2) {
             const ret = arg0.set(arg1, arg2);
             return ret;
-        },
-        __wbg_stack_3b0d974bbf31e44f: function(arg0, arg1) {
+        }, arguments); },
+        __wbg_stack_3b0d974bbf31e44f: function() { return logError(function (arg0, arg1) {
             const ret = arg1.stack;
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len1 = WASM_VECTOR_LEN;
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-        },
-        __wbg_static_accessor_GLOBAL_THIS_02344c9b09eb08a9: function() {
+        }, arguments); },
+        __wbg_static_accessor_GLOBAL_THIS_02344c9b09eb08a9: function() { return logError(function () {
             const ret = typeof globalThis === 'undefined' ? null : globalThis;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-        },
-        __wbg_static_accessor_GLOBAL_ac6d4ac874d5cd54: function() {
+        }, arguments); },
+        __wbg_static_accessor_GLOBAL_ac6d4ac874d5cd54: function() { return logError(function () {
             const ret = typeof global === 'undefined' ? null : global;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-        },
-        __wbg_static_accessor_SELF_9b2406c23aeb2023: function() {
+        }, arguments); },
+        __wbg_static_accessor_SELF_9b2406c23aeb2023: function() { return logError(function () {
             const ret = typeof self === 'undefined' ? null : self;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-        },
-        __wbg_static_accessor_WINDOW_b34d2126934e16ba: function() {
+        }, arguments); },
+        __wbg_static_accessor_WINDOW_b34d2126934e16ba: function() { return logError(function () {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-        },
-        __wbg_value_9cc0518af87a489c: function(arg0) {
+        }, arguments); },
+        __wbg_value_9cc0518af87a489c: function() { return logError(function (arg0) {
             const ret = arg0.value;
             return ret;
-        },
-        __wbg_warn_099dd8c85568de56: function(arg0, arg1, arg2, arg3) {
+        }, arguments); },
+        __wbg_warn_099dd8c85568de56: function() { return logError(function (arg0, arg1, arg2, arg3) {
             console.warn(arg0, arg1, arg2, arg3);
-        },
-        __wbg_wasmsignature_new: function(arg0) {
+        }, arguments); },
+        __wbg_wasmsignature_new: function() { return logError(function (arg0) {
             const ret = WasmSignature.__wrap(arg0);
             return ret;
-        },
-        __wbindgen_cast_0000000000000001: function(arg0) {
+        }, arguments); },
+        __wbindgen_cast_0000000000000001: function() { return logError(function (arg0) {
             // Cast intrinsic for `F64 -> Externref`.
             const ret = arg0;
             return ret;
-        },
-        __wbindgen_cast_0000000000000002: function(arg0) {
+        }, arguments); },
+        __wbindgen_cast_0000000000000002: function() { return logError(function (arg0) {
             // Cast intrinsic for `I64 -> Externref`.
             const ret = arg0;
             return ret;
-        },
-        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
+        }, arguments); },
+        __wbindgen_cast_0000000000000003: function() { return logError(function (arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return ret;
-        },
-        __wbindgen_cast_0000000000000004: function(arg0) {
+        }, arguments); },
+        __wbindgen_cast_0000000000000004: function() { return logError(function (arg0) {
             // Cast intrinsic for `U64 -> Externref`.
             const ret = BigInt.asUintN(64, arg0);
             return ret;
-        },
+        }, arguments); },
         __wbindgen_init_externref_table: function() {
-            try {
-                const table = wasm.__wbindgen_externrefs;
-                const offset = table.grow(4);
-                table.set(0, undefined);
-                table.set(offset + 0, undefined);
-                table.set(offset + 1, null);
-                table.set(offset + 2, true);
-                table.set(offset + 3, false);
-            } catch (_) {
-                // externref not supported; PDF parsing still works without it
-            }
+            const table = wasm.__wbindgen_externrefs;
+            const offset = table.grow(4);
+            table.set(0, undefined);
+            table.set(offset + 0, undefined);
+            table.set(offset + 1, null);
+            table.set(offset + 2, true);
+            table.set(offset + 3, false);
         },
     };
     return {
@@ -4803,6 +5490,8 @@ function __wbg_get_imports() {
     };
 }
 
+
+//#endregion
 const PdfDocumentFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_pdfdocument_free(ptr, 1));
@@ -4858,16 +5547,32 @@ const WasmTimestampFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_wasmtimestamp_free(ptr, 1));
 
+
+//#region intrinsics
 function addToExternrefTable0(obj) {
     const idx = wasm.__externref_table_alloc();
     wasm.__wbindgen_externrefs.set(idx, obj);
     return idx;
 }
 
+function _assertBigInt(n) {
+    if (typeof(n) !== 'bigint') throw new Error(`expected a bigint argument, found ${typeof(n)}`);
+}
+
+function _assertBoolean(n) {
+    if (typeof(n) !== 'boolean') {
+        throw new Error(`expected a boolean argument, found ${typeof(n)}`);
+    }
+}
+
 function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
         throw new Error(`expected instance of ${klass.name}`);
     }
+}
+
+function _assertNum(n) {
+    if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
 }
 
 function debugString(val) {
@@ -5018,6 +5723,22 @@ function isLikeNone(x) {
     return x === undefined || x === null;
 }
 
+function logError(f, args) {
+    try {
+        return f.apply(this, args);
+    } catch (e) {
+        let error = (function () {
+            try {
+                return e instanceof Error ? `${e.message}\n\nStack:\n${e.stack}` : e.toString();
+            } catch(_) {
+                return "<failed to stringify thrown value>";
+            }
+        }());
+        console.error("wasm-bindgen: imported JS function that was not marked as `catch` threw an error:", error);
+        throw e;
+    }
+}
+
 function passArray32ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 4, 4) >>> 0;
     getUint32ArrayMemory0().set(arg, ptr / 4);
@@ -5050,6 +5771,7 @@ function passArrayJsValueToWasm0(array, malloc) {
 }
 
 function passStringToWasm0(arg, malloc, realloc) {
+    if (typeof(arg) !== 'string') throw new Error(`expected a string argument, found ${typeof(arg)}`);
     if (realloc === undefined) {
         const buf = cachedTextEncoder.encode(arg);
         const ptr = malloc(buf.length, 1) >>> 0;
@@ -5077,7 +5799,7 @@ function passStringToWasm0(arg, malloc, realloc) {
         ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
         const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
         const ret = cachedTextEncoder.encodeInto(arg, view);
-
+        if (ret.read !== arg.length) throw new Error('failed to pass whole string');
         offset += ret.written;
         ptr = realloc(ptr, len, offset, 1) >>> 0;
     }
@@ -5121,6 +5843,10 @@ if (!('encodeInto' in cachedTextEncoder)) {
 
 let WASM_VECTOR_LEN = 0;
 
+
+//#endregion
+
+//#region wasm loading
 let wasmModule, wasmInstance, wasm;
 function __wbg_finalize_init(instance, module) {
     wasmInstance = instance;
@@ -5217,3 +5943,5 @@ async function __wbg_init(module_or_path) {
 }
 
 export { initSync, __wbg_init as default };
+//#endregion
+export { wasm as __wasm }
