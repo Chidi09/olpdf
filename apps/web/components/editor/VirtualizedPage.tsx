@@ -101,6 +101,7 @@ export function VirtualizedPage({ dim, scale, onCanvasReady, onCanvasDestroy, ch
 
       {state === "live" && (
         <canvas
+          key={`${dim.page_index}-${pageWidth}-${pageHeight}`}
           ref={(node) => {
             if (!node || node === canvasRef.current) return;
             canvasRef.current = node;

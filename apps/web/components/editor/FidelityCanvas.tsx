@@ -829,8 +829,13 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   const setupFabricCanvas = (pageIndex: number, el: HTMLCanvasElement, width: number, height: number) => {
     const existing = fabricCanvasesRef.current.get(pageIndex);
     if (existing) {
+      if (existing.getElement() !== el) {
+        existing.dispose();
+        fabricCanvasesRef.current.delete(pageIndex);
+      } else {
       existing.setDimensions({ width, height });
       return;
+      }
     }
 
     const fcanvas = new Canvas(el, {
