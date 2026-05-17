@@ -556,6 +556,8 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
         void saveMutation.mutateAsync(model);
         e.preventDefault();
       }
+      if (readOnly) return;
+
       if (e.key === "Delete" || e.key === "Backspace") {
         let deleted = false;
         for (const canvas of fabricCanvasesRef.current.values()) {
@@ -1104,7 +1106,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
             ydocRef.current.transact(() => {
               yBlock.set("bounding_box", yjsBbox);
               if (obj.type === "textbox") yBlock.set("content", (obj as Textbox).text ?? "");
-            });
+            }, "local");
           }
         }
       }

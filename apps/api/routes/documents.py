@@ -334,7 +334,7 @@ async def update_document(
     return {"id": doc_id, "status": "success"}
 
 
-async def _export_via_go(doc_dict: dict, format_type: str) -> bytes | None:
+async def _export_via_go(doc_dict: dict, format_type: str, operations: list | None = None) -> bytes | None:
     """Try Go export service first. Returns None if unavailable or fails."""
     if not EXPORT_SERVICE_URL:
         return None
@@ -349,6 +349,8 @@ async def _export_via_go(doc_dict: dict, format_type: str) -> bytes | None:
             "document_model": doc_dict,
             "color_space": doc_dict.get("meta", {}).get("color_space", "rgb"),
         }
+        if operations:
+            payload["operations"] = operations
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(
                 f"{EXPORT_SERVICE_URL}/export/{format_type}",
@@ -362,7 +364,7 @@ async def _export_via_go(doc_dict: dict, format_type: str) -> bytes | None:
         return None
 
 
-async def _export_layout_via_go(layout_payload: dict, original_object_key: str | None) -> bytes | None:
+async def _export_layout_via_go(layout_payload: dict, original_object_key: str | None, operations: list | None = None) -> bytes | None:
     """Send layout payload to Go layout export endpoint."""
     if not EXPORT_SERVICE_URL:
         return None
@@ -377,6 +379,8 @@ async def _export_layout_via_go(layout_payload: dict, original_object_key: str |
             "layout_payload": layout_payload,
             "original_object_key": original_object_key,
         }
+        if operations:
+            payload["operations"] = operations
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 f"{EXPORT_SERVICE_URL}/export/layout",
@@ -416,6 +420,7 @@ async def export_document(
             go_bytes = await _export_layout_via_go(
                 export_req.layout_payload,
                 export_req.original_object_key,
+                operations=export_req.operations,
             )
             if go_bytes:
                 object_name = f"exports/{doc_id}.pdf"
@@ -437,7 +442,7 @@ async def export_document(
                 }
 
         # Try Go export service first
-        go_bytes = await _export_via_go(doc_dict, normalized_format)
+        go_bytes = await _export_via_go(doc_dict, normalized_format, operations=export_req.operations)
         if go_bytes:
             object_name = f"exports/{doc_id}.{normalized_format}"
             uploaded = r2_storage.upload_bytes(go_bytes, object_name)

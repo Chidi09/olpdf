@@ -171,6 +171,22 @@ def create_app() -> FastAPI:
 
             # Worker routes use QStash signature instead of JWT/API Key
             if not path.startswith("/api/worker/"):
+                # Routes that accept X-Worker-Secret instead of JWT
+                worker_secret_paths = ["/api/pdf-jobs/", "/api/downloads"]
+                needs_worker_check = any(
+                    path.startswith(ws_path) for ws_path in worker_secret_paths
+                )
+                if needs_worker_check:
+                    worker_secret = request.headers.get("X-Worker-Secret", "")
+                    env_secret = os.environ.get("WORKER_SECRET", "")
+                    if worker_secret and env_secret and worker_secret == env_secret:
+                        response = await call_next(request)
+                        return response
+                    return JSONResponse(
+                        status_code=401,
+                        content={"error": "api_error", "message": "Valid X-Worker-Secret required for this endpoint"},
+                    )
+
                 auth_header = request.headers.get("authorization", "")
                 api_key_header = request.headers.get("x-api-key", "")
 

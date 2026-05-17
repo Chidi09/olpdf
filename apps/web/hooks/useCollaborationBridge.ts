@@ -73,7 +73,8 @@ export function useCollaborationBridge(
     const yBlocks = ydoc.getMap<Y.Map<unknown>>("blocks");
     const awareness = provider.awareness;
 
-    const observer = () => {
+    const observer = (_events: unknown, transaction: Y.Transaction) => {
+      if (transaction.origin === "local") return;
       if (!onRemoteBlocksChanged) return;
       const blocks: DocumentBlock[] = [];
       for (const [id, yBlock] of yBlocks.entries()) {
