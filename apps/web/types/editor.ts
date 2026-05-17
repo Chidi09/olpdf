@@ -12,6 +12,7 @@ export interface FabricObjectMeta {
   isCommentIndicator?: boolean;
   isHighlight?: boolean;
   isOcrBadge?: boolean;
+  isCursorOverlay?: boolean;
   commentIds?: string[];
   table_data?: TableData;
   noteFill?: string;

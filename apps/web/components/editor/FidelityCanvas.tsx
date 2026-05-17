@@ -75,6 +75,7 @@ import type { ToolOperation } from "@/components/editor/ai/tools/contracts";
 import type { PdfEditOperation } from "@/types/nativePdf";
 import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
 import type { PageLayoutDocument } from "@/types/pageLayout";
+import { reconcileFabricCanvas } from "@/lib/canvas/reconcileFabricCanvas";
 import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
 import { shouldEditFabricTextInPlace } from "@/components/editor/canvasTextEditing";
 import { getActiveToolAfterToolbarClick, shouldInsertToolImmediately } from "@/components/editor/canvasToolBehavior";
@@ -666,6 +667,26 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       }
     }
   }, [model.blocks]);
+
+  useEffect(() => {
+    const nextBlocks = model.blocks ?? [];
+    for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
+      const pageBlocks = nextBlocks
+        .filter((b) => (b.page_index ?? 0) === pageIndex)
+        .sort((a, b) => (a.z_index ?? 0) - (b.z_index ?? 0));
+      reconcileFabricCanvas(canvas, pageIndex, pageBlocks, scale, (block, s) => {
+        const btype = (block as any).type ?? "paragraph";
+        if (btype === "image") {
+          loadImageBlock(block, s, canvas);
+          return null;
+        }
+        if (btype === "table") return createTableBlock(block, s);
+        if (btype === "field") return createFieldBlock(block, s);
+        if (btype === "shape") return createShapeBlock(block, s);
+        return createTextBlock(block, s);
+      });
+    }
+  }, [model.blocks, scale]);
 
   useEffect(() => {
     const run = async () => {
