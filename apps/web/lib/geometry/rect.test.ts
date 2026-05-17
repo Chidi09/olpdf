@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canvasRectToDocumentRect, documentRectToCanvasRect, rectFromCanvasObjectBounds, rectFromXYWH, rectToXYWH } from "./rect";
+import { canvasRectToDocumentRect, documentRectToCanvasRect, normalizeRect, rectFromCanvasObjectBounds, rectFromXYWH, rectToXYWH } from "./rect";
 
 describe("rect geometry", () => {
   it("converts document rects to canvas rects", () => {
@@ -18,7 +18,23 @@ describe("rect geometry", () => {
     expect(rectToXYWH([10, 20, 110, 70])).toEqual({ x: 10, y: 20, width: 100, height: 50 });
   });
 
-  it("converts Fabric object bounds to document rects", () => {
+it("normalizeRect returns fallback for undefined", () => {
+  expect(normalizeRect(undefined, [0, 0, 612, 792])).toEqual([0, 0, 612, 792]);
+});
+
+it("normalizeRect returns fallback for empty array", () => {
+  expect(normalizeRect([], [0, 0, 612, 792])).toEqual([0, 0, 612, 792]);
+});
+
+it("normalizeRect returns fallback for array with wrong length", () => {
+  expect(normalizeRect([1, 2], [0, 0, 612, 792])).toEqual([0, 0, 612, 792]);
+});
+
+it("normalizeRect returns rect for valid 4-element array", () => {
+  expect(normalizeRect([10, 20, 110, 70], [0, 0, 612, 792])).toEqual([10, 20, 110, 70]);
+});
+
+it("converts Fabric object bounds to document rects", () => {
     expect(rectFromCanvasObjectBounds(20, 40, 200, 100, 2)).toEqual([10, 20, 110, 70]);
   });
 });

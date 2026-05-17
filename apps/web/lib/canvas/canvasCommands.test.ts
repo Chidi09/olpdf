@@ -79,6 +79,11 @@ describe("canvas commands", () => {
   });
 });
 
+it("returns same model for unknown command type", () => {
+  const next = applyCommand(baseModel, { type: "unknown_type" } as any);
+  expect(next).toBe(baseModel);
+});
+
 describe("nativeOperationFromCommand", () => {
   const model = {
     id: "doc-1",

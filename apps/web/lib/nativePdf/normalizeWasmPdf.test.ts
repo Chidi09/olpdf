@@ -129,7 +129,50 @@ describe("normalizeWasmResult", () => {
     expect(result.status).toBe("ready");
   });
 
-  it("passes through glyphs via normalizeWasmGlyphs", () => {
+it("handles missing metrics gracefully", () => {
+  const result = normalizeWasmResult({
+    blocks: [],
+    page_dimensions: [{ page_index: 0, width: 612, height: 792 }],
+  } as WasmParseResult, "doc-1", "ready");
+  expect(result.parseMetrics).toBeUndefined();
+});
+
+it("maintains source refs through normalization", () => {
+  const result = normalizeWasmResult({
+    blocks: [{
+      id: "blk-1",
+      object_id: "obj-1",
+      source_ref: "page:0:oxide:0",
+      type: "text",
+      content: "Hello",
+      rich_spans: [],
+      page_index: 0,
+      bounding_box: [10, 20, 110, 40] as const,
+      font_meta: { family: "Helvetica", size: 12, color: "#111111", is_bold: false, is_italic: false },
+      alignment: "left",
+      confidence_score: 1,
+      needs_review: false,
+      z_index: 3,
+      column_index: 0,
+      style_overrides: {},
+      is_invisible: false,
+    }],
+    glyphs: [{
+      id: "glyph-0",
+      char: "A",
+      bbox: [10, 20, 17, 40],
+      font_family: "Helvetica",
+      font_size: 12,
+      color: "#111",
+      page_index: 0,
+    }],
+    page_dimensions: [{ page_index: 0, width: 612, height: 792 }],
+  } as WasmParseResult, "doc-5", "ready");
+  expect(result.objects[0].sourceRef).toBe("page:0:oxide:0");
+  expect(result.glyphs![0].sourceRef).toEqual({ pageIndex: 0 });
+});
+
+it("passes through glyphs via normalizeWasmGlyphs", () => {
     const result = normalizeWasmResult({
       blocks: [],
       glyphs: [{ id: "g-0", char: "H", bbox: [10, 20, 17, 40], font_family: "Helvetica", font_size: 12, color: "#111", page_index: 0 }],
