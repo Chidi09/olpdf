@@ -34,6 +34,7 @@ export function useCollaboration(documentId: string, model: DocumentModel) {
   const ydocRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
   const [connected, setConnected] = useState(false);
+  const [provider, setProvider] = useState<WebsocketProvider | null>(null);
 
   useEffect(() => {
     const ydoc = initYDoc(model);
@@ -68,6 +69,7 @@ export function useCollaboration(documentId: string, model: DocumentModel) {
           color: generateColor(String(wsProvider.awareness.clientID)),
         });
         wsProvider.connect();
+        setProvider(wsProvider);
         providerRef.current = wsProvider;
       }
     });
@@ -78,8 +80,9 @@ export function useCollaboration(documentId: string, model: DocumentModel) {
       void localPersist.destroy();
       ydoc.destroy();
       providerRef.current = null;
+      setProvider(null);
     };
   }, [documentId]);
 
-  return { ydocRef, providerRef, connected };
+  return { ydocRef, providerRef, provider, connected };
 }

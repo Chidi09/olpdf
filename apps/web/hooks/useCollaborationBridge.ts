@@ -60,14 +60,13 @@ function renderCursors(canvas: Canvas, awareness: WebsocketProvider["awareness"]
 
 export function useCollaborationBridge(
   ydocRef: RefObject<Y.Doc | null>,
-  providerRef: RefObject<WebsocketProvider | null>,
+  provider: WebsocketProvider | null,
   fabricCanvasesRef: RefObject<Map<number, Canvas>>,
   scale: number,
   saveDebounced: RefObject<{ cancel: () => void }>,
 ) {
   useEffect(() => {
     const ydoc = ydocRef.current;
-    const provider = providerRef.current;
     if (!ydoc || !provider) return;
     const yBlocks = ydoc.getMap<Y.Map<unknown>>("blocks");
     const awareness = provider.awareness;
@@ -118,5 +117,5 @@ export function useCollaborationBridge(
         }
       }
     };
-  }, [ydocRef, providerRef, fabricCanvasesRef, scale, saveDebounced]);
+  }, [ydocRef, provider, fabricCanvasesRef, scale, saveDebounced]);
 }

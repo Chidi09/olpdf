@@ -327,7 +327,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   const opStore = usePdfEditOperationsStore();
   const suggestModeRef = useRef(suggestMode);
   const { matches, currentMatchIndex } = useFindReplaceStore();
-  const { ydocRef, providerRef } = useCollaboration(documentId, model);
+  const { ydocRef, providerRef, provider } = useCollaboration(documentId, model);
 
   useEffect(() => {
     currentModelRef.current = model;
@@ -640,7 +640,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     void fetchExport();
   }, [exportRequest, documentId, onExportComplete, onExportError]);
 
-  useCollaborationBridge(ydocRef, providerRef, fabricCanvasesRef, scale, saveDebounced);
+  useCollaborationBridge(ydocRef, provider, fabricCanvasesRef, scale, saveDebounced);
 
   // ── Apply format commands from the FormatBar ─────────────────────────────
 
@@ -725,7 +725,6 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   }, [documentId]);
 
   useEffect(() => {
-    const provider = providerRef.current;
     if (!provider) return;
     const onAwareness = () => {
       const states = Array.from(provider.awareness.getStates().entries()) as [number, AwarenessState][];
@@ -745,7 +744,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     return () => {
       provider.awareness.off("change", onAwareness);
     };
-  }, [providerRef]);
+  }, [provider]);
 
   useEffect(() => {
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
