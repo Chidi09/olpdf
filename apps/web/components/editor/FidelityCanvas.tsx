@@ -428,6 +428,23 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     currentModelRef.current = nextModel;
     onModelChange?.(nextModel);
     setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "accepted" } : c)));
+
+    for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
+      const pageBlocks = (nextModel.blocks ?? [])
+        .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
+        .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
+      reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
+        const btype = (block as any).type ?? "paragraph";
+        if (btype === "table") return createTableBlock(block, s);
+        if (btype === "field") return createFieldBlock(block, s);
+        if (btype === "shape") return createShapeBlock(block, s);
+        if (btype === "image") {
+          loadImageBlock(block, s, canvas);
+          return null;
+        }
+        return createTextBlock(block, s);
+      });
+    }
   };
 
   const rejectChange = (change: ChangeRecord) => {
@@ -925,7 +942,26 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       }
     }, 100);
 
-    fcanvas.on("object:added", sync);
+    fcanvas.on("object:added", (e) => {
+      if (suggestModeRef.current && e.target) {
+        const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
+        if (blockId) {
+          addPendingChange({
+            id: crypto.randomUUID(),
+            blockId,
+            field: "content",
+            oldValue: null,
+            newValue: "added",
+            userId: "local-user",
+            userName: "You",
+            timestamp: Date.now(),
+            status: "pending",
+          });
+        }
+        return;
+      }
+      sync();
+    });
     fcanvas.on("object:modified", (e) => {
       // Handle layout object modifications via page layout store
       const target = e.target as FabricObjectWithMeta | undefined;
@@ -1032,8 +1068,45 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (!blockId) return;
       reflowDebounced(blockId);
     });
-    fcanvas.on("object:removed", sync);
-    fcanvas.on("path:created", sync);
+    fcanvas.on("object:removed", (e) => {
+      if (suggestModeRef.current && e.target) {
+        const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
+        if (blockId) {
+          addPendingChange({
+            id: crypto.randomUUID(),
+            blockId,
+            field: "content",
+            oldValue: "existing",
+            newValue: null,
+            userId: "local-user",
+            userName: "You",
+            timestamp: Date.now(),
+            status: "pending",
+          });
+        }
+        return;
+      }
+      sync();
+    });
+    fcanvas.on("path:created", (e) => {
+      if (suggestModeRef.current) {
+        const pathBlockId = `blk_draw_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        (e.path as FabricObjectWithMeta).data = { ...((e.path as FabricObjectWithMeta).data ?? {}), blockId: pathBlockId, blockType: "shape" };
+        addPendingChange({
+          id: crypto.randomUUID(),
+          blockId: pathBlockId,
+          field: "content",
+          oldValue: null,
+          newValue: "drawing",
+          userId: "local-user",
+          userName: "You",
+          timestamp: Date.now(),
+          status: "pending",
+        });
+        return;
+      }
+      sync();
+    });
     fcanvas.on("mouse:dblclick", (e) => {
       lastInteractedPageIndexRef.current = pageIndex;
       const target = e.target;
