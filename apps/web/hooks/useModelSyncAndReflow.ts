@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import type { Canvas, IText, Textbox } from "fabric";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import type { FabricObjectWithMeta } from "@/types/editor";
+import { shouldPersistFabricObject } from "@/lib/canvas/fabricDocumentObject";
 import { rectFromCanvasObjectBounds, documentRectToCanvasRect, type RectX0Y0X1Y1 } from "@/lib/geometry/rect";
 
 export function useModelSyncAndReflow(args: {
@@ -17,7 +18,8 @@ export function useModelSyncAndReflow(args: {
   const { model, scale, fabricCanvasesRef, setCurrentModel, pushToHistory, saveModel } = args;
 
   const syncCanvasToModel = (pageIndex: number, canvas: Canvas) => {
-    const updatedBlocks: DocumentBlock[] = canvas.getObjects().map((obj, idx) => {
+    const documentObjects = canvas.getObjects().filter((obj) => shouldPersistFabricObject(obj as FabricObjectWithMeta));
+    const updatedBlocks: DocumentBlock[] = documentObjects.map((obj, idx) => {
       const left = obj.left ?? 0;
       const top = obj.top ?? 0;
       const w = (obj.width ?? 1) * (obj.scaleX ?? 1);
