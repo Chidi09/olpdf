@@ -1,4 +1,5 @@
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
+import type { PdfEditOperation } from "@/types/nativePdf";
 
 export type CanvasCommand =
   | { type: "replace_text"; blockId: string; text: string }
@@ -55,5 +56,86 @@ export function applyCommand(model: DocumentModel, command: CanvasCommand): Docu
 
     default:
       return model;
+  }
+}
+
+export function nativeOperationFromCommand(
+  command: CanvasCommand,
+  beforeModel: DocumentModel,
+  afterModel: DocumentModel,
+  pageIndex: number,
+): PdfEditOperation | undefined {
+
+  switch (command.type) {
+    case "replace_text": {
+      const beforeBlock = beforeModel.blocks?.find((b) => b.id === command.blockId);
+      if (!beforeBlock) return undefined;
+      return {
+        id: crypto.randomUUID(),
+        type: "replace_text",
+        pageIndex,
+        targetObjectId: command.blockId,
+        before: { text: (beforeBlock as any).content ?? "" },
+        after: { text: command.text },
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    case "move_resize": {
+      const beforeBlock = beforeModel.blocks?.find((b) => b.id === command.blockId);
+      if (!beforeBlock) return undefined;
+      return {
+        id: crypto.randomUUID(),
+        type: "move_object",
+        pageIndex,
+        targetObjectId: command.blockId,
+        before: { bbox: (beforeBlock as any).bounding_box },
+        after: { bbox: command.bbox },
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    case "delete_block": {
+      const beforeBlock = beforeModel.blocks?.find((b) => b.id === command.blockId);
+      if (!beforeBlock) return undefined;
+      return {
+        id: crypto.randomUUID(),
+        type: "delete_object",
+        pageIndex,
+        targetObjectId: command.blockId,
+        before: { block: beforeBlock },
+        after: {},
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    case "insert_block": {
+      return {
+        id: crypto.randomUUID(),
+        type: "insert_text",
+        pageIndex,
+        targetObjectId: command.block.id,
+        before: {},
+        after: { block: command.block },
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    case "format_block": {
+      const beforeBlock = beforeModel.blocks?.find((b) => b.id === command.blockId);
+      if (!beforeBlock) return undefined;
+      return {
+        id: crypto.randomUUID(),
+        type: "replace_text",
+        pageIndex,
+        targetObjectId: command.blockId,
+        before: { bbox: (beforeBlock as any).bounding_box, text: (beforeBlock as any).content },
+        after: { ...command.patch },
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    default:
+      return undefined;
   }
 }

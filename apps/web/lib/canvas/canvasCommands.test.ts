@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DocumentModel } from "@olpdf/document-model";
-import { applyCommand } from "./canvasCommands";
+import { applyCommand, nativeOperationFromCommand } from "./canvasCommands";
 
 const baseModel: DocumentModel = {
   id: "doc-1",
@@ -76,5 +76,54 @@ describe("canvas commands", () => {
   it("format_block returns same model for unknown blockId", () => {
     const next = applyCommand(baseModel, { type: "format_block", blockId: "nonexistent", patch: { content: "x" } });
     expect(next).toBe(baseModel);
+  });
+});
+
+describe("nativeOperationFromCommand", () => {
+  const model = {
+    id: "doc-1",
+    blocks: [
+      { id: "b1", type: "paragraph", content: "Hello", bounding_box: [0, 0, 100, 30] },
+    ] as any,
+  } as DocumentModel;
+
+  it("creates replace_text operation", () => {
+    const op = nativeOperationFromCommand(
+      { type: "replace_text", blockId: "b1", text: "Goodbye" },
+      model, model, 0,
+    );
+    expect(op).toBeDefined();
+    expect(op!.type).toBe("replace_text");
+    expect(op!.before.text).toBe("Hello");
+    expect(op!.after.text).toBe("Goodbye");
+  });
+
+  it("creates move_resize operation", () => {
+    const op = nativeOperationFromCommand(
+      { type: "move_resize", blockId: "b1", bbox: [10, 10, 110, 40] },
+      model, model, 0,
+    );
+    expect(op).toBeDefined();
+    expect(op!.type).toBe("move_object");
+    expect(op!.after.bbox).toEqual([10, 10, 110, 40]);
+  });
+
+  it("creates delete_block operation", () => {
+    const op = nativeOperationFromCommand(
+      { type: "delete_block", blockId: "b1" },
+      model, model, 0,
+    );
+    expect(op).toBeDefined();
+    expect(op!.type).toBe("delete_object");
+  });
+
+  it("creates insert_block operation", () => {
+    const newBlock = { id: "b2", type: "paragraph", content: "New" } as any;
+    const op = nativeOperationFromCommand(
+      { type: "insert_block", block: newBlock },
+      model, model, 0,
+    );
+    expect(op).toBeDefined();
+    expect(op!.type).toBe("insert_text");
   });
 });
