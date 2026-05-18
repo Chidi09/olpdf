@@ -6,6 +6,8 @@ import {
   EyeIcon,
   EyeSlashIcon,
   ExclamationTriangleIcon,
+  ChevronDownIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/hooks/useAuth";
 import { useEditorProfile } from "@/hooks/useEditorProfile";

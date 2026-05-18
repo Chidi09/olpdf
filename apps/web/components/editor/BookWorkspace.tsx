@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Bars3CenterLeftIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3CenterLeftIcon, XMarkIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 import BookSidebar, { type BookMatterKey } from "./BookSidebar";
 import BookInspector from "./BookInspector";
 import CollaborativeEditor from "../CollaborativeEditor";

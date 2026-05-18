@@ -37,6 +37,9 @@ import {
   MinusIcon,
   XMarkIcon,
   ChevronUpIcon,
+  CloudArrowUpIcon,
+  CommandLineIcon,
+  CpuChipIcon,
 } from "@heroicons/react/24/outline";
 import { PageShell } from "@/components/layout/PageShell";
 import { useToolkitStore } from "@/store/useToolkitStore";
