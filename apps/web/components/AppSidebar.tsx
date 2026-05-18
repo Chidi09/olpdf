@@ -60,7 +60,7 @@ export default function AppSidebar({ signingOut, onSigningOutChange }: { signing
 
   return (
     <aside
-      className={`relative z-20 flex h-screen shrink-0 flex-col border-r liquid-glass liquid-glass-noise transition-all duration-200 ${signingOut ? "pointer-events-none opacity-70" : ""} ${
+      className={`relative z-20 flex h-screen shrink-0 flex-col border-r border-[var(--border-subtle)] liquid-glass liquid-glass-noise transition-all duration-200 ${signingOut ? "pointer-events-none opacity-70" : ""} ${
         expanded ? "w-56" : "w-[64px]"
       }`}
     >
@@ -69,7 +69,7 @@ export default function AppSidebar({ signingOut, onSigningOutChange }: { signing
       {/* Logo */}
       <Link
         href="/dashboard"
-        className="flex h-16 shrink-0 items-center gap-3 border-b border-white/[0.08] px-4 transition-colors hover:bg-white/[0.05]"
+        className="flex h-16 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-4 transition-colors hover:bg-[var(--accent)]/5"
       >
         <div className="relative h-8 w-8 shrink-0">
           <Image src={DEFAULT_BRAND.icon192} alt="OLPDF Logo" fill className="object-contain" priority />
@@ -88,8 +88,8 @@ export default function AppSidebar({ signingOut, onSigningOutChange }: { signing
               title={!expanded ? item.label : undefined}
               className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-all ${
                 active
-                  ? "border border-white/[0.05] bg-white/10 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-                  : "text-[var(--text-secondary)] hover:bg-white/[0.05] hover:text-[var(--text-primary)]"
+                  ? "border border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--accent)]/5 hover:text-[var(--text-primary)]"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -100,7 +100,7 @@ export default function AppSidebar({ signingOut, onSigningOutChange }: { signing
       </nav>
 
       {/* User + sign-out */}
-      <div className="shrink-0 border-t border-white/[0.08] p-2">
+      <div className="shrink-0 border-t border-[var(--border-subtle)] p-2">
         <div className="px-1 pb-2">
           {expanded ? <ThemeSwitcher /> : <ThemeSwitcher compact />}
         </div>
@@ -123,7 +123,7 @@ export default function AppSidebar({ signingOut, onSigningOutChange }: { signing
       <button
         onClick={() => setExpanded((v) => !v)}
         aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
-        className="absolute -right-3 top-[72px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.10] bg-black/60 text-[var(--text-tertiary)] shadow-sm backdrop-blur-md transition-colors hover:text-[var(--text-primary)]"
+        className="absolute -right-3 top-[72px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-tertiary)] shadow-sm backdrop-blur-md transition-colors hover:text-[var(--text-primary)]"
       >
         {expanded ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
       </button>

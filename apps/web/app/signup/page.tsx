@@ -45,7 +45,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0c]">
+    <div className="flex min-h-screen bg-[var(--bg-base)]">
 
       {/* ── Left pane — form ─────────────────────────────────────────── */}
       <div className="relative flex flex-col w-full lg:w-[52%] xl:w-[48%] min-h-screen px-8 sm:px-14 py-10">
@@ -56,7 +56,7 @@ export default function SignupPage() {
             <div className="relative h-9 w-9 shrink-0 group-hover:scale-105 transition-transform">
               <Image src={DEFAULT_BRAND.icon192} alt="OLPDF" fill className="object-contain" priority />
             </div>
-            <span className="font-sans font-black tracking-tight text-2xl text-white">
+            <span className="font-sans font-black tracking-tight text-2xl text-[var(--text-primary)]">
               OL<span className="text-orange-500">PDF</span>
             </span>
           </Link>
@@ -64,42 +64,42 @@ export default function SignupPage() {
 
         {/* Form container */}
         <div className="flex flex-col flex-1 justify-center max-w-sm w-full mx-auto">
-          <h1 className="text-4xl font-sans font-black tracking-tight text-white mb-2">Create account.</h1>
-          <p className="text-base text-[#9ca3af] mb-8">Start editing PDFs like Word documents — free.</p>
+          <h1 className="text-4xl font-sans font-black tracking-tight text-[var(--text-primary)] mb-2">Create account.</h1>
+          <p className="text-base text-[var(--text-secondary)] mb-8">Start editing PDFs like Word documents — free.</p>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-[#d1d5db] mb-1.5 uppercase tracking-widest">Full Name</label>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-widest">Full Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-white placeholder:text-white/30"
+                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#d1d5db] mb-1.5 uppercase tracking-widest">Email</label>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-widest">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-white placeholder:text-white/30"
+                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#d1d5db] mb-1.5 uppercase tracking-widest">Password</label>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-widest">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 8 characters"
-                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-white placeholder:text-white/30"
+                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
                 required
                 minLength={8}
               />
@@ -121,13 +121,13 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <div className="flex items-center gap-3 my-5 before:h-px before:flex-1 before:bg-[#232325] after:h-px after:flex-1 after:bg-[#232325]">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#6b7280]">Or</span>
+          <div className="flex items-center gap-3 my-5 before:h-px before:flex-1 before:bg-[var(--border-subtle)] after:h-px after:flex-1 after:bg-[var(--border-subtle)]">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">Or</span>
           </div>
 
           <button
             onClick={signInWithGoogle}
-            className="w-full rounded-xl liquid-glass liquid-glass-noise transition-all px-4 py-3.5 font-semibold text-base flex items-center justify-center gap-3 text-white/80 hover:text-white active:scale-[0.98]"
+            className="w-full rounded-xl liquid-glass liquid-glass-noise transition-all px-4 py-3.5 font-semibold text-base flex items-center justify-center gap-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)] active:scale-[0.98]"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57C21.08 18.45 22.56 15.52 22.56 12.25z" fill="#4285F4" />
@@ -141,29 +141,29 @@ export default function SignupPage() {
           {/* Perks */}
           <ul className="mt-6 space-y-2">
             {["Free forever — no credit card", "API key included on signup", "Export to EPUB3 & more"].map((perk) => (
-              <li key={perk} className="flex items-center gap-2 text-xs text-[#9ca3af]">
+              <li key={perk} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                 <Check className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                 {perk}
               </li>
             ))}
           </ul>
 
-          <p className="text-center mt-6 text-[11px] text-[#4b5563]">
+          <p className="text-center mt-6 text-[11px] text-[var(--text-tertiary)]">
             By signing up you agree to our{" "}
-            <Link href="/terms" className="hover:text-[#9ca3af] underline transition-colors">Terms</Link>
+            <Link href="/terms" className="hover:text-[var(--text-secondary)] underline transition-colors">Terms</Link>
             {" "}and{" "}
-            <Link href="/privacy" className="hover:text-[#9ca3af] underline transition-colors">Privacy Policy</Link>.
+            <Link href="/privacy" className="hover:text-[var(--text-secondary)] underline transition-colors">Privacy Policy</Link>.
           </p>
 
-          <p className="text-center mt-4 text-sm text-[#6b7280]">
+          <p className="text-center mt-4 text-sm text-[var(--text-secondary)]">
             Already have an account?{" "}
             <Link href="/login" className="text-orange-500 hover:text-orange-400 font-semibold transition-colors">Log in</Link>
           </p>
         </div>
 
         {/* Footer */}
-        <p className="mt-auto text-[11px] text-[#4b5563] text-center">
-          © 2025 OLPDF · <Link href="/privacy" className="hover:text-[#9ca3af] transition-colors">Privacy</Link> · <Link href="/terms" className="hover:text-[#9ca3af] transition-colors">Terms</Link>
+        <p className="mt-auto text-[11px] text-[var(--text-tertiary)] text-center">
+          © 2025 OLPDF · <Link href="/privacy" className="hover:text-[var(--text-secondary)] transition-colors">Privacy</Link> · <Link href="/terms" className="hover:text-[var(--text-secondary)] transition-colors">Terms</Link>
         </p>
       </div>
 

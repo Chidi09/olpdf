@@ -115,7 +115,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   if (matchesPrefix(pathname, EDITOR_ROUTES)) {
     return (
-      <div className="app-shell-font relative h-screen overflow-hidden bg-black">
+      <div className="app-shell-font relative h-screen overflow-hidden bg-[var(--bg-base)]">
         {children}
         <OfflineIndicator />
       </div>
@@ -124,7 +124,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   if (matchesPrefix(pathname, APP_ROUTES)) {
     return (
-      <div className="app-shell-font relative flex h-screen overflow-hidden bg-black">
+      <div className="app-shell-font relative flex h-screen overflow-hidden bg-[var(--bg-base)]">
         <div className="pointer-events-none absolute -left-[12%] -top-[14%] h-[46%] w-[42%] rounded-full bg-orange-600/10 blur-[120px]" />
         <div className="pointer-events-none absolute -bottom-[10%] -right-[8%] h-[36%] w-[30%] rounded-full bg-blue-600/6 blur-[110px]" />
         <AppSidebar signingOut={signingOut} onSigningOutChange={setSigningOut} />

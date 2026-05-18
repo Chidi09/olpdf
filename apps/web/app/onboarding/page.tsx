@@ -41,8 +41,8 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-black font-sans text-[#ededed]">
-      <div className="relative flex min-h-screen w-full flex-col border-r border-[#222] px-8 py-10 lg:w-[45%]">
+    <div className="flex min-h-screen bg-[var(--bg-base)] font-sans text-[var(--text-primary)]">
+      <div className="relative flex min-h-screen w-full flex-col border-r border-[var(--border-subtle)] px-8 py-10 lg:w-[45%]">
         <div className="mb-16">
           <Link href="/" className="flex items-center gap-2 text-sm font-bold tracking-wide">
             <div className="flex h-6 w-6 items-center justify-center rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-700 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)]">
@@ -71,7 +71,7 @@ export default function OnboardingPage() {
           {step === 1 && (
             <div className="animate-in fade-in slide-in-from-bottom-2 space-y-6">
               <div>
-                <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Welcome to OLPDF</h1>
+                <h1 className="mb-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Welcome to OLPDF</h1>
                 <p className="text-sm leading-relaxed text-[#888]">
                   A structure-first document editor. Edit PDFs like Word documents - free, forever.
                 </p>
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <div className="relative hidden min-h-screen flex-1 flex-col overflow-hidden bg-[#050505] lg:flex">
+      <div className="relative hidden min-h-screen flex-1 flex-col overflow-hidden bg-[var(--bg-surface)] lg:flex">
         <div className="pointer-events-none absolute right-0 top-0 h-[600px] w-full rounded-full bg-orange-600/10 blur-[120px]" />
       </div>
     </div>
