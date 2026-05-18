@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useState, useRef, useCallback, useReducer } from "react";
+import { cn } from "@/lib/utils";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import dynamic from "next/dynamic";
 import Link from "next/link";
