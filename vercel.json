@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/bff/worker/cleanup-exports",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
