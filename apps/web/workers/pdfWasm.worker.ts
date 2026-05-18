@@ -22,9 +22,9 @@ let preflightStreamingFn: StreamingPreflightFn | null = null;
 const ready = (async () => {
   // @ts-expect-error — dynamic wasm import has no type declarations
   const mod = await import(/* webpackIgnore: true */ "/wasm/pdf_wasm.js");
-  await (mod.default as (url: URL | string) => Promise<void>)(
-    new URL("/wasm/pdf_wasm_bg.wasm", self.location.origin)
-  );
+  await (mod.default as (opts: { module_or_path: URL }) => Promise<void>)({
+    module_or_path: new URL("/wasm/pdf_wasm_bg.wasm", self.location.origin),
+  });
   parseFn = mod.parse_pdf as ParseFn;
   preflightFn = mod.preflight_pdf as ParseFn;
   parsePageByIndexFn = mod.parse_page_by_index as StreamingParseFn;

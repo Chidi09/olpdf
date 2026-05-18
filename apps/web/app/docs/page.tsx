@@ -538,7 +538,6 @@ export default function DocsPage() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-[var(--bg-base)] font-sans text-[var(--text-primary)] selection:bg-accent/30 transition-colors duration-500">
       <AmbientBackground />
-      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] pointer-events-none" />
 
       <div className="relative z-10 max-w-[1400px] mx-auto flex">
 
