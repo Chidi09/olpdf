@@ -112,6 +112,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://cdn.simpleicons.org" crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* SVG filter — referenced by .liquid-glass::before via filter:url(#lg-distort) */}
+        <svg aria-hidden="true" style={{ display: "none", position: "absolute" }}>
+          <defs>
+            <filter id="lg-distort" x="-5%" y="-5%" width="110%" height="110%" colorInterpolationFilters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency="0.022 0.014" numOctaves="4" seed="9" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
+        </svg>
         <TypekitLoader />
         <Providers>
           <LayoutShell>{children}</LayoutShell>
