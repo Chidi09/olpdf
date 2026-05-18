@@ -103,6 +103,13 @@ export function MagicAiDropzone() {
   const executeMagic = useCallback(async () => {
     if (!file || !instruction.trim()) return;
 
+    // Check auth before doing anything — Magic AI requires a session
+    const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
+    if (!sessionRes.ok) {
+      window.location.href = "/login?redirect=/#magic";
+      return;
+    }
+
     setState("uploading");
     setErrorMessage("");
     setTerminalLines([]);
