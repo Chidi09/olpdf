@@ -242,3 +242,130 @@ class PublishTemplatePayload(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     category: str = Field(min_length=1, max_length=50)
     description: str = Field(max_length=1000)
+
+
+class PdfPageNumberPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(default="Page {n}", max_length=100)
+    start_number: int = Field(default=1, ge=0)
+    position: str = Field(default="bottom_center", pattern=r"^(top|bottom)_(left|center|right)$")
+
+
+class PdfHeaderFooterPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(min_length=1, max_length=500)
+
+
+class PdfMetadataPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: Optional[str] = Field(None, max_length=200)
+    author: Optional[str] = Field(None, max_length=200)
+    subject: Optional[str] = Field(None, max_length=500)
+    keywords: Optional[str] = Field(None, max_length=500)
+
+
+class PdfBackgroundPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    color: str = Field(default="#ffffff", pattern=r"^#[0-9a-fA-F]{6}$")
+
+
+class PdfStampPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(min_length=1, max_length=200)
+    opacity: float = Field(default=0.3, ge=0.0, le=1.0)
+
+
+class PdfReplaceTextPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    find_text: str = Field(min_length=1, max_length=500)
+    replace_text: str = Field(default="", max_length=500)
+
+
+class PdfBatesPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    prefix: str = Field(default="BATES", max_length=50)
+    start_number: int = Field(default=1, ge=0)
+
+
+class PdfCropPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    x1: float = Field(ge=0)
+    y1: float = Field(ge=0)
+    x2: float = Field(ge=0)
+    y2: float = Field(ge=0)
+    page_indices: Optional[List[int]] = None
+
+
+class PdfExtractPagesPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    page_ranges: List[PdfPageRange]
+
+
+class PdfDeletePagesPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    page_indices: List[int]
+
+
+class PdfReorderPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    new_order: List[int]
+
+
+class PdfScalePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    target_size: Literal["A4", "Letter", "Legal"]
+
+
+class PdfMarginsPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    margin_size: float = Field(default=36, ge=0, le=200)
+
+
+class PdfResizePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    width: float = Field(ge=72)
+    height: float = Field(ge=72)
+
+
+class PdfSplitSizePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    max_mb: float = Field(default=10, ge=1, le=500)
+
+
+class PdfNUpPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pages_per_sheet: Literal[2, 4, 6, 8, 16]
+
+
+class PdfInitialViewPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    zoom: str = Field(default="fit_page", pattern=r"^(fit_page|fit_width|100%|75%|50%)$")
+    layout: str = Field(default="single", pattern=r"^(single|continuous|facing)$")
+
+
+class PdfRemovePasswordPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    password: str = Field(min_length=1, max_length=100)
+
+
+class PdfRedactTextPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pattern: str = Field(min_length=1, max_length=500)
+    replacement: Optional[str] = Field(None, max_length=500)
+
+
+class PdfComparePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    compare_doc_id: str = Field(min_length=1, max_length=100)
+
+
+class PdfSignPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: Optional[str] = Field(None, max_length=200)
+    location: Optional[str] = Field(None, max_length=200)
+
+
+class PdfToImagesPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    format: Literal["png", "jpg"] = "png"
+    dpi: int = Field(default=150, ge=72, le=600)

@@ -22,6 +22,7 @@ function nativeObjectToLayoutObject(obj: PdfEditSession["objects"][0]): LayoutOb
     height,
     rotation: 0,
     originalPdfObjectId: obj.id,
+    sourceRef: obj.sourceRef,
   };
 
   if (obj.type === "text" || obj.type === "list_item") {
@@ -113,6 +114,7 @@ function nativeLayoutObjectToLayoutObject(obj: WasmLayoutObject): LayoutObject {
     height: obj.height,
     rotation: obj.rotation,
     originalPdfObjectId: obj.originalPdfObjectId,
+    sourceRef: obj.sourceRef,
   };
 
   if (obj.type === "text") {

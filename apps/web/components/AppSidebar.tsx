@@ -60,10 +60,12 @@ export default function AppSidebar({ signingOut, onSigningOutChange }: { signing
 
   return (
     <aside
-      className={`relative z-20 flex h-screen shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl transition-all duration-200 ${signingOut ? "pointer-events-none opacity-70" : ""} ${
+      className={`relative z-20 flex h-screen shrink-0 flex-col border-r liquid-glass liquid-glass-noise transition-all duration-200 ${signingOut ? "pointer-events-none opacity-70" : ""} ${
         expanded ? "w-56" : "w-[64px]"
       }`}
     >
+      {/* Decorative Gradient Glow */}
+      <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-accent/5 blur-[80px] pointer-events-none" />
       {/* Logo */}
       <Link
         href="/dashboard"

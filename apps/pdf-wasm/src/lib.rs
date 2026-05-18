@@ -148,6 +148,7 @@ fn parse_page_blocks(
     let mut current_font = String::new();
     let mut current_size = 12.0_f64;
     let mut current_color = "#111111".to_string();
+    let mut current_bbox: Option<[f64; 4]> = None;
     let mut prev_y = 0.0;
     let mut prev_x = 0.0;
 
@@ -168,7 +169,7 @@ fn parse_page_blocks(
                     rich_spans: vec![],
                     next_block_id: None,
                     page_index,
-                    bounding_box: [0.0, 0.0, 0.0, 0.0],
+                    bounding_box: current_bbox.unwrap_or([0.0, 0.0, 0.0, 0.0]),
                     font_meta: FontMeta {
                         family: current_font.clone(),
                         size: current_size,
@@ -186,15 +187,31 @@ fn parse_page_blocks(
                     is_invisible: false,
                 });
                 block_idx += 1;
+                current_bbox = None;
             }
         }
 
         let ch_color = format!("#{:02X}{:02X}{:02X}", (ch.color.r * 255.0) as u8, (ch.color.g * 255.0) as u8, (ch.color.b * 255.0) as u8);
         let gw = ch.font_size as f64 * 0.6;
+        let glyph_bbox = [
+            ch.bbox.x as f64,
+            ch.bbox.y as f64,
+            ch.bbox.x as f64 + gw,
+            ch.bbox.y as f64 + ch.font_size as f64,
+        ];
+        current_bbox = Some(match current_bbox {
+            Some(b) => [
+                b[0].min(glyph_bbox[0]),
+                b[1].min(glyph_bbox[1]),
+                b[2].max(glyph_bbox[2]),
+                b[3].max(glyph_bbox[3]),
+            ],
+            None => glyph_bbox,
+        });
         glyphs.push(WasmGlyph {
             id: format!("glyph_{page_index}_{glyph_idx}"),
             char: ch.char.to_string(),
-            bbox: [ch.bbox.x as f64, ch.bbox.y as f64, ch.bbox.x as f64 + gw, ch.bbox.y as f64 + ch.font_size as f64],
+            bbox: glyph_bbox,
             font_family: ch.font_name.clone(),
             font_size: ch.font_size as f64,
             color: ch_color.clone(),
@@ -221,7 +238,7 @@ fn parse_page_blocks(
             rich_spans: vec![],
             next_block_id: None,
             page_index,
-            bounding_box: [0.0, 0.0, 0.0, 0.0],
+            bounding_box: current_bbox.unwrap_or([0.0, 0.0, 0.0, 0.0]),
             font_meta: FontMeta {
                 family: current_font,
                 size: current_size,
@@ -250,8 +267,8 @@ fn block_to_layout_object(block: &WasmBlock) -> WasmLayoutObject {
         page_index: block.page_index,
         x: block.bounding_box[0],
         y: block.bounding_box[1],
-        width: block.bounding_box[2],
-        height: block.bounding_box[3],
+        width: if block.bounding_box[2] > block.bounding_box[0] { block.bounding_box[2] - block.bounding_box[0] } else { 0.0 },
+        height: if block.bounding_box[3] > block.bounding_box[1] { block.bounding_box[3] - block.bounding_box[1] } else { 0.0 },
         rotation: 0.0,
         z_index: block.z_index,
         source_ref: block.source_ref.clone(),

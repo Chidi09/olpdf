@@ -7,20 +7,65 @@
   --bg-app: #ffffff;
   --bg-sidebar: #fafafa;
   --bg-hover: #f5f5f5;
-  --glass-fill: rgba(0, 0, 0, 0.02);
-  --glass-hover: rgba(0, 0, 0, 0.04);
+  --glass-fill: rgba(255, 255, 255, 0.4);
+  --glass-hover: rgba(255, 255, 255, 0.6);
   --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-lip: rgba(255, 255, 255, 0.5);
+  --glass-lip: rgba(255, 255, 255, 0.8);
+
+  /* Liquid Glass Spec — Light */
+  --liquid-bg: rgba(255, 255, 255, 0.2);
+  --liquid-border: rgba(255, 255, 255, 0.4);
+  --liquid-edge: rgba(255, 255, 255, 0.6);
+  --liquid-reflection: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
 }
 
 .dark {
   --bg-app: #000000;
   --bg-sidebar: #050505;
   --bg-hover: #111111;
-  --glass-fill: rgba(255, 255, 255, 0.02);
-  --glass-hover: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-lip: rgba(255, 255, 255, 0.02);
+  --glass-fill: rgba(10, 10, 10, 0.4);
+  --glass-hover: rgba(20, 20, 20, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-lip: rgba(255, 255, 255, 0.05);
+
+  /* Liquid Glass Spec — Dark */
+  --liquid-bg: rgba(10, 10, 10, 0.4);
+  --liquid-border: rgba(255, 255, 255, 0.08);
+  --liquid-edge: rgba(255, 255, 255, 0.12);
+  --liquid-reflection: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+}
+
+/* Liquid Glass Utilities */
+@layer utilities {
+  .liquid-glass {
+    @apply relative overflow-hidden backdrop-blur-[24px] backdrop-saturate-[180%] backdrop-contrast-[95%];
+    background: var(--liquid-bg);
+    background-image: var(--liquid-reflection);
+    box-shadow:
+      inset 0 0 0 1px var(--liquid-border),
+      inset 0 1px 1px var(--liquid-edge),
+      0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .liquid-glass-strong {
+    @apply liquid-glass backdrop-blur-[40px] backdrop-saturate-[220%];
+    background: var(--liquid-bg);
+  }
+
+  .liquid-glass-noise {
+    position: relative;
+  }
+
+  .liquid-glass-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.4;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
 }
 
 /* Adobe Fonts — body default */

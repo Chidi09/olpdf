@@ -58,6 +58,7 @@ import { useAiTools } from "@/hooks/useAiTools";
 import { useEditorToolbarActions } from "@/hooks/useEditorToolbarActions";
 import { useModelSyncAndReflow } from "@/hooks/useModelSyncAndReflow";
 import type { FabricObjectWithMeta, FabricGestureEvent, FabricMouseEvent, AwarenessState, TableData } from "@/types/editor";
+import { rectFromCanvasObjectBounds, documentRectToCanvasRect, type RectX0Y0X1Y1 } from "@/lib/geometry/rect";
 import type { LayoutObject } from "@/types/pageLayout";
 import { fabricSpecFromLayoutObject, createFabricObject } from "@/components/editor/pageLayoutFabric";
 import { createDefaultTableFrame } from "@/lib/pageLayout/table";
@@ -74,9 +75,12 @@ import type { ToolOperation } from "@/components/editor/ai/tools/contracts";
 import type { PdfEditOperation } from "@/types/nativePdf";
 import type { AiApplyAction } from "@/components/editor/ai/aiApplyState";
 import type { PageLayoutDocument } from "@/types/pageLayout";
+import { reconcileFabricCanvas } from "@/lib/canvas/reconcileFabricCanvas";
+import { shouldPersistFabricObject } from "@/lib/canvas/fabricDocumentObject";
 import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
 import { shouldEditFabricTextInPlace } from "@/components/editor/canvasTextEditing";
 import { getActiveToolAfterToolbarClick, shouldInsertToolImmediately } from "@/components/editor/canvasToolBehavior";
+import { applyCommand, type CanvasCommand } from "@/lib/canvas/canvasCommands";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -90,14 +94,17 @@ type FidelityCanvasProps = {
   exportRequest?: { requestId: string; format: "pdf" | "docx" } | null;
   onExportComplete?: (result: { requestId: string; url: string }) => void;
   onExportError?: (result: { requestId: string; message: string }) => void;
+  highlightBlockIds?: string[];
 };
 
 type ChangeRecord = {
   id: string;
   blockId: string;
-  field: "content" | "bounding_box" | "font_meta" | "alignment";
-  oldValue: unknown;
-  newValue: unknown;
+  field?: "content" | "bounding_box" | "font_meta" | "alignment";
+  oldValue?: unknown;
+  newValue?: unknown;
+  command?: CanvasCommand;
+  beforeModel?: DocumentModel;
   userId: string;
   userName: string;
   timestamp: number;
@@ -109,7 +116,8 @@ const DEFAULT_PAGE = { page_index: 0, width: 595.28, height: 841.89 };
 // ── Fabric object factory ─────────────────────────────────────────────────────
 
 function createTextBlock(block: DocumentBlock, scale: number) {
-  const bbox = block.bounding_box ?? [72, 72, 540, 86];
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 540, 86]) as RectX0Y0X1Y1, scale);
+  const width = Math.max(right - left, 20);
   const fm = (block.font_meta ?? {}) as Partial<{
     family: string;
     size: number;
@@ -117,9 +125,6 @@ function createTextBlock(block: DocumentBlock, scale: number) {
     is_italic: boolean;
     color: string;
   }>;
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
-  const width = Math.max((bbox[2] - bbox[0]) * scale, 20);
   const fontSize = Math.max(((fm.size as number) || 11) * scale, 8);
 
   const tb = new Textbox(block.content || "", {
@@ -149,11 +154,9 @@ function createTextBlock(block: DocumentBlock, scale: number) {
 
 function createTableBlock(block: DocumentBlock, scale: number): Group {
   const tableData = (block.table_data ?? { headers: [], rows: [] }) as TableData;
-  const bbox = block.bounding_box ?? [72, 72, 400, 200];
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
-  const tableW = Math.max((bbox[2] - bbox[0]) * scale, 80);
-  const tableH = Math.max((bbox[3] - bbox[1]) * scale, 40);
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 400, 200]) as RectX0Y0X1Y1, scale);
+  const tableW = Math.max(right - left, 80);
+  const tableH = Math.max(bottom - top, 40);
 
   const headers = tableData.headers ?? [];
   const allRows: string[][] = headers.length > 0
@@ -210,9 +213,7 @@ function createTableBlock(block: DocumentBlock, scale: number): Group {
 
 function createShapeBlock(block: DocumentBlock, scale: number) {
   const fabricData = block.fabric_data ?? {};
-  const bbox = block.bounding_box ?? [72, 72, 140, 120];
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 140, 120]) as RectX0Y0X1Y1, scale);
   const objType = String(fabricData.type || "rect").toLowerCase();
   const stroke = String(fabricData.stroke || "#111111");
   const fill = String(fabricData.fill || "rgba(0,0,0,0)");
@@ -222,12 +223,12 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
   if (objType === "ellipse" || objType === "circle") {
     shape = new Ellipse({
       left, top,
-      rx: Math.max((bbox[2] - bbox[0]) * scale * 0.5, 8),
-      ry: Math.max((bbox[3] - bbox[1]) * scale * 0.5, 8),
+      rx: Math.max((right - left) * 0.5, 8),
+      ry: Math.max((bottom - top) * 0.5, 8),
       stroke, fill, strokeWidth,
     });
   } else if (objType === "line" || objType === "arrow") {
-    shape = new Line([left, top, bbox[2] * scale, bbox[3] * scale], { stroke, strokeWidth });
+    shape = new Line([left, top, right, bottom], { stroke, strokeWidth });
   } else if (["textbox", "text", "i-text", "sticky-note", "sticky_note"].includes(objType)) {
     shape = new IText(String(fabricData.text || block.content || "Text"), {
       left, top,
@@ -239,9 +240,11 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
   } else {
     shape = new Rect({
       left, top,
-      width: Math.max((bbox[2] - bbox[0]) * scale, 20),
-      height: Math.max((bbox[3] - bbox[1]) * scale, 20),
+      width: Math.max(right - left, 20),
+      height: Math.max(bottom - top, 20),
       stroke, fill, strokeWidth,
+      rx: (fabricData as Record<string, unknown>).rx as number | undefined ?? 0,
+      ry: (fabricData as Record<string, unknown>).ry as number | undefined ?? 0,
     });
   }
   (shape as FabricObjectWithMeta).data = { blockId: block.id, blockType: "shape", shapeType: objType, ...fabricData };
@@ -249,17 +252,12 @@ function createShapeBlock(block: DocumentBlock, scale: number) {
 }
 
 function createFieldBlock(block: DocumentBlock, scale: number): Rect {
-  const bbox = block.bounding_box ?? [72, 72, 240, 100];
-  const x0 = bbox[0];
-  const y0 = bbox[1];
-  const x1 = bbox[2];
-  const y1 = bbox[3];
-  const w = (x1 - x0) * scale;
-  const h = Math.max((y1 - y0) * scale, 24);
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [72, 72, 240, 100]) as RectX0Y0X1Y1, scale);
+  const w = right - left;
+  const h = Math.max(bottom - top, 24);
 
   const fieldRect = new Rect({
-    left: x0 * scale,
-    top: y0 * scale,
+    left, top,
     width: w,
     height: h,
     fill: "rgba(249,115,22,0.06)",
@@ -279,11 +277,9 @@ function createFieldBlock(block: DocumentBlock, scale: number): Rect {
 }
 
 function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
-  const bbox = block.bounding_box ?? [0, 0, 100, 100];
-  const left = bbox[0] * scale;
-  const top = bbox[1] * scale;
-  const w = (bbox[2] - bbox[0]) * scale;
-  const h = (bbox[3] - bbox[1]) * scale;
+  const [left, top, right, bottom] = documentRectToCanvasRect((block.bounding_box ?? [0, 0, 100, 100]) as RectX0Y0X1Y1, scale);
+  const w = right - left;
+  const h = bottom - top;
 
   if (block.src) {
     FabricImage.fromURL(block.src, { crossOrigin: "anonymous" }).then((img) => {
@@ -309,9 +305,23 @@ function loadImageBlock(block: DocumentBlock, scale: number, canvas: Canvas) {
   }
 }
 
+function applyCanvasInteractionState(canvas: Canvas, readOnly: boolean, activeTool: ShapeTool) {
+  canvas.selection = !readOnly;
+  canvas.isDrawingMode = !readOnly && activeTool === "draw";
+  canvas.getObjects().forEach((obj) => {
+    const data = (obj as FabricObjectWithMeta).data ?? {};
+    if (data.isHighlight || data.isCommentIndicator || data.isOcrBadge) return;
+    obj.selectable = !readOnly;
+    obj.evented = !readOnly;
+    if (obj.type === "textbox") {
+      (obj as Textbox).editable = !readOnly;
+    }
+  });
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function FidelityCanvas({ documentId, model, layoutDocument, toolbarHost, onModelChange, onNativeOperation, onAiLifecycleEvent, readOnly, exportRequest, onExportComplete, onExportError }: FidelityCanvasProps) {
+export default function FidelityCanvas({ documentId, model, layoutDocument, toolbarHost, onModelChange, onNativeOperation, onAiLifecycleEvent, readOnly, exportRequest, onExportComplete, onExportError, highlightBlockIds }: FidelityCanvasProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(900);
   const containerWidthRef = useRef(900);
@@ -338,7 +348,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   const opStore = usePdfEditOperationsStore();
   const suggestModeRef = useRef(suggestMode);
   const { matches, currentMatchIndex } = useFindReplaceStore();
-  const { ydocRef, providerRef } = useCollaboration(documentId, model);
+  const { ydocRef, providerRef, provider } = useCollaboration(documentId, model);
 
   useEffect(() => {
     currentModelRef.current = model;
@@ -348,40 +358,81 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     suggestModeRef.current = suggestMode;
   }, [suggestMode]);
 
+  useEffect(() => {
+    // Apply or remove AI highlights whenever highlightBlockIds changes
+    fabricCanvasesRef.current.forEach((canvas) => {
+      // 1. Remove old AI highlights
+      const oldHighlights = canvas.getObjects().filter((o) => (o as FabricObjectWithMeta).data?.isAiHighlight);
+      for (const h of oldHighlights) canvas.remove(h);
+
+      if (!highlightBlockIds || highlightBlockIds.length === 0) {
+        canvas.renderAll();
+        return;
+      }
+
+      // 2. Add new AI highlights
+      let scrolled = false;
+      canvas.getObjects().forEach((obj) => {
+        const blockId = (obj as FabricObjectWithMeta).data?.blockId;
+        if (blockId && highlightBlockIds.includes(blockId)) {
+          const highlightRect = new Rect({
+            left: obj.left! - 4,
+            top: obj.top! - 4,
+            width: obj.width! * (obj.scaleX || 1) + 8,
+            height: obj.height! * (obj.scaleY || 1) + 8,
+            fill: "rgba(249, 115, 22, 0.05)",
+            stroke: "rgba(249, 115, 22, 0.8)",
+            strokeWidth: 2,
+            rx: 6,
+            ry: 6,
+            selectable: false,
+            evented: false,
+            strokeUniform: true,
+          });
+          (highlightRect as FabricObjectWithMeta).data = { isAiHighlight: true };
+          canvas.add(highlightRect);
+          canvas.bringObjectToFront(highlightRect);
+
+          // Scroll the first matched object into view
+          if (!scrolled) {
+            const container = rootRef.current?.parentElement;
+            if (container) {
+              const canvasParent = canvas.getElement().parentElement?.parentElement;
+              if (canvasParent) {
+                const absoluteTop = canvasParent.offsetTop + obj.top!;
+                container.scrollTo({ top: absoluteTop - 100, behavior: "smooth" });
+                scrolled = true;
+              }
+            }
+          }
+        }
+      });
+      canvas.renderAll();
+    });
+  }, [highlightBlockIds]);
+
   // ── Layout ───────────────────────────────────────────────────────────────
 
   const pageDimensions = model.page_dimensions?.length ? model.page_dimensions : [DEFAULT_PAGE];
   const primaryPage = pageDimensions[0] ?? DEFAULT_PAGE;
   const scale = Math.max(0.4, Math.min(3, (containerWidth / primaryPage.width) * userZoom));
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      const nextImages = { ...pageImages };
-      let changed = false;
-      const pagesToFetch = pageDimensions.filter((dim) => !nextImages[dim.page_index]);
-
-      await Promise.all(
-        pagesToFetch.map(async (dim) => {
-          try {
-            const res = await fetch(`/api/bff/documents/${documentId}/page/${dim.page_index}/image`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.url) {
-                nextImages[dim.page_index] = data.url;
-                changed = true;
-              }
-            }
-          } catch (e) {
-            // best effort
-          }
-        })
-      );
-      if (changed) {
-        setPageImages(nextImages);
+  const ensurePageImage = useCallback(async (pageIndex: number) => {
+    try {
+      const res = await fetch(`/api/bff/documents/${documentId}/page/${pageIndex}/image`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          setPageImages((prev) => {
+            if (prev[pageIndex]) return prev;
+            return { ...prev, [pageIndex]: data.url };
+          });
+        }
       }
-    };
-    void fetchImages();
-  }, [documentId, pageDimensions]);
+    } catch {
+      // silent
+    }
+  }, [documentId]);
 
   const saveDebounced = useRef(
     debounce((m: DocumentModel) => void saveMutation.mutateAsync(m), 700)
@@ -429,34 +480,82 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
   const acceptChange = (change: ChangeRecord) => {
     if (readOnly) return;
-    const blocks = (currentModelRef.current.blocks ?? []).map((b) => {
-      if (b.id !== change.blockId) return b;
-      return { ...b, [change.field]: change.newValue } as DocumentBlock;
-    });
-    const nextModel = { ...currentModelRef.current, blocks };
+    let nextModel: DocumentModel;
+
+    if (change.command && change.beforeModel) {
+      nextModel = applyCommand(change.beforeModel, change.command);
+    } else if (change.field && change.newValue !== undefined) {
+      const blocks = (currentModelRef.current.blocks ?? []).map((b) => {
+        if (b.id !== change.blockId) return b;
+        return { ...b, [change.field!]: change.newValue } as DocumentBlock;
+      });
+      nextModel = { ...currentModelRef.current, blocks };
+    } else {
+      return;
+    }
+
     pushToHistory(nextModel);
     saveDebounced.current(nextModel);
     currentModelRef.current = nextModel;
     onModelChange?.(nextModel);
     setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "accepted" } : c)));
+
+    const reconcileBlocks = (model: DocumentModel) => {
+      for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
+        const pageBlocks = (model.blocks ?? [])
+          .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
+          .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
+        reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
+          const btype = (block as any).type ?? "paragraph";
+          if (btype === "table") return createTableBlock(block, s);
+          if (btype === "field") return createFieldBlock(block, s);
+          if (btype === "shape") return createShapeBlock(block, s);
+          if (btype === "image") {
+            loadImageBlock(block, s, canvas);
+            return null;
+          }
+          return createTextBlock(block, s);
+        });
+      }
+    };
+    reconcileBlocks(nextModel);
   };
 
   const rejectChange = (change: ChangeRecord) => {
-    // Restore the Fabric object to its pre-change value so the canvas
-    // visually reflects the rejection (model was never mutated in suggest mode).
-    for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-      const obj = canvas.getObjects().find((o) => (o as FabricObjectWithMeta).data?.blockId === change.blockId);
-      if (!obj) continue;
-      if (change.field === "bounding_box" && Array.isArray(change.oldValue) && change.oldValue.length === 4) {
-        const [x0, y0] = change.oldValue as number[];
-        obj.set({ left: x0 * scale, top: y0 * scale });
-        obj.setCoords();
+    // Restore from beforeModel snapshot when available, otherwise restore
+    // individual Fabric object properties (legacy path).
+    if (change.beforeModel) {
+      for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
+        const pageBlocks = (change.beforeModel.blocks ?? [])
+          .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
+          .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
+        reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
+          const btype = (block as any).type ?? "paragraph";
+          if (btype === "table") return createTableBlock(block, s);
+          if (btype === "field") return createFieldBlock(block, s);
+          if (btype === "shape") return createShapeBlock(block, s);
+          if (btype === "image") {
+            loadImageBlock(block, s, canvas);
+            return null;
+          }
+          return createTextBlock(block, s);
+        });
       }
-      if (change.field === "content" && obj.type === "textbox") {
-        (obj as Textbox).set("text", String(change.oldValue ?? ""));
+    } else {
+      for (const [, canvas] of fabricCanvasesRef.current.entries()) {
+        const obj = canvas.getObjects().find((o) => (o as FabricObjectWithMeta).data?.blockId === change.blockId);
+        if (!obj) continue;
+        if (change.field === "bounding_box" && Array.isArray(change.oldValue) && (change.oldValue as unknown[]).length === 4) {
+          const [x0, y0] = change.oldValue as number[];
+          obj.set({ left: x0 * scale, top: y0 * scale });
+          obj.setCoords();
+        }
+        if (change.field === "content" && obj.type === "textbox") {
+          (obj as Textbox).set("text", String(change.oldValue ?? ""));
+        }
+        canvas.renderAll();
+        break;
       }
-      canvas.renderAll();
-      break;
     }
     setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "rejected" } : c)));
   };
@@ -544,6 +643,8 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
         void saveMutation.mutateAsync(model);
         e.preventDefault();
       }
+      if (readOnly) return;
+
       if (e.key === "Delete" || e.key === "Backspace") {
         let deleted = false;
         for (const canvas of fabricCanvasesRef.current.values()) {
@@ -608,8 +709,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   // ── Read-only mode ─────────────────────────────────────────────────────
   useEffect(() => {
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-      canvas.selection = !readOnly;
-      canvas.getObjects().forEach((obj) => { obj.selectable = !readOnly; obj.evented = !readOnly; });
+      applyCanvasInteractionState(canvas, Boolean(readOnly), activeTool);
       canvas.renderAll();
     }
   }, [readOnly]);
@@ -634,7 +734,44 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     void fetchExport();
   }, [exportRequest, documentId, onExportComplete, onExportError]);
 
-  useCollaborationBridge(ydocRef, providerRef, fabricCanvasesRef, scale, saveDebounced);
+  useCollaborationBridge(
+    ydocRef,
+    provider,
+    fabricCanvasesRef,
+    scale,
+    saveDebounced,
+    useCallback((remoteBlocks: DocumentBlock[]) => {
+      const currentBlocks = currentModelRef.current.blocks ?? [];
+      const remoteMap = new Map(remoteBlocks.map((b) => [b.id, b]));
+
+      const merged = currentBlocks.map((b) => remoteMap.get(b.id) ?? b);
+      const currentIds = new Set(currentBlocks.map((b) => b.id));
+      for (const b of remoteBlocks) {
+        if (!currentIds.has(b.id)) merged.push(b);
+      }
+
+      const nextModel = { ...currentModelRef.current, blocks: merged };
+      currentModelRef.current = nextModel;
+      onModelChange?.(nextModel);
+
+      for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
+        const pageBlocks = merged
+          .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
+          .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
+        reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
+          const btype = (block as any).type ?? "paragraph";
+          if (btype === "table") return createTableBlock(block, s);
+          if (btype === "field") return createFieldBlock(block, s);
+          if (btype === "shape") return createShapeBlock(block, s);
+          if (btype === "image") {
+            loadImageBlock(block, s, canvas);
+            return null;
+          }
+          return createTextBlock(block, s);
+        });
+      }
+    }, [scale, onModelChange]),
+  );
 
   // ── Apply format commands from the FormatBar ─────────────────────────────
 
@@ -680,6 +817,26 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   }, [model.blocks]);
 
   useEffect(() => {
+    const nextBlocks = model.blocks ?? [];
+    for (const [pageIndex, canvas] of fabricCanvasesRef.current.entries()) {
+      const pageBlocks = nextBlocks
+        .filter((b) => (b.page_index ?? 0) === pageIndex)
+        .sort((a, b) => (a.z_index ?? 0) - (b.z_index ?? 0));
+      reconcileFabricCanvas(canvas, pageIndex, pageBlocks, scale, (block, s) => {
+        const btype = (block as any).type ?? "paragraph";
+        if (btype === "image") {
+          loadImageBlock(block, s, canvas);
+          return null;
+        }
+        if (btype === "table") return createTableBlock(block, s);
+        if (btype === "field") return createFieldBlock(block, s);
+        if (btype === "shape") return createShapeBlock(block, s);
+        return createTextBlock(block, s);
+      });
+    }
+  }, [model.blocks, scale]);
+
+  useEffect(() => {
     const run = async () => {
       try {
         const supabase = createSupabaseBrowserClient();
@@ -699,7 +856,6 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   }, [documentId]);
 
   useEffect(() => {
-    const provider = providerRef.current;
     if (!provider) return;
     const onAwareness = () => {
       const states = Array.from(provider.awareness.getStates().entries()) as [number, AwarenessState][];
@@ -719,7 +875,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
     return () => {
       provider.awareness.off("change", onAwareness);
     };
-  }, [providerRef]);
+  }, [provider]);
 
   useEffect(() => {
     for (const [, canvas] of fabricCanvasesRef.current.entries()) {
@@ -734,16 +890,15 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (!canvas) continue;
       const block = model.blocks?.find((b) => b.id === match.blockId);
       if (!block) continue;
-      const bbox = block.bounding_box ?? [0, 0, 0, 0];
-      const [x0, y0, x1, y1] = bbox;
+      const [hLeft, hTop, hRight, hBottom] = documentRectToCanvasRect((block.bounding_box ?? [0, 0, 0, 0]) as RectX0Y0X1Y1, scale);
       const isCurrent =
         matches[currentMatchIndex]?.blockId === match.blockId &&
         matches[currentMatchIndex]?.startOffset === match.startOffset;
       const highlightRect = new Rect({
-        left: x0 * scale,
-        top: y0 * scale,
-        width: (x1 - x0) * scale,
-        height: (y1 - y0) * scale,
+        left: hLeft,
+        top: hTop,
+        width: hRight - hLeft,
+        height: hBottom - hTop,
         fill: isCurrent ? "rgba(249,115,22,0.35)" : "rgba(253,224,71,0.35)",
         selectable: false,
         evented: false,
@@ -813,7 +968,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
   useEffect(() => {
     for (const canvas of fabricCanvasesRef.current.values()) {
-      canvas.isDrawingMode = activeTool === "draw";
+      applyCanvasInteractionState(canvas, Boolean(readOnly), activeTool);
       if (activeTool === "draw") {
         canvas.freeDrawingBrush = new PencilBrush(canvas);
         canvas.freeDrawingBrush.width = 2;
@@ -829,8 +984,13 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   const setupFabricCanvas = (pageIndex: number, el: HTMLCanvasElement, width: number, height: number) => {
     const existing = fabricCanvasesRef.current.get(pageIndex);
     if (existing) {
+      if (existing.getElement() !== el) {
+        existing.dispose();
+        fabricCanvasesRef.current.delete(pageIndex);
+      } else {
       existing.setDimensions({ width, height });
       return;
+      }
     }
 
     const fcanvas = new Canvas(el, {
@@ -912,25 +1072,57 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       }
     }, 100);
 
-    fcanvas.on("object:added", sync);
+    fcanvas.on("object:added", (e) => {
+      if (e.target && !shouldPersistFabricObject(e.target as FabricObjectWithMeta)) return;
+      if (suggestModeRef.current && e.target) {
+        const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
+        if (blockId) {
+          const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
+          if (existing) {
+            captureChange({
+              blockId,
+              command: { type: "insert_block", block: existing },
+              beforeModel: currentModelRef.current,
+            });
+          } else {
+            addPendingChange({
+              id: crypto.randomUUID(),
+              blockId,
+              field: "content",
+              oldValue: null,
+              newValue: "added",
+              userId: "local-user",
+              userName: "You",
+              timestamp: Date.now(),
+              status: "pending",
+            });
+          }
+        }
+        return;
+      }
+      sync();
+    });
     fcanvas.on("object:modified", (e) => {
       // Handle layout object modifications via page layout store
       const target = e.target as FabricObjectWithMeta | undefined;
       const layoutId = target?.data?.layoutObjectId;
       if (layoutId) {
         const { getState } = usePageLayoutStore;
-        const { document: layoutDoc, activePageId } = getState();
+        const { document: layoutDoc } = getState();
         if (layoutDoc) {
-          const pageId = `page-${pageIndex}`;
-          const obj = e.target as any;
-          const left = (obj.left ?? 0) / scale;
-          const top = (obj.top ?? 0) / scale;
-          const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
-          const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
-          getState().moveObject(pageId, layoutId, left, top);
-          getState().resizeObject(pageId, layoutId, w, h);
+          const existsInLayout = layoutDoc.pages?.some((p) => p.objects?.some((o) => o.id === layoutId));
+          if (existsInLayout) {
+            const pageId = `page-${pageIndex}`;
+            const obj = e.target as any;
+            const left = (obj.left ?? 0) / scale;
+            const top = (obj.top ?? 0) / scale;
+            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
+            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+            getState().moveObject(pageId, layoutId, left, top);
+            getState().resizeObject(pageId, layoutId, w, h);
+            return;
+          }
         }
-        return;
       }
 
       if (suggestModeRef.current && e.target) {
@@ -939,22 +1131,29 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
           const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
           if (existing) {
             const obj = e.target;
-            const left = (obj.left ?? 0) / scale;
-            const top = (obj.top ?? 0) / scale;
-            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
-            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
-            captureChange({
-              blockId,
-              field: "bounding_box",
-              oldValue: existing.bounding_box,
-              newValue: [left, top, left + w, top + h],
-            });
-            if (obj.type === "textbox") {
+            const beforeModel = currentModelRef.current;
+            const canvasBbox = rectFromCanvasObjectBounds(
+              obj.left ?? 0, obj.top ?? 0,
+              (obj.width ?? 0) * (obj.scaleX ?? 1), (obj.height ?? 0) * (obj.scaleY ?? 1),
+              scale
+            );
+            const oldBbox = existing.bounding_box;
+            const oldContent = existing.content ?? "";
+            const newContent = obj.type === "textbox" ? (obj as Textbox).text ?? "" : oldContent;
+            const bboxChanged = oldBbox?.toString() !== canvasBbox?.toString();
+            const contentChanged = obj.type === "textbox" && oldContent !== newContent;
+            if (bboxChanged) {
               captureChange({
                 blockId,
-                field: "content",
-                oldValue: existing.content ?? "",
-                newValue: (obj as Textbox).text ?? "",
+                command: { type: "move_resize", blockId, bbox: canvasBbox },
+                beforeModel,
+              });
+            }
+            if (contentChanged) {
+              captureChange({
+                blockId,
+                command: { type: "replace_text", blockId, text: newContent },
+                beforeModel,
               });
             }
           }
@@ -979,12 +1178,11 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
                 pageIndex,
                 targetObjectId: blockId,
                 before: { text: beforeText, bbox: beforeBlock.bounding_box },
-                after: { text: afterText, bbox: [
-                  (tb.left ?? 0) / scale,
-                  (tb.top ?? 0) / scale,
-                  ((tb.left ?? 0) + (tb.width ?? 0) * (tb.scaleX ?? 1)) / scale,
-                  ((tb.top ?? 0) + (tb.height ?? 0) * (tb.scaleY ?? 1)) / scale,
-                ]},
+                after: { text: afterText, bbox: rectFromCanvasObjectBounds(
+                  tb.left ?? 0, tb.top ?? 0,
+                  (tb.width ?? 0) * (tb.scaleX ?? 1), (tb.height ?? 0) * (tb.scaleY ?? 1),
+                  scale
+                )},
                 createdAt: new Date().toISOString(),
               };
               opStore.applyOperation(nativeOp);
@@ -1002,14 +1200,15 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
           const yBlock = yBlocks.get(blockId);
           if (yBlock) {
             const obj = e.target;
-            const left = (obj.left ?? 0) / scale;
-            const top = (obj.top ?? 0) / scale;
-            const w = ((obj.width ?? 0) * (obj.scaleX ?? 1)) / scale;
-            const h = ((obj.height ?? 0) * (obj.scaleY ?? 1)) / scale;
+            const yjsBbox = rectFromCanvasObjectBounds(
+              obj.left ?? 0, obj.top ?? 0,
+              (obj.width ?? 0) * (obj.scaleX ?? 1), (obj.height ?? 0) * (obj.scaleY ?? 1),
+              scale
+            );
             ydocRef.current.transact(() => {
-              yBlock.set("bounding_box", [left, top, left + w, top + h]);
+              yBlock.set("bounding_box", yjsBbox);
               if (obj.type === "textbox") yBlock.set("content", (obj as Textbox).text ?? "");
-            });
+            }, "local");
           }
         }
       }
@@ -1018,8 +1217,60 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (!blockId) return;
       reflowDebounced(blockId);
     });
-    fcanvas.on("object:removed", sync);
-    fcanvas.on("path:created", sync);
+    fcanvas.on("object:removed", (e) => {
+      if (suggestModeRef.current && e.target) {
+        const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
+        if (blockId) {
+          const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
+          const beforeModel = currentModelRef.current;
+          if (existing) {
+            captureChange({
+              blockId,
+              command: { type: "delete_block", blockId },
+              beforeModel,
+            });
+          } else {
+            addPendingChange({
+              id: crypto.randomUUID(),
+              blockId,
+              field: "content",
+              oldValue: "existing",
+              newValue: null,
+              userId: "local-user",
+              userName: "You",
+              timestamp: Date.now(),
+              status: "pending",
+            });
+          }
+        }
+        return;
+      }
+      sync();
+    });
+    fcanvas.on("path:created", (e) => {
+      if (suggestModeRef.current) {
+        const pathBlockId = `blk_draw_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        (e.path as FabricObjectWithMeta).data = { ...((e.path as FabricObjectWithMeta).data ?? {}), blockId: pathBlockId, blockType: "shape" };
+        captureChange({
+          blockId: pathBlockId,
+          command: { type: "insert_block", block: {
+            id: pathBlockId,
+            type: "shape",
+            content: "",
+            bounding_box: [0, 0, 0, 0],
+            style_overrides: {},
+            z_index: 0,
+            page_index: pageIndex,
+            confidence_score: 0,
+            needs_review: false,
+            float: "none",
+          } as DocumentBlock },
+          beforeModel: currentModelRef.current,
+        });
+        return;
+      }
+      sync();
+    });
     fcanvas.on("mouse:dblclick", (e) => {
       lastInteractedPageIndexRef.current = pageIndex;
       const target = e.target;
@@ -1110,8 +1361,36 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
     fabricCanvasesRef.current.set(pageIndex, fcanvas);
 
+    applyCanvasInteractionState(fcanvas, Boolean(readOnly), activeTool);
+
     // Apply any already-loaded comment indicators to this newly-live canvas.
     renderCommentIndicators(fcanvas, comments, pageIndex, scale, setOpenCommentThread);
+
+    // Apply existing find highlights to this newly-live canvas.
+    for (const match of matches) {
+      if (match.pageIndex !== pageIndex) continue;
+      const block = model.blocks?.find((b) => b.id === match.blockId);
+      if (!block) continue;
+      const [hLeft, hTop, hRight, hBottom] = documentRectToCanvasRect((block.bounding_box ?? [0, 0, 0, 0]) as RectX0Y0X1Y1, scale);
+      const isCurrent =
+        matches[currentMatchIndex]?.blockId === match.blockId &&
+        matches[currentMatchIndex]?.startOffset === match.startOffset;
+      const highlightRect = new Rect({
+        left: hLeft,
+        top: hTop,
+        width: hRight - hLeft,
+        height: hBottom - hTop,
+        fill: isCurrent ? "rgba(249,115,22,0.35)" : "rgba(253,224,71,0.35)",
+        selectable: false,
+        evented: false,
+      });
+      (highlightRect as FabricObjectWithMeta).data = { isHighlight: true };
+      fcanvas.add(highlightRect);
+      fcanvas.bringObjectToFront(highlightRect);
+    }
+    fcanvas.renderAll();
+
+    ensurePageImage(pageIndex);
   };
 
   const destroyFabricCanvas = (pageIndex: number) => {
@@ -1145,6 +1424,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   const createCanvasBlockId = () => `blk_canvas_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const addShape = (pageIndex: number, tool: ShapeTool = activeTool) => {
+    if (readOnly) return;
     const canvas = fabricCanvasesRef.current.get(pageIndex);
     if (!canvas || tool === "select" || tool === "draw") return;
 
@@ -1197,95 +1477,135 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       return;
     }
 
+    // ── Insert via model pipeline (document coordinates) ──
+
+    const dispatchBlock = (block: DocumentBlock) => {
+      const nextModel = applyCommand(currentModelRef.current, { type: "insert_block", block });
+      pushToHistory(nextModel);
+      saveDebounced.current(nextModel);
+      currentModelRef.current = nextModel;
+      onModelChange?.(nextModel);
+    };
+
     if (tool === "header_footer") {
-      const header = new Textbox("Header", {
-        left: 72,
-        top: 28,
-        width: 300,
-        fontSize: 11 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
+      const pageH = pageDimensions[pageIndex]?.height ?? primaryPage.height;
+      dispatchBlock({
+        id: createCanvasBlockId(),
+        type: "paragraph",
+        content: "Header",
+        bounding_box: [72, 28, 372, 42],
+        font_meta: { family: "Georgia, serif", size: 11, color: "#111111", is_bold: false, is_italic: false },
+        style_overrides: {},
+        z_index: 0,
+        page_index: pageIndex,
+        confidence_score: 1,
+        needs_review: false,
+        float: "none",
       });
-      (header as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      const footer = new Textbox("Footer", {
-        left: 72,
-        top: Math.max((pageDimensions[pageIndex]?.height ?? primaryPage.height) * scale - 52, 28),
-        width: 300,
-        fontSize: 11 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
+      dispatchBlock({
+        id: createCanvasBlockId(),
+        type: "paragraph",
+        content: "Footer",
+        bounding_box: [72, pageH - 52, 372, pageH - 38],
+        font_meta: { family: "Georgia, serif", size: 11, color: "#111111", is_bold: false, is_italic: false },
+        style_overrides: {},
+        z_index: 1,
+        page_index: pageIndex,
+        confidence_score: 1,
+        needs_review: false,
+        float: "none",
       });
-      (footer as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      canvas.add(header, footer);
-      canvas.setActiveObject(header);
-      canvas.renderAll();
       return;
     }
 
     if (tool === "page_number") {
-      const pageWidth = (pageDimensions[pageIndex]?.width ?? primaryPage.width) * scale;
-      const pageHeight = (pageDimensions[pageIndex]?.height ?? primaryPage.height) * scale;
-      const pageNumber = new Textbox(`Page ${pageIndex + 1}`, {
-        left: Math.max(pageWidth - 140, 72),
-        top: Math.max(pageHeight - 52, 28),
-        width: 90,
-        fontSize: 10 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
-        textAlign: "right",
+      const pageW = pageDimensions[pageIndex]?.width ?? primaryPage.width;
+      const pageH = pageDimensions[pageIndex]?.height ?? primaryPage.height;
+      dispatchBlock({
+        id: createCanvasBlockId(),
+        type: "paragraph",
+        content: `Page ${pageIndex + 1}`,
+        bounding_box: [Math.max(pageW - 140, 72), Math.max(pageH - 52, 28), Math.max(pageW - 50, 162), Math.max(pageH - 38, 42)],
+        font_meta: { family: "Georgia, serif", size: 10, color: "#111111", is_bold: false, is_italic: false },
+        alignment: "right",
+        style_overrides: {},
+        z_index: 0,
+        page_index: pageIndex,
+        confidence_score: 1,
+        needs_review: false,
+        float: "none",
       });
-      (pageNumber as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      canvas.add(pageNumber);
-      canvas.setActiveObject(pageNumber);
-      canvas.renderAll();
       return;
     }
 
-    let shape;
+    let block: DocumentBlock;
+
     if (tool === "rect") {
-      shape = new Rect({ left: 70, top: 70, width: 140, height: 90, fill: "rgba(14,165,233,0.12)", stroke: "#0284c7", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "rect", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [70, 70, 210, 160],
+        fabric_data: { type: "rect", fill: "rgba(14,165,233,0.12)", stroke: "#0284c7", strokeWidth: 2 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "roundedRect") {
-      shape = new Rect({ left: 80, top: 80, width: 160, height: 96, rx: 16, ry: 16, fill: "rgba(99,102,241,0.12)", stroke: "#4f46e5", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "rounded-rect", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [80, 80, 240, 176],
+        fabric_data: { type: "rect", rx: 16, ry: 16, fill: "rgba(99,102,241,0.12)", stroke: "#4f46e5", strokeWidth: 2 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "ellipse") {
-      shape = new Ellipse({ left: 90, top: 90, rx: 70, ry: 45, fill: "rgba(34,197,94,0.12)", stroke: "#16a34a", strokeWidth: 2 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "ellipse", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [20, 45, 160, 135],
+        fabric_data: { type: "ellipse", fill: "rgba(34,197,94,0.12)", stroke: "#16a34a", strokeWidth: 2 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "arrow") {
-      shape = new Line([120, 120, 290, 220], { stroke: "#dc2626", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "arrow", arrowHeadLength: 14, arrowHeadAngle: 28, layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [120, 120, 290, 220],
+        fabric_data: { type: "arrow", stroke: "#dc2626", strokeWidth: 3, arrowHeadLength: 14, arrowHeadAngle: 28 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "line") {
-      shape = new Line([120, 120, 290, 220], { stroke: "#f97316", strokeWidth: 3 });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "line", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "",
+        bounding_box: [120, 120, 290, 220],
+        fabric_data: { type: "line", stroke: "#f97316", strokeWidth: 3 },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else if (tool === "sticky") {
-      shape = new IText("Sticky note", { left: 120, top: 140, fill: "#3f3f46", fontSize: 16, fontFamily: "Georgia", backgroundColor: "#fff59d" });
-      (shape as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "shape", shapeType: "sticky-note", noteFill: "#fff59d", textColor: "#3f3f46", layoutObjectId: `shape-${Date.now()}` };
+      block = {
+        id: createCanvasBlockId(),
+        type: "shape", content: "Sticky note",
+        bounding_box: [120, 140, 400, 180],
+        fabric_data: { type: "sticky-note", fill: "#fff59d", noteFill: "#fff59d", textColor: "#3f3f46", fontSize: 16, fontFamily: "Georgia" },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     } else {
-      // activeTool === "text" — add a new text block
-      const tb = new Textbox("New text", {
-        left: 120, top: 140, width: 300,
-        fontSize: 14 * scale,
-        fontFamily: "Georgia, serif",
-        fill: "#111111",
-        editable: true,
-        borderColor: "#f97316",
-        cornerColor: "#f97316",
-        cornerSize: 8,
-        transparentCorners: false,
-      });
-      (tb as FabricObjectWithMeta).data = { blockId: createCanvasBlockId(), blockType: "paragraph", shapeType: "textbox" };
-      canvas.add(tb);
-      canvas.setActiveObject(tb);
-      canvas.renderAll();
-      return;
+      block = {
+        id: createCanvasBlockId(),
+        type: "paragraph", content: "New text",
+        bounding_box: [120, 140, 420, 160],
+        font_meta: { family: "Georgia, serif", size: 14, color: "#111111", is_bold: false, is_italic: false },
+        style_overrides: {}, z_index: 0, page_index: pageIndex,
+        confidence_score: 1, needs_review: false, float: "none",
+      };
     }
 
-    canvas.add(shape);
-    canvas.setActiveObject(shape);
-    canvas.renderAll();
+    dispatchBlock(block);
   };
 
   const getToolbarTargetPageIndex = () => {
@@ -1297,6 +1617,7 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   };
 
   const handleToolbarToolClick = (tool: ShapeTool) => {
+    if (readOnly) return;
     setActiveTool(tool);
     if (!shouldInsertToolImmediately(tool)) return;
     addShape(getToolbarTargetPageIndex(), tool);

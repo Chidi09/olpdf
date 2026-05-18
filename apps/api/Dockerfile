@@ -24,6 +24,9 @@ COPY --from=builder /usr/local/bin/uvicorn  /usr/local/bin/uvicorn
 # Copy source into /app/api/ so `api.main:app` resolves correctly
 COPY . ./api/
 
+# Entrypoint runs migrations then starts gunicorn
+RUN chmod +x /app/api/entrypoint.sh
+
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
@@ -32,10 +35,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["gunicorn", "api.main:app", \
-     "-k", "uvicorn.workers.UvicornWorker", \
-     "--workers", "2", \
-     "--bind", "0.0.0.0:8000", \
-     "--timeout", "120", \
-     "--graceful-timeout", "30", \
-     "--access-logfile", "-"]
+CMD ["/app/api/entrypoint.sh"]

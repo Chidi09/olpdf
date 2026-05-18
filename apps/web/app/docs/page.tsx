@@ -529,33 +529,43 @@ export default function DocsPage() {
   }, []);
 
   return (
-    <main className="app-shell-font relative min-h-screen overflow-x-hidden bg-black text-[var(--text-primary)] transition-colors duration-300">
+    <main className="relative min-h-screen overflow-x-hidden bg-black text-text-primary selection:bg-accent/30 transition-colors duration-500">
       <AmbientBackground />
-      <div className="relative z-10 max-w-8xl mx-auto flex">
+      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] pointer-events-none" />
+
+      <div className="relative z-10 max-w-[1400px] mx-auto flex">
 
         {/* ── Sidebar ── */}
-        <aside className="hidden lg:block w-60 xl:w-64 shrink-0 self-start sticky top-0 max-h-screen overflow-y-auto py-10 pl-6 pr-4 border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl">
-          <Link href="/" className="inline-flex items-baseline mb-8 group">
-            <span className="font-sans font-black tracking-tighter text-orange-500 text-lg">O</span>
-            <span className="font-serif italic font-light text-[var(--text-primary)] -ml-0.5 mr-0.5 text-lg">L</span>
-            <span className="bg-[#e21818] text-white px-1.5 py-0.5 rounded font-mono font-bold text-base">PDF</span>
-            <span className="text-sm font-mono text-[var(--text-tertiary)] ml-2">Docs</span>
+        <aside className="hidden lg:block w-72 shrink-0 self-start sticky top-0 max-h-screen overflow-y-auto py-12 pl-8 pr-6 border-r liquid-glass liquid-glass-noise z-30 custom-scrollbar">
+          <Link href="/" className="inline-flex items-center mb-10 group active:scale-95 transition-all">
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl border border-accent/20 bg-accent/5 shadow-inner mr-3 group-hover:rotate-6 transition-transform">
+               <span className="font-sans font-black tracking-tighter text-accent text-xl italic">O</span>
+            </div>
+            <div className="flex flex-col">
+               <span className="font-sans font-black tracking-tighter text-text-primary text-base leading-none">OLPDF <span className="text-accent italic">DOCS</span></span>
+               <span className="font-mono text-[8px] uppercase tracking-widest text-text-tertiary mt-0.5 opacity-60">Kernel_v1.02_STABLE</span>
+            </div>
           </Link>
-          <nav className="space-y-6">
+
+          <nav className="space-y-8">
             {NAV.map((item, i) => {
               if (item.type === "header") return (
-                <p key={i} className="text-xs font-semibold text-white mt-6 mb-3 uppercase tracking-wider">{item.label}</p>
+                <div key={i} className="flex items-center gap-2 mt-8 mb-4">
+                   <div className="h-px flex-1 bg-border-subtle" />
+                   <p className="font-mono text-[9px] font-black text-text-tertiary uppercase tracking-[0.2em]">{item.label}</p>
+                </div>
               );
               const Icon = item.icon;
               const active = activeSection === item.id;
               return (
                 <Link key={item.id} href={`#${item.id}`}
-                  className={`flex items-center gap-2.5 pl-4 py-1.5 text-sm border-l -ml-px transition-colors ${
+                  className={cn(
+                    "flex items-center gap-3 pl-4 py-2 text-xs font-bold uppercase tracking-widest border-l-2 transition-all group",
                     active
-                      ? "text-white border-white"
-                      : "text-[#888] border-transparent hover:text-[#ededed] hover:border-[#444]"
-                  }`}>
-                  {Icon && <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "" : "opacity-70"}`} />}
+                      ? "text-accent border-accent bg-accent/5 shadow-[inset_4px_0_12px_-2px_rgba(217,119,6,0.05)]"
+                      : "text-text-tertiary border-transparent hover:text-text-primary hover:border-border-strong hover:bg-white/5"
+                  )}>
+                  {Icon && <Icon className={cn("h-3.5 w-3.5 shrink-0 transition-transform group-hover:scale-110", active ? "text-accent" : "opacity-40")} />}
                   {item.label}
                 </Link>
               );
@@ -564,108 +574,100 @@ export default function DocsPage() {
         </aside>
 
         {/* ── Content ── */}
-        <div className="flex-1 min-w-0 py-10 px-6 lg:px-10 xl:px-12 space-y-20 max-w-4xl">
+        <div className="flex-1 min-w-0 py-12 px-8 lg:px-12 xl:px-16 space-y-32 max-w-5xl">
 
-          <div className="scroll-mt-24">
-            <BackLink href="/" label="Back to home" className="mb-8" />
-            <div className="flex items-center gap-3 mb-4">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-bold text-[var(--text-tertiary)] uppercase tracking-widest">API v1 · Beta</span>
+          <div className="scroll-mt-24 relative">
+            <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-accent/5 blur-[120px] pointer-events-none" />
+
+            <BackLink href="/" label="Exit Workspace" className="mb-12 opacity-60 hover:opacity-100 transition-opacity font-mono text-[10px] uppercase tracking-widest" />
+
+            <div className="flex items-center gap-3 mb-6 animate-reveal">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <span className="font-mono text-[10px] font-black text-text-tertiary uppercase tracking-[0.3em]">Runtime: API_V1_STABLE_BETA</span>
             </div>
-            <h1 className="mb-4 text-4xl md:text-5xl font-semibold tracking-tight">OLPDF Documentation</h1>
-            <p className="max-w-2xl text-base text-[var(--text-secondary)] leading-relaxed">
-              The complete reference for the OLPDF REST API, Studio editor, PDF toolkit, and self-hosting infrastructure.
+
+            <h1 className="mb-6 text-5xl md:text-7xl font-sans font-black tracking-tighter text-text-primary uppercase italic animate-reveal" style={{ animationDelay: '0.1s' }}>
+               Core Technical<br />Documentation
+            </h1>
+
+            <p className="max-w-2xl text-lg font-sans font-medium text-text-secondary leading-relaxed animate-reveal" style={{ animationDelay: '0.2s' }}>
+              The definitive architecture reference for the OLPDF REST API, Studio orchestration loop, and high-fidelity PDF manipulation kernel.
             </p>
           </div>
 
           {/* ─── OVERVIEW ──────────────────────────────────────────── */}
-          <section id="overview" className="scroll-mt-24">
-            <SectionHead icon={GlobeAltIcon} title="Overview" subtitle="Base URL, versioning, and content type conventions" color="text-blue-400" />
+          <section id="overview" className="scroll-mt-24 animate-reveal" style={{ animationDelay: '0.3s' }}>
+            <SectionHead icon={GlobeAltIcon} title="Architecture Overview" subtitle="System entry points, versioning protocol, and content schemas" color="text-blue-400" />
 
-            <div className="space-y-6">
-              <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-                <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-3">Base URL</p>
-                <code className="font-mono font-black text-lg text-[var(--accent)]">https://api.olpdf.xyz</code>
+            <div className="space-y-8">
+              <div className="p-8 rounded-2xl liquid-glass-strong border border-border-strong shadow-panel group overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                   <GlobeAltIcon className="h-24 w-24" />
+                </div>
+                <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-text-tertiary mb-4 opacity-70">Internal API Gateway</p>
+                <code className="font-sans font-black text-2xl md:text-3xl text-accent break-all tracking-tighter">https://api.olpdf.xyz</code>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4">
                 {[
-                  { label: "Protocol",     value: "HTTPS only" },
-                  { label: "Format",       value: "JSON (UTF-8)" },
-                  { label: "Versioning",   value: "/v1 prefix" },
+                  { label: "Security",     value: "Strict TLS 1.3" },
+                  { label: "Payload",       value: "UTF-8 Binary JSON" },
+                  { label: "Route ID",   value: "V1 Prefix Enforced" },
                 ].map(({ label, value }) => (
-                  <div key={label} className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
-                    <p className="text-sm font-black uppercase tracking-widest text-[var(--text-tertiary)] mb-1">{label}</p>
-                    <p className="font-mono font-bold text-base text-[var(--text-primary)]">{value}</p>
+                  <div key={label} className="p-5 rounded-xl liquid-glass border border-border-subtle hover:border-accent/30 transition-colors group">
+                    <p className="font-mono text-[9px] font-black uppercase tracking-widest text-text-tertiary mb-2 group-hover:text-accent transition-colors">{label}</p>
+                    <p className="font-sans font-black text-sm text-text-primary uppercase tracking-tight">{value}</p>
                   </div>
                 ))}
               </div>
 
-              <p className="text-[var(--text-secondary)] font-medium leading-relaxed text-base">
-                All request bodies must be <code className="font-mono text-amber-500">application/json</code>. Binary uploads (PDF ingestion)
-                use <code className="font-mono text-amber-500">multipart/form-data</code>. Every response includes
-                an <code className="font-mono text-amber-500">X-Request-ID</code> header for distributed tracing.
+              <p className="text-text-secondary font-sans font-medium leading-relaxed text-base max-w-3xl">
+                All high-level orchestration requests must use <code className="font-mono text-accent bg-accent/5 px-1.5 py-0.5 rounded border border-accent/20">application/json</code>.
+                Large-scale binary stream ingestion (PDF reconstruction) utilizes optimized <code className="font-mono text-accent bg-accent/5 px-1.5 py-0.5 rounded border border-accent/20">multipart/form-data</code> pipelines.
               </p>
             </div>
           </section>
 
           {/* ─── QUICK START ───────────────────────────────────────── */}
           <section id="quickstart" className="scroll-mt-24">
-            <SectionHead icon={BoltIcon} title="Quick Start" subtitle="Extract and edit your first document in under 3 minutes" color="text-amber-400" />
+            <SectionHead icon={BoltIcon} title="Rapid Deployment" subtitle="Synthesize and manipulate documents in under 180 seconds" color="text-amber-400" />
 
-            <div className="space-y-6">
-              <div className="flex flex-col gap-2">
-                {["Upload a PDF to extract its semantic model", "Use the AI instruction endpoint to edit it", "Export back to PDF or EPUB3"].map((step, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
-                    <span className="h-7 w-7 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-black flex items-center justify-center shrink-0">{i + 1}</span>
-                    <p className="text-base font-medium text-[var(--text-primary)]">{step}</p>
+            <div className="space-y-10">
+              <div className="grid gap-4 sm:grid-cols-3">
+                {["Ingest PDF for semantic kernel extraction", "Issue Agentic instructions for transformation", "Commit and export to binary archive"].map((step, i) => (
+                  <div key={i} className="flex flex-col gap-4 p-6 rounded-2xl liquid-glass border border-border-subtle relative overflow-hidden group hover:border-accent/40 transition-all">
+                    <div className="absolute -right-4 -bottom-4 h-16 w-16 flex items-center justify-center font-sans font-black text-6xl text-text-tertiary opacity-5 group-hover:opacity-10 transition-opacity italic">
+                       {i + 1}
+                    </div>
+                    <div className="h-8 w-8 rounded-lg bg-surface border border-border-strong flex items-center justify-center font-mono text-[10px] font-black text-text-tertiary">
+                       MOD_0{i + 1}
+                    </div>
+                    <p className="text-sm font-sans font-black uppercase tracking-tight text-text-primary leading-tight relative z-10">{step}</p>
                   </div>
                 ))}
               </div>
 
-              <CodeBlock filename="quickstart.sh" lang="bash" code={`# 1. Upload + extract
+              <div className="space-y-4">
+                 <CodeBlock filename="kernel_init.sh" lang="bash" code={`# 1. Ingest + Map Structure
 curl -X POST https://api.olpdf.xyz/v1/extract \\
-  -H "Authorization: Bearer free_beta_key" \\
+  -H "Authorization: Bearer beta_key_v1" \\
   -H "Content-Type: application/json" \\
-  -d '{"url": "https://example.com/report.pdf", "mode": "semantic"}'
+  -d '{"url": "https://cdn.xyz/src.pdf", "mode": "fidelity"}'
 
-# Returns: { "document_id": "doc_abc123", "blocks": [...] }
+# Response: { "document_id": "kernel_7f3", "blocks": [...] }`} />
 
-# 2. Issue an AI instruction
-curl -X POST https://api.olpdf.xyz/api/ai/documents/doc_abc123/instruction \\
-  -H "Authorization: Bearer free_beta_key" \\
-  -H "Content-Type: application/json" \\
-  -d '{"instruction": "Summarize the executive summary section into 3 bullet points"}'
+                 <CodeBlock filename="agent_commit.py" lang="python" code={`import requests
 
-# 3. Export to PDF
-curl -X POST https://api.olpdf.xyz/api/documents/doc_abc123/export/pdf \\
-  -H "Authorization: Bearer free_beta_key" \\
-  --output result.pdf`} />
-
-              <CodeBlock filename="quickstart.py" lang="python" code={`import requests
-
-BASE = "https://api.olpdf.xyz"
-HEADERS = {"Authorization": "Bearer free_beta_key"}
-
-# 1. Extract
-doc = requests.post(f"{BASE}/v1/extract", headers=HEADERS, json={
-    "url": "https://example.com/report.pdf",
-    "mode": "semantic"
-}).json()
-doc_id = doc["document_id"]
-
-# 2. AI edit
-requests.post(f"{BASE}/api/ai/documents/{doc_id}/instruction", headers=HEADERS, json={
-    "instruction": "Convert all headers to Title Case"
-})
-
-# 3. Export
-pdf = requests.post(f"{BASE}/api/documents/{doc_id}/export/pdf", headers=HEADERS)
-open("result.pdf", "wb").write(pdf.content)`} />
+# 2. Agentic Transformation Loop
+requests.post("https://api.olpdf.xyz/api/ai/instruction",
+    headers={"X-API-Key": "live_key_99"},
+    json={"instruction": "Standardize all H1 nodes to obsidian-italic"}
+)`} />
+              </div>
             </div>
           </section>
 
-          
+
           {/* ─── CODE EXAMPLES ─────────────────────────────────────────── */}
           <section id="code-examples" className="scroll-mt-24">
             <SectionHead icon={CommandLineIcon} title="Code Examples" subtitle="Extract and edit a PDF in curl, Python, Node, Java, Go, and Rust" color="text-orange-400" />

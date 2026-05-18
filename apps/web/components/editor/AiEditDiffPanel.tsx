@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { DocumentBlock } from "@olpdf/document-model";
-import { Sparkles } from "lucide-react";
+import { Sparkles, CornerDownLeft } from "lucide-react";
 
 interface AiEditDiffPanelProps {
   instruction: string;
@@ -10,6 +10,7 @@ interface AiEditDiffPanelProps {
   after: DocumentBlock[];
   onAccept: () => void;
   onReject: () => void;
+  onRefine?: (newInstruction: string) => void;
 }
 
 type ChangeCategory = "content" | "type" | "style" | "structural";
@@ -166,8 +167,27 @@ export default function AiEditDiffPanel({
   after,
   onAccept,
   onReject,
+  onRefine,
 }: AiEditDiffPanelProps) {
+  const [refinementText, setRefinementText] = useState("");
   const changes = computeChanges(before, after);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if they are actively typing in the refinement input
+      if (document.activeElement?.tagName === "INPUT") return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onReject();
+      } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        onAccept();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onAccept, onReject]);
 
   if (changes.length === 0) return null;
 
@@ -175,6 +195,14 @@ export default function AiEditDiffPanel({
   const typeChanges = changes.filter((c) => c.category === "type");
   const styleChanges = changes.filter((c) => c.category === "style");
   const structuralChanges = changes.filter((c) => c.category === "structural");
+
+  const handleRefineSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (refinementText.trim() && onRefine) {
+      onRefine(refinementText.trim());
+      setRefinementText("");
+    }
+  };
 
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-3xl z-[60] p-6 animate-in slide-in-from-bottom-8 duration-500">
@@ -205,12 +233,14 @@ export default function AiEditDiffPanel({
             <button
               onClick={onReject}
               className="rounded-md border border-white/[0.06] px-3 py-1.5 text-[11px] font-medium text-[#888] transition-colors hover:bg-white/[0.04] hover:text-white"
+              title="Reject (Esc)"
             >
               Reject
             </button>
             <button
               onClick={onAccept}
               className="rounded-md bg-white px-3 py-1.5 text-[11px] font-semibold text-black transition-colors hover:bg-[#e5e5e5]"
+              title="Accept (Ctrl+Enter)"
             >
               Insert
             </button>
@@ -267,6 +297,27 @@ export default function AiEditDiffPanel({
             </div>
           ))}
         </div>
+
+        {onRefine && (
+          <div className="border-t border-white/[0.06] bg-black/40 p-3">
+            <form onSubmit={handleRefineSubmit} className="relative flex items-center">
+              <input
+                type="text"
+                value={refinementText}
+                onChange={(e) => setRefinementText(e.target.value)}
+                placeholder="Not quite right? Add a refinement instruction..."
+                className="w-full rounded-md border border-white/10 bg-white/[0.03] pl-3 pr-10 py-1.5 text-xs text-white placeholder-white/40 focus:border-orange-500/50 focus:bg-white/[0.05] focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!refinementText.trim()}
+                className="absolute right-1 p-1.5 text-[#666] transition-colors hover:text-white disabled:opacity-30"
+              >
+                <CornerDownLeft className="h-3.5 w-3.5" />
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

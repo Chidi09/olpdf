@@ -75,6 +75,7 @@ export type ObjectBase = {
   height: number;
   rotation: number;
   originalPdfObjectId?: string;
+  sourceRef?: string;
 };
 
 export type TextFrame = ObjectBase & {

@@ -167,59 +167,65 @@ export default function SettingsPage() {
 
   return (
     <PageShell>
-      <div className="max-w-5xl space-y-10">
-        <div className="mb-8 border-b border-[var(--border-subtle)] pb-5">
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Settings</h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">Manage your account, preferences, and AI integrations.</p>
+      <div className="mx-auto max-w-5xl space-y-12">
+        <div className="mb-10 border-b border-border-subtle pb-8 relative overflow-hidden">
+          <div className="absolute -left-10 -top-10 h-64 w-64 rounded-full bg-accent/5 blur-[100px] pointer-events-none" />
+          <h1 className="font-sans text-3xl font-black tracking-tighter text-text-primary uppercase italic">Control Center</h1>
+          <p className="mt-2 font-sans text-sm font-medium text-text-secondary max-w-2xl leading-relaxed">
+             Orchestrate your account identity, cryptographic access, and AI compute providers.
+          </p>
         </div>
 
-        <section className="grid gap-8 border-b border-[var(--border-subtle)] pb-10 md:grid-cols-3">
-          <div className="md:col-span-1">
-            <h2 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">Account details</h2>
-            <p className="pr-4 text-xs leading-relaxed text-[var(--text-secondary)]">Your profile identity and authentication provider details.</p>
+        <section className="grid gap-10 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <h2 className="font-sans text-sm font-black uppercase tracking-[0.2em] text-text-primary">Identity Profile</h2>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-text-secondary pr-6">Your public-facing alias and verified authentication credentials used across the OLPDF network.</p>
           </div>
-          <div className="md:col-span-2">
-            <GlassPanel className="flex flex-col">
-              <div className="grid flex-1 gap-4 p-5 sm:grid-cols-1">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 overflow-hidden rounded-full border border-white/20">
+          <div className="lg:col-span-2">
+            <div className="flex flex-col rounded-2xl liquid-glass border border-border-strong overflow-hidden shadow-panel group">
+              <div className="grid gap-6 p-6 sm:p-8">
+                <div className="flex items-center gap-6">
+                  <div className="h-16 w-16 overflow-hidden rounded-2xl border-2 border-accent/20 bg-surface shadow-inner relative group-hover:scale-105 transition-transform duration-500">
                     {editorProfile.avatarUrl ? (
                       <img src={editorProfile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-white/10 text-xs font-semibold uppercase text-white/70">
+                      <div className="flex h-full w-full items-center justify-center font-sans font-black text-xl uppercase text-accent/40 italic">
                         {editorProfile.alias.slice(0, 2)}
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-accent/5 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">@{editorProfile.alias}</p>
-                    <p className="text-xs text-[var(--text-tertiary)]">Editor alias — shown to collaborators</p>
+                    <p className="font-sans text-lg font-black text-text-primary tracking-tight">@{editorProfile.alias}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-text-tertiary mt-0.5 opacity-60">Collaborator Identifier</p>
                   </div>
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Email Address</label>
-                  <div className="flex h-9 items-center rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm text-[var(--text-primary)]">
-                    {user?.email || "user@example.com"}
+
+                <div className="space-y-2">
+                  <label className="font-mono text-[10px] font-black uppercase tracking-widest text-text-tertiary">Verified Email</label>
+                  <div className="flex h-11 items-center rounded-xl border border-border-strong bg-background/50 px-4 font-sans text-sm font-bold text-text-primary shadow-inner">
+                    {user?.email || "user@verification_pending"}
                   </div>
                 </div>
               </div>
-              <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-panel)] px-5 py-3 text-xs text-[var(--text-tertiary)]">
-                Identity linking will be available in a future update.
+              <div className="border-t border-border-subtle bg-surface/30 px-6 py-4 flex items-center gap-3">
+                <div className="h-1.5 w-1.5 rounded-full bg-text-tertiary opacity-30" />
+                <span className="font-mono text-[9px] uppercase tracking-widest text-text-tertiary">Third-party ID linking coming soon</span>
               </div>
-            </GlassPanel>
+            </div>
           </div>
         </section>
 
-        <section className="grid gap-8 border-b border-[var(--border-subtle)] pb-10 md:grid-cols-3">
-          <div className="md:col-span-1">
-            <h2 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">AI Engine</h2>
-            <p className="pr-4 text-xs leading-relaxed text-[var(--text-secondary)]">Choose your AI provider. Bring your own key for any supported model, or use our free tier.</p>
+        <section className="grid gap-10 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <h2 className="font-sans text-sm font-black uppercase tracking-[0.2em] text-text-primary">Compute Nodes</h2>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-text-secondary pr-6">Define the LLM orchestration kernel. Connect proprietary keys for increased rate limits or utilize the OLPDF standard tier.</p>
           </div>
-          <div className="md:col-span-2">
-            <GlassPanel className="flex flex-col">
-              <div className="space-y-6 p-5">
+          <div className="lg:col-span-2">
+            <div className="flex flex-col rounded-2xl liquid-glass border border-border-strong overflow-hidden shadow-panel group">
+              <div className="space-y-8 p-6 sm:p-8">
                 <div>
-                  <label className="mb-2.5 block text-xs font-medium text-[var(--text-primary)]">Select Provider</label>
+                  <label className="font-mono text-[10px] font-black uppercase tracking-widest text-text-tertiary mb-4 block">Provider Selection</label>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     {PROVIDERS.map((p) => {
                       const active = provider === p.id;
@@ -230,140 +236,155 @@ export default function SettingsPage() {
                             setProvider(p.id);
                             setModel(p.models[0]);
                           }}
-                          className={`flex flex-col rounded-md border p-3 text-left transition-all ${
+                          className={cn(
+                            "flex flex-col rounded-xl border p-4 text-left transition-all duration-300 active:scale-95 group/btn",
                             active
-                              ? "border-[var(--accent)] bg-[var(--bg-elevated)]"
-                              : "border-[var(--border-strong)] bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)]"
-                          }`}
+                              ? "border-accent/40 bg-accent/10 shadow-lg shadow-accent/5"
+                              : "border-border-strong bg-surface hover:bg-hover hover:border-accent/30"
+                          )}
                         >
-                          <div className="mb-2 flex items-center gap-2">
-                            <ProviderIcon slug={p.iconSlug} color={active ? p.accent : "#888888"} size={16} />
-                            <span className="text-xs font-semibold text-[var(--text-primary)]">{p.label}</span>
+                          <div className="mb-3 flex items-center gap-3">
+                            <div className={cn(
+                              "p-1.5 rounded-lg border transition-colors",
+                              active ? "border-accent/20 bg-accent/10" : "border-border-subtle bg-background"
+                            )}>
+                              <ProviderIcon slug={p.iconSlug} color={active ? p.accent : "#555"} size={14} />
+                            </div>
+                            <span className={cn(
+                              "font-sans text-xs font-black uppercase tracking-tight",
+                              active ? "text-text-primary" : "text-text-secondary group-hover/btn:text-text-primary"
+                            )}>{p.label}</span>
                           </div>
-                          <span className="text-[10px] text-[var(--text-tertiary)]">{p.sublabel}</span>
+                          <span className="font-sans text-[10px] font-medium leading-tight text-text-tertiary opacity-80">{p.sublabel}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium text-[var(--text-primary)]">Model</label>
-                    <select
-                      value={model}
-                      onChange={(e) => setModel(e.target.value)}
-                      className="h-9 w-full appearance-none rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--accent)]"
-                    >
-                      {selectedProvider.models.map((m) => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="font-mono text-[10px] font-black uppercase tracking-widest text-text-tertiary">Kernel Model</label>
+                    <div className="relative">
+                      <select
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        className="h-11 w-full appearance-none rounded-xl border border-border-strong bg-background/50 px-4 pr-10 font-sans text-sm font-bold text-text-primary outline-none focus:border-accent transition-all shadow-inner"
+                      >
+                        {selectedProvider.models.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                      <ChevronDownIcon className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
+                    </div>
                   </div>
 
                   {selectedProvider.requiresKey && (
-                    <div>
-                      <label className="mb-1.5 block text-xs font-medium text-[var(--text-primary)]">API Key</label>
+                    <div className="space-y-2 animate-reveal">
+                      <label className="font-mono text-[10px] font-black uppercase tracking-widest text-text-tertiary">Private API Key</label>
                       <div className="relative">
                         <input
                           type={showKey ? "text" : "password"}
                           value={apiKey}
                           onChange={(e) => setApiKey(e.target.value)}
-                          placeholder={keySet ? "Enter new key to replace saved key" : "sk-..."}
-                          className="h-9 w-full rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] pl-3 pr-10 font-mono text-sm text-[var(--text-primary)] outline-none transition-all focus:border-[var(--accent)]"
+                          placeholder={keySet ? "REPLACE_EXISTING_SECRET" : "sk-xxxxxxxxxxxxxxxxxxxx"}
+                          className="h-11 w-full rounded-xl border border-border-strong bg-background/50 pl-4 pr-12 font-mono text-sm text-text-primary outline-none focus:border-accent transition-all shadow-inner"
                         />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setShowKey((v) => !v)}
-                            className="h-7 min-w-0 px-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-                          >
-                            {showKey ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                          </Button>
-                        </div>
+                        <button
+                          onClick={() => setShowKey((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-tertiary hover:text-text-primary transition-colors"
+                        >
+                          {showKey ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-[var(--bg-panel)] px-5 py-3">
-                <span className={`text-xs ${saveMsg?.toLowerCase().includes("fail") || saveMsg?.toLowerCase().includes("error") ? "text-red-400" : "text-[var(--text-tertiary)]"}`}>
-                  {saveMsg || "Please use a valid API key when required by provider."}
-                </span>
+              <div className="flex items-center justify-between border-t border-border-subtle bg-black/40 px-6 py-5">
                 <div className="flex items-center gap-2">
+                   {saveMsg ? (
+                     <span className={cn(
+                       "font-mono text-[9px] uppercase tracking-widest animate-reveal",
+                       saveMsg.toLowerCase().includes("fail") || saveMsg.toLowerCase().includes("error") ? "text-red-400" : "text-emerald-400"
+                     )}>{saveMsg}</span>
+                   ) : (
+                     <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-text-tertiary opacity-30" />
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-text-tertiary">Kernel Sync Ready</span>
+                     </div>
+                   )}
+                </div>
+                <div className="flex items-center gap-3">
                   {keySet && (
-                    <Button
+                    <button
                       onClick={handleClearKey}
-                      isDisabled={clearing}
-                      size="sm"
-                      variant="outline"
-                      className="h-8 border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-xs font-semibold text-[var(--text-primary)]"
+                      disabled={clearing}
+                      className="h-10 rounded-xl border border-border-strong bg-surface px-5 font-sans text-[10px] font-black uppercase tracking-widest text-text-primary transition-all hover:bg-hover active:scale-95 disabled:opacity-50"
                     >
-                      {clearing ? "Clearing..." : "Clear Key"}
-                    </Button>
+                      {clearing ? "Purging..." : "Wipe Key"}
+                    </button>
                   )}
-                  <Button
+                  <button
                     onClick={handleSave}
-                    isDisabled={saving}
-                    size="sm"
-                    className="flex h-8 items-center gap-2 bg-white px-4 text-xs font-semibold text-black transition-all hover:bg-[#e5e5e5] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                    disabled={saving}
+                    className="group relative h-10 flex items-center gap-2 overflow-hidden rounded-xl bg-white px-6 font-sans text-[10px] font-black uppercase tracking-widest text-black shadow-xl shadow-white/5 transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
                   >
-                    {saving && <InlineSpinner className="w-3 h-3 text-black" />}
-                    {saving ? "Saving..." : "Save Config"}
-                  </Button>
+                    {saving ? <InlineSpinner className="h-3 w-3 text-black" /> : <CheckCircleIcon className="h-4 w-4" />}
+                    {saving ? "Syncing" : "Save Logic"}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  </button>
                 </div>
               </div>
-            </GlassPanel>
+            </div>
           </div>
         </section>
 
-        <section className="grid gap-8 md:grid-cols-3">
-          <div className="md:col-span-1">
-            <h2 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">Danger Zone</h2>
-            <p className="pr-4 text-xs leading-relaxed text-[var(--text-secondary)]">Export your data archive, or permanently delete your account and all associated data.</p>
+        <section className="grid gap-10 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <h2 className="font-sans text-sm font-black uppercase tracking-[0.2em] text-red-500">Atomic Cleanup</h2>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-text-secondary pr-6">Irreversible destructive operations. Permanently purge your knowledge base and identity from the cluster.</p>
           </div>
-          <div className="md:col-span-2 space-y-4">
-            <div className="flex flex-col gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex flex-col gap-6 rounded-2xl liquid-glass border border-border-strong p-6 sm:flex-row sm:items-center sm:justify-between group hover:border-accent/40 transition-colors">
               <div>
-                <h3 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">Export Data Archive</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Download your documents, books, and metadata as JSON.</p>
+                <h3 className="font-sans text-sm font-black text-text-primary uppercase tracking-tight leading-none mb-1.5">Export Global Archive</h3>
+                <p className="font-sans text-xs text-text-tertiary leading-relaxed">Aggregate all documents, books, and metadata into a standardized JSON bundle.</p>
               </div>
               <button
                 onClick={() => window.open("/api/bff/account/export-data", "_blank")}
-                className="h-9 shrink-0 rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-4 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-panel)]"
+                className="h-10 rounded-xl border border-border-strong bg-surface px-6 font-sans text-[10px] font-black uppercase tracking-widest text-text-primary transition-all hover:bg-accent hover:text-white hover:border-accent active:scale-95"
               >
-                Request Export
+                Execute Export
               </button>
             </div>
 
-            <div className="flex flex-col gap-4 rounded-lg border border-red-500/25 bg-red-500/7 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-6 rounded-2xl liquid-glass border border-red-500/20 bg-red-500/5 p-6 sm:flex-row sm:items-center sm:justify-between group hover:border-red-500/40 transition-colors">
               <div>
-                <h3 className="mb-1 text-sm font-semibold text-red-400">Delete Account</h3>
-                <p className="text-xs text-red-300/80">This action is irreversible and will delete all documents.</p>
+                <h3 className="font-sans text-sm font-black text-red-400 uppercase tracking-tight leading-none mb-1.5">Destroy Identity</h3>
+                <p className="font-sans text-xs text-red-300/60 leading-relaxed">Full system wipe. All blobs in R2 and rows in Supabase will be permanently deleted.</p>
               </div>
               <button
                 onClick={async () => {
-                  if (window.confirm("Are you absolutely sure? This cannot be undone.")) {
+                  if (window.confirm("FATAL ACTION: Are you sure? This cannot be recovered.")) {
                     const res = await fetch("/api/bff/account/delete", { method: "DELETE" }).catch(() => null);
                     if (res?.ok) {
-                      alert("Account deleted.");
                       window.location.href = "/login";
                     } else {
-                      alert("Failed. Please try again or contact support.");
+                      alert("Fatal error during deletion.");
                     }
                   }
                 }}
-                className="h-9 shrink-0 rounded-md bg-red-600 px-4 text-sm font-medium text-white transition-colors hover:bg-red-500"
+                className="h-10 rounded-xl bg-red-600 px-6 font-sans text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-red-600/20 transition-all hover:bg-red-500 active:scale-95"
               >
-                Delete Account
+                Purge All Data
               </button>
             </div>
 
-            <div className="flex items-start gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-panel)] p-3 text-xs text-[var(--text-tertiary)]">
-              <ExclamationTriangleIcon className="mt-0.5 h-4 w-4" />
-              <span>Provider credentials are encrypted at rest and never returned in API responses.</span>
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-border-subtle bg-surface/30 backdrop-blur-sm">
+              <ExclamationTriangleIcon className="h-4 w-4 text-text-tertiary mt-0.5" />
+              <p className="font-sans text-[10px] font-medium leading-relaxed text-text-tertiary opacity-70">Security Protocol: Provider credentials and cryptographic keys are hashed server-side and never exposed in transit or UI layers.</p>
             </div>
           </div>
         </section>

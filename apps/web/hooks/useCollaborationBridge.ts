@@ -4,8 +4,9 @@ import { useEffect } from "react";
 import type { RefObject } from "react";
 import * as Y from "yjs";
 import type { WebsocketProvider } from "y-websocket";
-import type { Canvas, Textbox } from "fabric";
+import type { Canvas } from "fabric";
 import type { FabricObjectWithMeta } from "@/types/editor";
+import type { DocumentBlock } from "@olpdf/document-model";
 
 const cursorContainers = new WeakMap<Canvas, Map<number, HTMLDivElement>>();
 
@@ -60,41 +61,30 @@ function renderCursors(canvas: Canvas, awareness: WebsocketProvider["awareness"]
 
 export function useCollaborationBridge(
   ydocRef: RefObject<Y.Doc | null>,
-  providerRef: RefObject<WebsocketProvider | null>,
+  provider: WebsocketProvider | null,
   fabricCanvasesRef: RefObject<Map<number, Canvas>>,
   scale: number,
   saveDebounced: RefObject<{ cancel: () => void }>,
+  onRemoteBlocksChanged?: (blocks: DocumentBlock[]) => void,
 ) {
   useEffect(() => {
     const ydoc = ydocRef.current;
-    const provider = providerRef.current;
     if (!ydoc || !provider) return;
     const yBlocks = ydoc.getMap<Y.Map<unknown>>("blocks");
     const awareness = provider.awareness;
 
-    const observer = () => {
-      for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-        for (const obj of canvas.getObjects()) {
-          const blockId = (obj as FabricObjectWithMeta).data?.blockId;
-          if (!blockId) continue;
-          const yBlock = yBlocks.get(blockId);
-          if (!yBlock) continue;
-
-          const bbox = yBlock.get("bounding_box") as number[] | undefined;
-          if (bbox?.length === 4) {
-            obj.set({ left: bbox[0] * scale, top: bbox[1] * scale });
-            obj.setCoords();
-          }
-
-          if (obj.type === "textbox") {
-            const content = yBlock.get("content") as string | undefined;
-            if (content !== undefined && (obj as Textbox).text !== content) {
-              (obj as Textbox).set("text", content);
-            }
-          }
-          canvas.renderAll();
+    const observer = (_events: unknown, transaction: Y.Transaction) => {
+      if (transaction.origin === "local") return;
+      if (!onRemoteBlocksChanged) return;
+      const blocks: DocumentBlock[] = [];
+      for (const [id, yBlock] of yBlocks.entries()) {
+        const obj: Record<string, unknown> = { id };
+        for (const [k, v] of yBlock.entries()) {
+          obj[k] = v;
         }
+        blocks.push(obj as unknown as DocumentBlock);
       }
+      onRemoteBlocksChanged(blocks);
     };
 
     const awarenessHandler = () => {
@@ -118,5 +108,5 @@ export function useCollaborationBridge(
         }
       }
     };
-  }, [ydocRef, providerRef, fabricCanvasesRef, scale, saveDebounced]);
+  }, [ydocRef, provider, fabricCanvasesRef, scale, saveDebounced, onRemoteBlocksChanged]);
 }

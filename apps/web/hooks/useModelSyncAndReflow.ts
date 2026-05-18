@@ -4,6 +4,8 @@ import type { RefObject } from "react";
 import type { Canvas, IText, Textbox } from "fabric";
 import type { DocumentBlock, DocumentModel } from "@olpdf/document-model";
 import type { FabricObjectWithMeta } from "@/types/editor";
+import { shouldPersistFabricObject } from "@/lib/canvas/fabricDocumentObject";
+import { rectFromCanvasObjectBounds, documentRectToCanvasRect, type RectX0Y0X1Y1 } from "@/lib/geometry/rect";
 
 export function useModelSyncAndReflow(args: {
   model: DocumentModel;
@@ -16,14 +18,15 @@ export function useModelSyncAndReflow(args: {
   const { model, scale, fabricCanvasesRef, setCurrentModel, pushToHistory, saveModel } = args;
 
   const syncCanvasToModel = (pageIndex: number, canvas: Canvas) => {
-    const updatedBlocks: DocumentBlock[] = canvas.getObjects().map((obj, idx) => {
+    const documentObjects = canvas.getObjects().filter((obj) => shouldPersistFabricObject(obj as FabricObjectWithMeta));
+    const updatedBlocks: DocumentBlock[] = documentObjects.map((obj, idx) => {
       const left = obj.left ?? 0;
       const top = obj.top ?? 0;
       const w = (obj.width ?? 1) * (obj.scaleX ?? 1);
       const h = (obj.height ?? 1) * (obj.scaleY ?? 1);
       const blockId = (obj as FabricObjectWithMeta).data?.blockId ?? `blk_canvas_${pageIndex}_${idx}_${Date.now()}`;
       const blockType = (obj as FabricObjectWithMeta).data?.blockType ?? "paragraph";
-      const bbox: [number, number, number, number] = [left / scale, top / scale, (left + w) / scale, (top + h) / scale];
+      const bbox = rectFromCanvasObjectBounds(left, top, w, h, scale);
 
       if (obj.type === "textbox") {
         const tb = obj as Textbox;
@@ -100,11 +103,11 @@ export function useModelSyncAndReflow(args: {
         if (!blockId) continue;
         const block = nextModel.blocks?.find((b) => b.id === blockId);
         if (!block || (block.page_index ?? 0) !== pageIndex) continue;
-        const bbox = block.bounding_box ?? [0, 0, 0, 0];
-        const [x0, y0, x1, y1] = bbox;
-        obj.set({ left: x0 * scale, top: y0 * scale });
+        const bbox = (block.bounding_box ?? [0, 0, 0, 0]) as RectX0Y0X1Y1;
+        const [left, top, right, bottom] = documentRectToCanvasRect(bbox, scale);
+        obj.set({ left, top });
         if (obj.type === "textbox") {
-          (obj as Textbox).set({ width: (x1 - x0) * scale, height: (y1 - y0) * scale });
+          (obj as Textbox).set({ width: right - left, height: bottom - top });
         }
       }
       canvas.renderAll();

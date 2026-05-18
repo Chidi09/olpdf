@@ -15,7 +15,7 @@ from .core.auth import verify_jwt_token
 from .core.security import hash_api_key
 from .core.supabase_client import supabase
 from .repositories.user_repo import ApiKeyRepository
-from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments, ai_settings, auth, pdf_edits, telemetry, downloads, pdf_jobs, publications, v1
+from .routes import documents, books, ai, pdf, worker, templates, api_keys, account, webhooks, signatures, workspaces, forms, plugins, tenants, annotations, avatar, comments, ai_settings, auth, pdf_edits, telemetry, downloads, pdf_jobs, publications, v1, magic
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -171,6 +171,22 @@ def create_app() -> FastAPI:
 
             # Worker routes use QStash signature instead of JWT/API Key
             if not path.startswith("/api/worker/"):
+                # Routes that accept X-Worker-Secret instead of JWT
+                worker_secret_paths = ["/api/pdf-jobs/", "/api/downloads"]
+                needs_worker_check = any(
+                    path.startswith(ws_path) for ws_path in worker_secret_paths
+                )
+                if needs_worker_check:
+                    worker_secret = request.headers.get("X-Worker-Secret", "")
+                    env_secret = os.environ.get("WORKER_SECRET", "")
+                    if worker_secret and env_secret and worker_secret == env_secret:
+                        response = await call_next(request)
+                        return response
+                    return JSONResponse(
+                        status_code=401,
+                        content={"error": "api_error", "message": "Valid X-Worker-Secret required for this endpoint"},
+                    )
+
                 auth_header = request.headers.get("authorization", "")
                 api_key_header = request.headers.get("x-api-key", "")
 
@@ -262,6 +278,7 @@ def create_app() -> FastAPI:
     app.include_router(publications.router)
     app.include_router(telemetry.router)
     app.include_router(v1.router)
+    app.include_router(magic.router)
 
     @app.on_event("startup")
     async def warm_redis():

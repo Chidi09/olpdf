@@ -16,7 +16,7 @@ export function useEditorToolbarActions(args: {
   const [redoStack, setRedoStack] = useState<DocumentModel[]>([]);
 
   const pushToHistory = (nextModel: DocumentModel) => {
-    setHistory((prev) => [...prev.slice(-49), model]);
+    setHistory((prev) => [...prev.slice(-49), getCurrentModel()]);
     setRedoStack([]);
     onModelChange?.(nextModel);
   };
@@ -24,17 +24,21 @@ export function useEditorToolbarActions(args: {
   const undo = () => {
     if (history.length === 0) return;
     const prev = history[history.length - 1];
-    setRedoStack((r) => [model, ...r]);
+    setRedoStack((r) => [getCurrentModel(), ...r]);
     setHistory((h) => h.slice(0, -1));
     onModelChange?.(prev);
+    saveModel(prev);
+    setCurrentModel(prev);
   };
 
   const redo = () => {
     if (redoStack.length === 0) return;
     const next = redoStack[0];
-    setHistory((h) => [...h, model]);
+    setHistory((h) => [...h, getCurrentModel()]);
     setRedoStack((r) => r.slice(1));
     onModelChange?.(next);
+    saveModel(next);
+    setCurrentModel(next);
   };
 
   const saveVersionSnapshot = async () => {
