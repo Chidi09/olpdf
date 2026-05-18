@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
@@ -518,60 +518,58 @@ function Callout({ type = "info", children }: { type?: "info" | "warn" | "tip"; 
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState("overview");
-  const observer = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    observer.current = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }),
-      { rootMargin: "-10% 0% -80% 0%", threshold: 0 }
-    );
-    document.querySelectorAll("section[id]").forEach(s => observer.current?.observe(s));
-    return () => observer.current?.disconnect();
+    const onScroll = () => {
+      const sections = Array.from(document.querySelectorAll<HTMLElement>("section[id]"));
+      let current = sections[0]?.id ?? "overview";
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= 140) {
+          current = section.id;
+        }
+      }
+      setActiveSection(current);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-black text-text-primary selection:bg-accent/30 transition-colors duration-500">
+    <main className="relative min-h-screen overflow-x-hidden bg-[var(--bg-base)] font-sans text-[var(--text-primary)] selection:bg-accent/30 transition-colors duration-500">
       <AmbientBackground />
       <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] pointer-events-none" />
 
       <div className="relative z-10 max-w-[1400px] mx-auto flex">
 
         {/* ── Sidebar ── */}
-        <aside className="hidden lg:block w-72 shrink-0 self-start sticky top-0 max-h-screen overflow-y-auto py-12 pl-8 pr-6 border-r liquid-glass liquid-glass-noise z-30 custom-scrollbar">
-          <Link href="/" className="inline-flex items-center mb-10 group active:scale-95 transition-all">
-            <div className="h-10 w-10 flex items-center justify-center rounded-xl border border-accent/20 bg-accent/5 shadow-inner mr-3 group-hover:rotate-6 transition-transform">
-               <span className="font-sans font-black tracking-tighter text-accent text-xl italic">O</span>
-            </div>
-            <div className="flex flex-col">
-               <span className="font-sans font-black tracking-tighter text-text-primary text-base leading-none">OLPDF <span className="text-accent italic">DOCS</span></span>
-               <span className="font-mono text-[8px] uppercase tracking-widest text-text-tertiary mt-0.5 opacity-60">Kernel_v1.02_STABLE</span>
-            </div>
-          </Link>
-
-          <nav className="space-y-8">
-            {NAV.map((item, i) => {
-              if (item.type === "header") return (
-                <div key={i} className="flex items-center gap-2 mt-8 mb-4">
-                   <div className="h-px flex-1 bg-border-subtle" />
-                   <p className="font-mono text-[9px] font-black text-text-tertiary uppercase tracking-[0.2em]">{item.label}</p>
-                </div>
-              );
-              const Icon = item.icon;
-              const active = activeSection === item.id;
-              return (
-                <Link key={item.id} href={`#${item.id}`}
-                  className={cn(
-                    "flex items-center gap-3 pl-4 py-2 text-xs font-bold uppercase tracking-widest border-l-2 transition-all group",
-                    active
-                      ? "text-accent border-accent bg-accent/5 shadow-[inset_4px_0_12px_-2px_rgba(217,119,6,0.05)]"
-                      : "text-text-tertiary border-transparent hover:text-text-primary hover:border-border-strong hover:bg-white/5"
-                  )}>
-                  {Icon && <Icon className={cn("h-3.5 w-3.5 shrink-0 transition-transform group-hover:scale-110", active ? "text-accent" : "opacity-40")} />}
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+        <aside className="hidden lg:flex w-60 shrink-0 sticky top-0 h-screen z-30 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <div className="flex-1 overflow-y-auto py-10 pl-6 pr-5 custom-scrollbar">
+            <nav className="space-y-1">
+              {NAV.map((item, i) => {
+                if (item.type === "header") return (
+                  <div key={i} className="flex items-center gap-2 pt-6 pb-2">
+                    <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+                    <p className="font-mono text-[9px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">{item.label}</p>
+                  </div>
+                );
+                const Icon = item.icon;
+                const active = activeSection === item.id;
+                return (
+                  <Link key={item.id} href={`#${item.id}`}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all group",
+                      active
+                        ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                        : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass-subtle)]"
+                    )}>
+                    {Icon && <Icon className={cn("h-3.5 w-3.5 shrink-0", active ? "text-[var(--accent)]" : "opacity-50")} />}
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
         </aside>
 
         {/* ── Content ── */}

@@ -239,7 +239,7 @@ export default function AiEditDiffPanel({
             </button>
             <button
               onClick={onAccept}
-              className="rounded-md bg-white px-3 py-1.5 text-[11px] font-semibold text-black transition-colors hover:bg-[#e5e5e5]"
+              className="rounded-md bg-[var(--text-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--bg-base)] transition-colors hover:opacity-90"
               title="Accept (Ctrl+Enter)"
             >
               Insert
@@ -311,7 +311,7 @@ export default function AiEditDiffPanel({
               <button
                 type="submit"
                 disabled={!refinementText.trim()}
-                className="absolute right-1 p-1.5 text-[#666] transition-colors hover:text-white disabled:opacity-30"
+                className="absolute right-1 p-1.5 text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)] disabled:opacity-30"
               >
                 <CornerDownLeft className="h-3.5 w-3.5" />
               </button>

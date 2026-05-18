@@ -38,7 +38,7 @@ export default function AiHistoryPanel({
         <h3 className="text-sm font-bold text-[var(--accent)] flex items-center gap-2">
           <Sparkles className="h-4 w-4" /> AI Edit History
         </h3>
-        <button onClick={onClose} className="text-[var(--text-tertiary)] hover:text-white"><X className="h-4 w-4" /></button>
+        <button onClick={onClose} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"><X className="h-4 w-4" /></button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

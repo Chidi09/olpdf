@@ -26,7 +26,7 @@ export default function CoverBuilder({ onSave, onClose }: CoverBuilderProps) {
       <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-[var(--border-subtle)] flex justify-between items-center">
           <h2 className="text-xl font-bold text-[var(--text-primary)]">Book Cover Builder</h2>
-          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-white"><X className="h-4 w-4" /></button>
+          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -80,7 +80,7 @@ export default function CoverBuilder({ onSave, onClose }: CoverBuilderProps) {
         </div>
 
         <div className="p-6 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] flex justify-end gap-3">
-          <button onClick={onClose} className="px-6 py-2 text-sm text-[var(--text-secondary)] hover:text-white">Cancel</button>
+          <button onClick={onClose} className="px-6 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button>
           <button 
             onClick={() => onSave(gradient)} 
             className="px-6 py-2 bg-[var(--accent)] text-[var(--text-on-accent)] rounded-lg text-sm font-bold hover:opacity-90"
