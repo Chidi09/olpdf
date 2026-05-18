@@ -12,7 +12,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans:  ['degular', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        sans:  ['var(--font-geist-sans)', 'Geist', 'Helvetica Neue', 'Arial', 'sans-serif'],
         serif: ['mr-eaves-sans', 'Georgia', 'serif'],
         mono:  ['var(--font-geist-mono)', 'Menlo', 'monospace'],
       },
