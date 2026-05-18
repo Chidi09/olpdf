@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-56px)] w-full max-w-md items-center px-6 py-12">
-      <div className="w-full space-y-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6">
+      <div className="w-full space-y-4 rounded-xl liquid-glass liquid-glass-noise p-6">
         <h1 className="text-2xl font-bold">Reset password</h1>
         <p className="text-sm text-[var(--text-secondary)]">
           Enter your email address and we&apos;ll send you a link to reset your password.
@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="Email"
-            className="w-full rounded border border-[var(--border-subtle)] bg-transparent px-3 py-2"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm backdrop-blur-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30 transition-all"
             required
           />
           {error && <p className="text-sm text-red-500">{error}</p>}

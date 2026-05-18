@@ -26,7 +26,7 @@ export default async function PublicationPage({ params }: { params: Promise<{ sl
 
         <div className="space-y-2">
           {(pub.snapshot?.blocks ?? []).map((block: { id: string; content?: string; type?: string }) => (
-            <div key={block.id} className="p-3 rounded border border-[var(--border-subtle)]">
+            <div key={block.id} className="p-3 rounded-xl liquid-glass liquid-glass-noise">
               {block.content || "(empty)"}
             </div>
           ))}

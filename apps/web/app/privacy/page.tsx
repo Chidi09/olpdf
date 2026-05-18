@@ -63,7 +63,7 @@ export default function PrivacyPage() {
           {sections.map((section, i) => (
             <section key={i} className="group relative">
                <div className="flex items-start gap-6">
-                  <div className="h-12 w-12 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center justify-center shrink-0 group-hover:border-[var(--accent)]/50 transition-colors">
+                  <div className="h-12 w-12 rounded-2xl liquid-glass liquid-glass-noise flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
                      <section.icon className="h-6 w-6 text-[var(--text-tertiary)] group-hover:text-[var(--accent)] transition-colors" />
                   </div>
                   <div>
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        <div className="mt-20 p-8 rounded-[32px] bg-[var(--accent-subtle)] border border-[var(--accent)]/20 text-center">
+        <div className="mt-20 p-8 rounded-[32px] liquid-glass liquid-glass-noise text-center">
            <h3 className="text-xl font-black mb-4">Have questions?</h3>
            <p className="text-sm text-[var(--text-secondary)] mb-6">
              Our privacy team is available to help with data export requests, deletion, or technical security inquiries.

@@ -79,7 +79,7 @@ export default function PluginMarketplacePage() {
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] pb-24">
       {/* Header */}
-      <div className="bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] pt-16 pb-12 px-6">
+      <div className="liquid-glass-strong liquid-glass-noise border-b border-white/[0.06] pt-16 pb-12 px-6">
         <div className="mx-auto max-w-7xl">
           <BackLink href="/dashboard" label="Back to workspace" />
           
@@ -115,7 +115,7 @@ export default function PluginMarketplacePage() {
               placeholder="Search plugins by name, feature, or author..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg-surface)] border border-[var(--border-strong)] rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold"
+              className="w-full liquid-glass rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all font-bold placeholder:text-white/30"
             />
           </div>
 
@@ -124,10 +124,10 @@ export default function PluginMarketplacePage() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all border ${
-                  activeCategory === cat 
-                    ? "bg-[var(--text-primary)] text-[var(--bg-base)] border-[var(--text-primary)]" 
-                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--accent)]/40"
+                className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all ${
+                  activeCategory === cat
+                    ? "liquid-glass-strong text-white ring-1 ring-accent/50"
+                    : "liquid-glass liquid-glass-noise text-white/60 hover:text-white"
                 }`}
               >
                 {cat}

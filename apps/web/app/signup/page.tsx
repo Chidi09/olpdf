@@ -75,7 +75,7 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-base font-medium text-white placeholder:text-[#6b7280]"
+                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-white placeholder:text-white/30"
                 required
               />
             </div>
@@ -87,7 +87,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-base font-medium text-white placeholder:text-[#6b7280]"
+                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-white placeholder:text-white/30"
                 required
               />
             </div>
@@ -99,7 +99,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 8 characters"
-                className="w-full rounded-xl border border-[#232325] bg-[#111113] px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/60 transition-all text-base font-medium text-white placeholder:text-[#6b7280]"
+                className="w-full rounded-xl liquid-glass px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all text-base font-medium text-white placeholder:text-white/30"
                 required
                 minLength={8}
               />
@@ -127,7 +127,7 @@ export default function SignupPage() {
 
           <button
             onClick={signInWithGoogle}
-            className="w-full rounded-xl border border-[#2a2a2e] hover:border-[#3a3a3e] bg-[#111113] hover:bg-[#161618] transition-all px-4 py-3.5 font-semibold text-base flex items-center justify-center gap-3 text-[#d1d5db]"
+            className="w-full rounded-xl liquid-glass liquid-glass-noise transition-all px-4 py-3.5 font-semibold text-base flex items-center justify-center gap-3 text-white/80 hover:text-white active:scale-[0.98]"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57C21.08 18.45 22.56 15.52 22.56 12.25z" fill="#4285F4" />

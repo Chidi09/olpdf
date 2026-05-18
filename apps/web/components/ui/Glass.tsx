@@ -12,10 +12,10 @@ export function AmbientBackground() {
 export function GlassCard({ children, className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`group relative z-10 flex flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] ${className}`}
+      className={`group relative z-10 flex flex-col rounded-xl liquid-glass liquid-glass-noise transition-all duration-300 hover:scale-[1.01] hover:shadow-float ${className}`}
       {...props}
     >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-orange-500/0 via-transparent to-orange-500/0 transition-all duration-500 group-hover:from-orange-500/5" />
+      <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-accent/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       <div className="relative z-10 flex h-full flex-col">{children}</div>
     </div>
   );
@@ -23,7 +23,7 @@ export function GlassCard({ children, className = "", ...props }: React.HTMLAttr
 
 export function GlassPanel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`z-10 overflow-hidden rounded-lg border border-white/10 bg-white/[0.015] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-xl ${className}`}>
+    <div className={`z-10 overflow-hidden rounded-xl liquid-glass liquid-glass-noise ${className}`}>
       {children}
     </div>
   );

@@ -114,10 +114,8 @@ export default function OnboardingPage() {
                     setMode("guest");
                     setStep(3);
                   }}
-                  className={`w-full rounded-lg border p-4 text-left transition-all active:scale-[0.98] ${
-                    mode === "guest"
-                      ? "border-orange-500 bg-[#111]"
-                      : "border-[#333] bg-[#0A0A0A] hover:border-[#444] hover:bg-[#111]"
+                  className={`w-full rounded-xl liquid-glass liquid-glass-noise p-4 text-left transition-all active:scale-[0.98] ${
+                    mode === "guest" ? "ring-1 ring-orange-500/60" : "hover:scale-[1.01]"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -133,10 +131,8 @@ export default function OnboardingPage() {
 
                 <button
                   onClick={signInWithGoogle}
-                  className={`w-full rounded-lg border p-4 text-left transition-all active:scale-[0.98] ${
-                    mode === "cloud"
-                      ? "border-orange-500 bg-[#111]"
-                      : "border-[#333] bg-[#0A0A0A] hover:border-[#444] hover:bg-[#111]"
+                  className={`w-full rounded-xl liquid-glass liquid-glass-noise p-4 text-left transition-all active:scale-[0.98] ${
+                    mode === "cloud" ? "ring-1 ring-orange-500/60" : "hover:scale-[1.01]"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -171,14 +167,12 @@ export default function OnboardingPage() {
                       setStep(4);
                       complete();
                     }}
-                    className={`flex flex-col rounded-lg border p-4 text-left transition-all active:scale-[0.98] ${
-                      useCase === key
-                        ? "border-orange-500 bg-[#111]"
-                        : "border-[#333] bg-[#0A0A0A] hover:border-[#444] hover:bg-[#111]"
+                    className={`flex flex-col rounded-xl liquid-glass liquid-glass-noise p-4 text-left transition-all active:scale-[0.98] ${
+                      useCase === key ? "ring-1 ring-orange-500/60" : "hover:scale-[1.01]"
                     }`}
                   >
-                    <div className="mb-3 flex h-8 w-8 items-center justify-center rounded border border-[#333] bg-[#111]">
-                      <Icon className="h-4 w-4 text-[#888]" />
+                    <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg liquid-glass">
+                      <Icon className="h-4 w-4 text-white/60" />
                     </div>
                     <p className="mb-0.5 text-sm font-semibold text-white">{label}</p>
                     <p className="text-[11px] leading-relaxed text-[#666]">{desc}</p>

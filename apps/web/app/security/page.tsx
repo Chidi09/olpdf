@@ -23,14 +23,14 @@ export default function SecurityPage() {
         
         {/* Core Principles */}
         <section className="grid sm:grid-cols-2 gap-8">
-          <div className="bg-[var(--bg-elevated)] p-8 rounded-3xl border border-[var(--border-subtle)] shadow-sm">
+          <div className="liquid-glass liquid-glass-noise p-8 rounded-3xl">
             <Lock className="h-8 w-8 text-blue-500 mb-4" />
             <h3 className="text-xl font-bold mb-3">Encryption Everywhere</h3>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
               All data is encrypted in transit using TLS 1.3 and at rest using AES-256. We utilize Cloudflare R2 for highly available, zero-egress object storage with strict access controls.
             </p>
           </div>
-          <div className="bg-[var(--bg-elevated)] p-8 rounded-3xl border border-[var(--border-subtle)] shadow-sm">
+          <div className="liquid-glass liquid-glass-noise p-8 rounded-3xl">
             <EyeOff className="h-8 w-8 text-purple-500 mb-4" />
             <h3 className="text-xl font-bold mb-3">Privacy by Design</h3>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
@@ -74,7 +74,7 @@ export default function SecurityPage() {
             <Server className="h-6 w-6 text-emerald-500" />
             <h2 className="text-3xl font-black">Compliance & Infrastructure</h2>
           </div>
-          <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden">
+          <div className="liquid-glass liquid-glass-noise rounded-2xl overflow-hidden">
              <div className="p-6 border-b border-[var(--border-subtle)]">
                <h3 className="font-bold text-lg">Sub-processors</h3>
                <p className="text-sm text-[var(--text-secondary)] mt-1">We use the following trusted providers to deliver our service:</p>

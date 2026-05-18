@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-56px)] w-full max-w-md items-center px-6 py-12">
-      <div className="w-full space-y-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6">
+      <div className="w-full space-y-4 rounded-xl liquid-glass liquid-glass-noise p-6">
         <h1 className="text-2xl font-bold">Set new password</h1>
         {success ? (
           <div className="space-y-4">
@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="New Password"
-              className="w-full rounded border border-[var(--border-subtle)] bg-transparent px-3 py-2"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm backdrop-blur-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30 transition-all"
               required
               minLength={8}
             />
@@ -74,7 +74,7 @@ export default function ResetPasswordPage() {
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               placeholder="Confirm New Password"
-              className="w-full rounded border border-[var(--border-subtle)] bg-transparent px-3 py-2"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm backdrop-blur-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30 transition-all"
               required
               minLength={8}
             />
