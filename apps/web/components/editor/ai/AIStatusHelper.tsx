@@ -9,6 +9,7 @@ interface AIStatusHelperProps {
   onViewDiff?: () => void;
   onUndo?: () => void;
   onDismiss?: () => void;
+  onCancel?: () => void;
 }
 
 const phaseLabels: Record<AiApplyPhase, string> = {
@@ -36,6 +37,7 @@ export default function AIStatusHelper({
   onViewDiff,
   onUndo,
   onDismiss,
+  onCancel,
 }: AIStatusHelperProps) {
   if (phase === "idle") return null;
 
@@ -87,6 +89,14 @@ export default function AIStatusHelper({
             className="rounded px-2 py-1 text-[11px] text-[#888] transition-colors hover:text-white"
           >
             Undo
+          </button>
+        )}
+        {phase === "streaming" && onCancel && (
+          <button
+            onClick={onCancel}
+            className="rounded px-2 py-1 text-[11px] text-[#888] transition-colors hover:text-white"
+          >
+            Cancel
           </button>
         )}
         {onDismiss && (

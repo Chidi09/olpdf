@@ -136,33 +136,88 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   }, [documentQuery.data, documentId, setCurrentModel]);
 
   const [isChatMode, setIsChatMode] = useState(false);
+  const [chatHistory, setChatHistory] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
   const canRunAi = instruction.trim().length > 0 && !isRunningAi;
+  const aiAbortControllerRef = useRef<AbortController | null>(null);
+
+  const cancelAiRequest = () => {
+    if (aiAbortControllerRef.current) {
+      aiAbortControllerRef.current.abort();
+      aiAbortControllerRef.current = null;
+      setIsRunningAi(false);
+      dispatchAi({ type: "RESET" });
+      toast("AI request cancelled", "info");
+    }
+  };
+
+  const undoAi = async () => {
+    if (!activeAiLog) return;
+    dispatchAi({ type: "START_APPLYING", changedBlockCount: 1, affectedPageCount: 1 });
+    try {
+      await fetch(`/api/bff/ai/logs/${activeAiLog.id}/reject`, { method: "POST" });
+      const res = await fetch(`/api/bff/documents/${documentId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.document_model) setCurrentModel(normalizeModelForEditor(data.document_model, documentId));
+      }
+      setActiveAiLog(null);
+      dispatchAi({ type: "RESET" });
+      toast("AI suggestion reverted", "success");
+    } catch {
+      toast("Failed to revert AI suggestion", "error");
+      dispatchAi({ type: "RESET" });
+    }
+  };
 
   const runAi = async () => {
     if (!canRunAi) return;
     setIsRunningAi(true);
     dispatchAi({ type: "START_STREAMING" });
+
+    aiAbortControllerRef.current = new AbortController();
+
     try {
-      const response = await fetch(`/api/bff/ai/documents/${documentId}/instruction`, {
+      const endpoint = isChatMode
+        ? `/api/bff/ai/documents/${documentId}/chat`
+        : `/api/bff/ai/documents/${documentId}/instruction`;
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction }),
+        signal: aiAbortControllerRef.current.signal,
       });
-      if (!response.ok) throw new Error("AI instruction failed");
+
+      if (!response.ok) throw new Error("AI request failed");
       const data = await response.json();
-      setActiveAiLog({
-        id: data.log_id,
-        instruction,
-        status: "pending_review",
-        created_at: new Date().toISOString(),
-        tool_calls: data.tool_calls || [],
-        diff_snapshot: data.diff_snapshot,
-      });
+
+      if (isChatMode) {
+        setChatHistory((prev) => [
+          ...prev,
+          { role: "user", text: instruction },
+          { role: "assistant", text: data.reply || "Chat response received." }
+        ]);
+        dispatchAi({ type: "RESET" });
+      } else {
+        setActiveAiLog({
+          id: data.log_id,
+          instruction,
+          status: "pending_review",
+          created_at: new Date().toISOString(),
+          tool_calls: data.tool_calls || [],
+          diff_snapshot: data.diff_snapshot,
+        });
+        toast("AI suggestion ready — review and insert below.", "info");
+        dispatchAi({ type: "FINISH_STREAMING" });
+      }
       setInstruction("");
-      dispatchAi({ type: "FINISH_STREAMING" });
-      toast("AI suggestion ready — review and insert below.", "info");
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
+      toast("Failed to complete AI request.", "error");
+      dispatchAi({ type: "RESET" });
     } finally {
       setIsRunningAi(false);
+      aiAbortControllerRef.current = null;
     }
   };
 
@@ -173,11 +228,11 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       const response = await fetch(`/api/bff/ai/logs/${activeAiLog.id}/accept`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
       if (data.document_model) setCurrentModel(normalizeModelForEditor(data.document_model, documentId));
-      setActiveAiLog(null);
       dispatchAi({ type: "FINISH_APPLYING" });
       toast("AI suggestion inserted", "success");
     } catch {
       toast("Failed to apply AI suggestion", "error");
+      dispatchAi({ type: "RESET" });
     }
   };
 
@@ -196,8 +251,14 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   const runSummarize = async () => {
     setIsRunningAi(true);
     dispatchAi({ type: "START_STREAMING" });
+
+    aiAbortControllerRef.current = new AbortController();
+
     try {
-      const response = await fetch(`/api/bff/ai/documents/${documentId}/summarise`, { method: "POST" });
+      const response = await fetch(`/api/bff/ai/documents/${documentId}/summarise`, {
+        method: "POST",
+        signal: aiAbortControllerRef.current.signal,
+      });
       if (!response.ok) throw new Error("Summarize failed");
       const data = await response.json();
       const summaryText = data.summary || data.updated_model?.blocks?.[0]?.content || "";
@@ -214,15 +275,26 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         toast(summaryText, "info");
       }
       dispatchAi({ type: "FINISH_STREAMING" });
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
+      toast("Failed to summarize document.", "error");
+      dispatchAi({ type: "RESET" });
     } finally {
       setIsRunningAi(false);
+      aiAbortControllerRef.current = null;
     }
   };
 
   const runDetectPii = async () => {
     dispatchAi({ type: "START_STREAMING" });
+
+    aiAbortControllerRef.current = new AbortController();
+
     try {
-      const response = await fetch(`/api/bff/ai/documents/${documentId}/detect-pii`, { method: "POST" });
+      const response = await fetch(`/api/bff/ai/documents/${documentId}/detect-pii`, {
+        method: "POST",
+        signal: aiAbortControllerRef.current.signal,
+      });
       if (!response.ok) throw new Error("PII detection failed");
       const data = await response.json();
       const count = data.count || data.findings?.length || 0;
@@ -231,8 +303,12 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       } else {
         toast("No PII detected.", "info");
       }
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
+      toast("Failed to detect PII.", "error");
     } finally {
       dispatchAi({ type: "RESET" });
+      aiAbortControllerRef.current = null;
     }
   };
 
@@ -476,42 +552,47 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
   };
 
   return (
-    <div className="flex h-screen w-full overflow-x-auto overflow-y-hidden bg-black text-[#ededed]">
-      {isOutlineOpen && <aside className="z-20 hidden w-[240px] shrink-0 flex-col border-r border-white/[0.08] bg-black/40 backdrop-blur-2xl lg:flex 2xl:w-[260px]">
-        <div className="flex h-14 items-center border-b border-white/[0.08] px-3">
-          <Link href="/dashboard" className="mr-2 rounded-md p-1.5 text-[#888] transition-colors hover:bg-white/[0.05] hover:text-white">
+    <div className="flex h-screen w-full overflow-x-auto overflow-y-hidden bg-black text-text-primary selection:bg-accent/30 relative">
+      {/* Background Depth */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:32px_32px] pointer-events-none" />
+
+      {isOutlineOpen && <aside className="z-20 hidden w-[240px] shrink-0 flex-col liquid-glass liquid-glass-noise lg:flex 2xl:w-[260px] border-r">
+        <div className="flex h-14 items-center border-b border-white/[0.08] px-4 bg-surface/30">
+          <Link href="/dashboard" className="mr-3 rounded-lg p-1.5 text-text-tertiary transition-all hover:bg-accent/10 hover:text-accent active:scale-90">
             <ChevronLeftIcon className="h-4 w-4" />
           </Link>
-          <span className="text-xs font-medium tracking-wide text-[#aaa]">Outline</span>
+          <span className="font-mono text-[10px] font-black uppercase tracking-widest text-text-tertiary opacity-60">Structure</span>
           <button
             onClick={() => setIsOutlineOpen(false)}
-            className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.06] hover:text-white"
+            className="ml-auto rounded-lg p-1.5 text-text-tertiary transition-all hover:bg-white/5 hover:text-white"
             aria-label="Hide outline"
           >
             <ChevronRightIcon className="h-4 w-4 rotate-180" />
           </button>
         </div>
 
-        <div className="flex gap-1 border-b border-white/[0.08] p-2">
+        <div className="flex gap-1 border-b border-white/[0.08] p-2 bg-black/20">
           <button
             onClick={() => setLeftTab("outline")}
-            className={`flex flex-1 items-center justify-center gap-2 rounded py-1.5 text-xs font-medium transition-colors ${
-              leftTab === "outline" ? "bg-[#222] text-white" : "text-[#888] hover:bg-[#111] hover:text-white"
-            }`}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all",
+              leftTab === "outline" ? "bg-accent text-white shadow-lg shadow-accent/10" : "text-text-tertiary hover:bg-white/5 hover:text-text-secondary"
+            )}
           >
             <Bars3BottomLeftIcon className="h-3.5 w-3.5" /> Outline
           </button>
           <button
             onClick={() => setLeftTab("pages")}
-            className={`flex flex-1 items-center justify-center gap-2 rounded py-1.5 text-xs font-medium transition-colors ${
-              leftTab === "pages" ? "bg-[#222] text-white" : "text-[#888] hover:bg-[#111] hover:text-white"
-            }`}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all",
+              leftTab === "pages" ? "bg-accent text-white shadow-lg shadow-accent/10" : "text-text-tertiary hover:bg-white/5 hover:text-text-secondary"
+            )}
           >
             <PhotoIcon className="h-3.5 w-3.5" /> Pages
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
           {leftTab === "pages" ? (
             <PageThumbnailRail
               pageDimensions={currentModel?.page_dimensions ?? []}
@@ -527,36 +608,38 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
               }}
             />
           ) : (
-          <div className="relative pl-3 border-l border-[var(--border-subtle)]">
+          <div className="relative pl-3 border-l border-border-subtle/50 ml-1 mt-2">
             {outlineItems.length > 0 && activeSectionId && (
               <div
-                className="absolute left-[-1px] w-[2px] bg-[var(--accent)] transition-all duration-300 ease-out rounded-full"
+                className="absolute left-[-1px] w-[2px] bg-accent transition-all duration-300 ease-out rounded-full shadow-[0_0_8px_var(--accent)]"
                 style={{ top: calculateTopPosition(activeSectionId), height: 24 }}
               />
             )}
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {outlineItems.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => scrollToOutlineItem(item)}
-                  className={`group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[var(--bg-elevated)] ${
+                  className={cn(
+                    "group flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-xs transition-all hover:bg-surface/80",
                     activeSectionId === item.id
-                      ? "text-[var(--text-primary)] font-medium"
-                      : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                  }`}
+                      ? "text-text-primary font-bold bg-accent/5"
+                      : "text-text-tertiary hover:text-text-secondary"
+                  )}
                   style={{ height: ITEM_HEIGHT }}
                 >
-                  <span className={`flex h-3 w-3 items-center justify-center rounded-sm border text-[8px] transition-colors ${
+                  <span className={cn(
+                    "flex h-4 w-4 items-center justify-center rounded border text-[7px] font-black transition-all",
                     activeSectionId === item.id
-                      ? "border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent)]"
-                      : "border-[#444] bg-[var(--bg-panel)] text-[var(--text-tertiary)] group-hover:border-orange-500 group-hover:text-orange-500"
-                  }`}>
-                    {item.type}
+                      ? "border-accent bg-accent text-white shadow-sm"
+                      : "border-border-strong bg-background text-text-tertiary group-hover:border-accent/60"
+                  )}>
+                    {item.type.charAt(0)}
                   </span>
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.pageIndex >= 0 && (
-                    <span className="shrink-0 text-[9px] font-mono text-[var(--text-tertiary)] opacity-60 group-hover:opacity-100 transition-opacity">
-                      p.{item.pageIndex + 1}
+                    <span className="shrink-0 font-mono text-[9px] text-text-tertiary opacity-40 group-hover:opacity-100 transition-opacity">
+                      {item.pageIndex + 1}
                     </span>
                   )}
                 </div>
@@ -564,16 +647,16 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             </div>
           </div>
           )}
-          {leftTab === "outline" && outlineItems.length === 0 && <p className="px-2 py-2 text-xs text-[var(--text-tertiary)]">No blocks yet.</p>}
+          {leftTab === "outline" && outlineItems.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 opacity-30 gap-2">
+               <Bars3BottomLeftIcon className="h-5 w-5" />
+               <p className="font-mono text-[9px] uppercase tracking-widest">Null Set</p>
+            </div>
+          )}
         </div>
       </aside>}
 
-      <main className="relative flex min-w-[720px] flex-1 flex-col xl:min-w-[860px]">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-20"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
-        />
-
+      <main className="relative flex min-w-[720px] flex-1 flex-col xl:min-w-[860px] z-10">
         <EditorCommandBar
           mode={layoutMode}
           title={titleDraft}
@@ -604,72 +687,86 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
             <GlassTooltip label={isOutlineOpen ? "Hide outline" : "Show outline"}>
               <button
                 onClick={() => setIsOutlineOpen((open) => !open)}
-                className={`flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                className={cn(
+                  "flex h-9 items-center gap-2 rounded-xl border px-4 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
                   isOutlineOpen
-                    ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                    : "border-[#333] bg-[#0A0A0A] text-[#888] hover:bg-[#111] hover:text-white"
-                }`}
+                    ? "border-accent/40 bg-accent/10 text-accent shadow-sm shadow-accent/5"
+                    : "border-border-strong bg-surface text-text-tertiary hover:bg-hover hover:text-text-primary"
+                )}
               >
-                <Bars3BottomLeftIcon className="h-3.5 w-3.5" /> Outline
+                <Bars3BottomLeftIcon className="h-4 w-4" /> Outline
               </button>
             </GlassTooltip>
           }
           rightSlot={
-            <>
+            <div className="flex items-center gap-2">
               <GlassTooltip label={isSidebarOpen ? "Hide assistant" : "Show assistant"}>
                 <button
                   onClick={() => setIsSidebarOpen((open) => !open)}
-                  className={`flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                  className={cn(
+                    "flex h-9 items-center gap-2 rounded-xl border px-4 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
                     isSidebarOpen
-                      ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                      : "border-[#333] bg-[#0A0A0A] text-[#888] hover:bg-[#111] hover:text-white"
-                  }`}
+                      ? "border-accent/40 bg-accent/10 text-accent"
+                      : "border-border-strong bg-surface text-text-tertiary hover:bg-hover hover:text-text-primary"
+                  )}
                 >
-                  <SparklesIcon className="h-3.5 w-3.5" /> AI
+                  <SparklesIcon className="h-4 w-4" /> AI
                 </button>
               </GlassTooltip>
+
+              <div className="h-4 w-px bg-border-subtle mx-1" />
+
               <GlassTooltip label="Scan for PII">
                 <button
                   onClick={runDetectPii}
-                  className="flex h-8 items-center gap-1 rounded-md border border-[#333] bg-[#0A0A0A] px-2 text-[11px] text-[#888] transition-colors hover:bg-[#111] hover:text-white active:scale-[0.98]"
+                  className="flex h-9 items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 font-mono text-[10px] font-black text-text-tertiary transition-all hover:bg-hover hover:text-text-primary active:scale-95"
                 >
                   PII
                 </button>
               </GlassTooltip>
               <GlassTooltip label="Share" shortcut="⌘S">
-                <button onClick={() => void shareEditor()} className="flex h-8 w-8 items-center justify-center rounded-md border border-[#333] bg-[#0A0A0A] text-[#888] transition-colors hover:bg-[#111] active:scale-[0.98]">
+                <button onClick={() => void shareEditor()} className="flex h-9 w-9 items-center justify-center rounded-xl border border-border-strong bg-surface text-text-tertiary transition-all hover:bg-hover hover:text-text-primary active:scale-95">
                   <ShareIcon className="h-4 w-4" />
                 </button>
               </GlassTooltip>
-              <GlassTooltip label="Publish to web">
-                <button onClick={() => toast("Publish is not enabled yet", "info")} className="ml-2 flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:bg-[#e5e5e5] active:scale-[0.98]">
-                  <PlayIcon className="h-3.5 w-3.5" /> Publish
-                </button>
-              </GlassTooltip>
-            </>
+              <button onClick={() => toast("Publish is not enabled yet", "info")} className="ml-2 flex h-9 items-center gap-2 rounded-xl bg-white px-5 text-[10px] font-black uppercase tracking-[0.15em] text-black shadow-xl shadow-white/5 transition-all hover:brightness-110 active:scale-95">
+                <PlayIcon className="h-4 w-4" /> Publish
+              </button>
+            </div>
           }
         />
 
-        <div className="mx-auto w-full max-w-[1200px] px-4 pt-2">
-          {showCanvasToolbarHost && <div ref={setCanvasToolbarHost} className="mb-2" />}
+        <div className="mx-auto w-full max-w-[1200px] px-6 pt-3 relative z-30">
+          {showCanvasToolbarHost && <div ref={setCanvasToolbarHost} className="mb-3" />}
           <AIStatusHelper
             phase={aiState.phase}
             toolLabels={toolCallSummary}
             onApply={() => void acceptAi()}
             onViewDiff={() => {}}
-            onUndo={() => dispatchAi({ type: "REVERT" })}
+            onUndo={() => void undoAi()}
+            onCancel={cancelAiRequest}
             onDismiss={() => dispatchAi({ type: "RESET" })}
           />
         </div>
 
         <AIApplyEffectsLayer phase={aiState.phase} profile={animationProfile} />
-        <div ref={editorContentRef} className="relative z-20 min-h-0 flex-1 overflow-hidden">
+
+        <div ref={editorContentRef} className="relative z-20 min-h-0 flex-1 overflow-hidden transition-all duration-700">
           {!currentModel ? (
-            <div className="flex h-full w-full items-center justify-center bg-black/20 text-xs font-semibold uppercase tracking-[0.18em] text-[#777]">
-              Loading editor
+            <div className="flex h-full w-full flex-col items-center justify-center gap-4 text-text-tertiary">
+              <InlineSpinner className="h-6 w-6 text-accent" />
+              <span className="font-mono text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Initializing Kernel</span>
             </div>
           ) : editorSurface === "pdf_canvas" || layoutMode === "fidelity" ? (
-            <FidelityCanvas documentId={documentId} model={currentModel} toolbarHost={showCanvasToolbarHost ? canvasToolbarHost : undefined} onModelChange={setCurrentModel} onNativeOperation={nativeSessionInfo.appendOperation} onAiLifecycleEvent={dispatchAi} />
+            <FidelityCanvas
+              documentId={documentId}
+              model={currentModel}
+              toolbarHost={showCanvasToolbarHost ? canvasToolbarHost : undefined}
+              onModelChange={setCurrentModel}
+              onNativeOperation={nativeSessionInfo.appendOperation}
+              onAiLifecycleEvent={dispatchAi}
+              highlightBlockIds={aiDiff ? [...aiDiff.before.map(b => b.id), ...aiDiff.after.map(b => b.id)] : undefined}
+            />
           ) : (
             <CollaborativeEditor
               documentId={documentId}
@@ -683,45 +780,45 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
       </main>
 
       <aside
-        className={`z-20 flex shrink-0 flex-col border-l border-white/[0.08] bg-[#050505]/90 backdrop-blur-xl transition-[width] duration-300 ${
-          isSidebarOpen ? "w-[300px]" : "w-10"
-        }`}
+        className={cn(
+          "z-20 flex shrink-0 flex-col liquid-glass liquid-glass-noise border-l transition-all duration-500 shadow-2xl",
+          isSidebarOpen ? "w-[300px]" : "w-12"
+        )}
       >
         {!isSidebarOpen ? (
           <button
             onClick={() => { setIsSidebarOpen(true); setActiveRightTab("assistant"); }}
-            className="flex h-full w-full items-start justify-center px-2 pt-4 text-[#777] transition-colors hover:bg-white/[0.03] hover:text-white"
+            className="flex h-full w-full items-start justify-center px-2 pt-6 text-text-tertiary transition-all hover:bg-accent/5 hover:text-accent"
             aria-label="Open sidebar"
           >
-            <SparklesIcon className="h-4 w-4 text-orange-500/80" />
+            <SparklesIcon className="h-5 w-5" />
           </button>
         ) : (
           <>
-        <div className="flex h-12 items-center border-b border-white/[0.06] px-2">
-          <button
-            onClick={() => setActiveRightTab("assistant")}
-            className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors ${
-              activeRightTab === "assistant"
-                ? "text-white"
-                : "text-[#555] hover:text-white/70"
-            }`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-            Assistant
-          </button>
-          <button
-            onClick={() => setActiveRightTab("themes")}
-            className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
-              activeRightTab === "themes"
-                ? "text-white"
-                : "text-[#555] hover:text-white/70"
-            }`}
-          >
-            Themes
-          </button>
+        <div className="flex h-14 items-center border-b border-white/[0.06] px-3 bg-surface/30">
+          <div className="flex gap-1 p-1 bg-black/40 rounded-xl border border-white/5">
+            <button
+              onClick={() => setActiveRightTab("assistant")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all",
+                activeRightTab === "assistant" ? "bg-accent text-white shadow-lg shadow-accent/10" : "text-text-tertiary hover:text-text-secondary"
+              )}
+            >
+              <SparklesIcon className="h-3 w-3" /> Assistant
+            </button>
+            <button
+              onClick={() => setActiveRightTab("themes")}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all",
+                activeRightTab === "themes" ? "bg-accent text-white shadow-lg shadow-accent/10" : "text-text-tertiary hover:text-text-secondary"
+              )}
+            >
+              Themes
+            </button>
+          </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="ml-auto rounded p-1 text-[#777] transition-colors hover:bg-white/[0.04] hover:text-white"
+            className="ml-auto rounded-lg p-2 text-text-tertiary transition-all hover:bg-white/5 hover:text-red-400"
             aria-label="Collapse sidebar"
           >
             <ChevronRightIcon className="h-4 w-4" />
@@ -729,63 +826,76 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
         </div>
 
         {activeRightTab === "assistant" ? (
-          <div className="flex-1 overflow-y-auto p-3">
-            <div className="space-y-3">
-              <div className="flex gap-1 rounded-lg border border-white/[0.08] p-0.5">
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div className="space-y-5">
+              <div className="flex gap-1 rounded-xl bg-black/40 p-1 border border-white/5">
                 <button
                   onClick={() => setIsChatMode(false)}
-                  className={`flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors ${
-                    !isChatMode ? "bg-white/10 text-white" : "text-[#555] hover:text-white/70"
-                  }`}
+                  className={cn(
+                    "flex-1 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all",
+                    !isChatMode ? "bg-white/10 text-white shadow-sm" : "text-text-tertiary hover:text-white/70"
+                  )}
                 >
-                  Edit
+                  Engineering
                 </button>
                 <button
                   onClick={() => setIsChatMode(true)}
-                  className={`flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors ${
-                    isChatMode ? "bg-white/10 text-white" : "text-[#555] hover:text-white/70"
-                  }`}
+                  className={cn(
+                    "flex-1 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all",
+                    isChatMode ? "bg-white/10 text-white shadow-sm" : "text-text-tertiary hover:text-white/70"
+                  )}
                 >
-                  Q&A
+                  Analysis
                 </button>
               </div>
 
-              <textarea
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                placeholder={isChatMode ? "Ask a question about the document..." : "Rewrite, translate, format..."}
-                className="min-h-28 w-full resize-none rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2.5 text-sm text-[#ededed] outline-none transition-all placeholder:text-[#555] focus:border-orange-500/50 focus:bg-white/[0.04]"
-              />
+              {isChatMode && chatHistory.length > 0 && (
+                <div className="flex flex-col gap-4 pb-2 animate-reveal">
+                  {chatHistory.map((msg, i) => (
+                    <div key={i} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
+                      <div className={cn(
+                        "px-4 py-2.5 text-xs rounded-2xl max-w-[92%] leading-relaxed shadow-sm",
+                        msg.role === "user"
+                          ? "bg-accent/10 border border-accent/20 text-orange-100 rounded-tr-none"
+                          : "bg-surface border border-border-subtle text-text-secondary rounded-tl-none"
+                      )}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  {isRunningAi && (
+                    <div className="flex items-start">
+                      <div className="px-4 py-2.5 text-xs rounded-2xl rounded-tl-none bg-surface border border-border-subtle text-text-tertiary animate-pulse flex items-center gap-2">
+                        <InlineSpinner className="h-3 w-3" /> Reasoning...
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="flex items-center gap-2">
+              <div className="relative group">
+                <textarea
+                  value={instruction}
+                  onChange={(e) => setInstruction(e.target.value)}
+                  placeholder={isChatMode ? "Inquire about document kernel..." : "Synthesize new structures..."}
+                  className="min-h-32 w-full resize-none rounded-xl border border-border-strong bg-background/50 p-4 font-sans text-xs text-text-primary outline-none transition-all placeholder:text-text-tertiary focus:border-accent/50 focus:bg-background/80 shadow-inner"
+                />
+                <div className="absolute bottom-3 right-3 font-mono text-[8px] text-text-tertiary opacity-30 uppercase">prompt_v2.0</div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
                 <button
-                  onClick={isChatMode ? async () => {
-                    setIsRunningAi(true);
-                    try {
-                      const res = await fetch(`/api/bff/ai/documents/${documentId}/chat`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ instruction }),
-                      });
-                      if (res.ok) {
-                        const data = await res.json();
-                        toast(data.reply || "No response", "info");
-                      }
-                      setInstruction("");
-                    } finally {
-                      setIsRunningAi(false);
-                    }
-                  } : runAi}
+                  onClick={runAi}
                   disabled={!canRunAi}
-                  className="flex-1 rounded-md bg-white px-3 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex-1 h-10 rounded-xl bg-white px-4 text-[10px] font-black uppercase tracking-widest text-black shadow-lg shadow-white/5 transition-all hover:brightness-110 active:scale-95 disabled:opacity-30"
                 >
-                  {isRunningAi ? "Generating..." : isChatMode ? "Ask" : "Run"}
+                  {isRunningAi ? "Synthesizing" : isChatMode ? "Analyze" : "Execute"}
                 </button>
                 <button
                   onClick={() => setShowHistory(true)}
-                  className="rounded-md border border-white/10 px-3 py-2 text-xs font-medium text-[#777] transition-colors hover:border-white/20 hover:text-white"
+                  className="h-10 px-4 rounded-xl border border-border-strong bg-surface text-[10px] font-black uppercase tracking-widest text-text-tertiary transition-all hover:border-accent/40 hover:text-accent active:scale-95"
                 >
-                  History
+                  Log
                 </button>
               </div>
 
@@ -793,17 +903,19 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
                 <button
                   onClick={runSummarize}
                   disabled={isRunningAi}
-                  className="w-full rounded-md border border-white/[0.08] px-3 py-2 text-xs font-medium text-[#777] transition-colors hover:border-white/20 hover:text-white disabled:opacity-40"
+                  className="w-full h-9 rounded-xl border-2 border-dashed border-border-strong px-4 text-[10px] font-black uppercase tracking-widest text-text-tertiary transition-all hover:border-accent/30 hover:text-text-secondary active:scale-[0.98] disabled:opacity-20"
                 >
-                  Summarize document
+                  Reconstruct Summary
                 </button>
               )}
 
-              <p className="text-[11px] leading-relaxed text-[#555]">
-                {isChatMode
-                  ? "Ask questions about the document content. No edits are made."
-                  : "AI changes open in review before they touch your document."}
-              </p>
+              <div className="p-3 rounded-xl bg-accent/5 border border-accent/10">
+                <p className="text-[10px] leading-relaxed text-text-tertiary font-medium">
+                  {isChatMode
+                    ? "Interactive Q&A mode. The agent provides insights without mutating the document binary."
+                    : "Atomic edit mode. All transformations are staged for manual verification before commit."}
+                </p>
+              </div>
             </div>
           </div>
         ) : (
@@ -862,6 +974,10 @@ export default function DocumentWorkspace({ documentId }: DocumentWorkspaceProps
           after={aiDiff.after}
           onAccept={acceptAi}
           onReject={rejectAi}
+          onRefine={(refinement) => {
+            setInstruction(refinement);
+            void runAi();
+          }}
         />
       )}
     </div>

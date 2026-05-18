@@ -72,8 +72,8 @@ function NavbarInner() {
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-[100] border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md transition-all duration-300 ${
-          scrolled ? "py-2 shadow-sm" : "py-4"
+        className={`fixed inset-x-0 top-0 z-[100] border-b liquid-glass liquid-glass-noise transition-all duration-300 ${
+          scrolled ? "py-2" : "py-4"
         }`}
       >
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-8">

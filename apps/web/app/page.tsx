@@ -32,6 +32,7 @@ const jsonLd = {
 };
 import ApiSection from "@/components/ApiSection";
 import EmbedSection from "@/components/EmbedSection";
+import { MagicAiDropzone } from "@/components/landing/MagicAiDropzone";
 import {
   FileJson,
   Layers,
@@ -230,6 +231,18 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Magic AI Dropzone */}
+      <section className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+            Try the <span className="text-[var(--accent)]">Magic AI</span>
+          </h2>
+          <p className="mt-3 text-lg text-[var(--text-secondary)]">
+            Upload a PDF and tell the AI what to do. It chains multiple operations automatically.
+          </p>
+        </div>
+        <MagicAiDropzone />
+      </section>
 
       {/* MISSION */}
       <section className="py-28 px-6 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] animate-reveal opacity-0" style={{ animationDelay: '120ms' }}>

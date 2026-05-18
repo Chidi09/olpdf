@@ -256,7 +256,7 @@ export default function Dashboard() {
   };
 
   return (
-    <PageShell 
+    <PageShell
       title={
         <div className="flex items-center gap-4">
           <span className="text-sm font-semibold tracking-tight">Dashboard</span>
@@ -334,77 +334,89 @@ export default function Dashboard() {
       }
     >
       <div className="space-y-8">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link href="/editor/new" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 via-transparent to-orange-500/0 transition-all duration-500 group-hover:from-orange-500/5" />
-            <DocumentTextIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/editor/new" className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-xl liquid-glass liquid-glass-noise p-5 transition-all duration-500 hover:scale-[1.02] hover:shadow-float active:scale-[0.98]">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-accent/5 blur-2xl group-hover:bg-accent/10 transition-colors" />
+            <DocumentTextIcon className="h-6 w-6 text-text-tertiary group-hover:text-accent transition-colors" />
             <div>
-              <h3 className="text-sm font-medium text-[var(--text-primary)]">Blank Document</h3>
-              <p className="text-xs text-[var(--text-secondary)]">Start from scratch</p>
+              <h3 className="font-sans text-sm font-black uppercase tracking-tight text-text-primary">Blank Document</h3>
+              <p className="font-sans text-xs font-medium text-text-secondary">Start from absolute zero</p>
             </div>
           </Link>
 
-          <Link href="/books/new" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
-            <BookOpenIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+          <Link href="/books/new" className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-xl liquid-glass liquid-glass-noise p-5 transition-all duration-500 hover:scale-[1.02] hover:shadow-float active:scale-[0.98]">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/5 blur-2xl group-hover:bg-blue-500/10 transition-colors" />
+            <BookOpenIcon className="h-6 w-6 text-text-tertiary group-hover:text-accent transition-colors" />
             <div>
-              <h3 className="text-sm font-medium text-[var(--text-primary)]">New Book</h3>
-              <p className="text-xs text-[var(--text-secondary)]">Compile chapters</p>
+              <h3 className="font-sans text-sm font-black uppercase tracking-tight text-text-primary">New Book</h3>
+              <p className="font-sans text-xs font-medium text-text-secondary">Orchestrate chapters</p>
             </div>
           </Link>
 
-          <Link href="/templates" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
-            <Squares2X2Icon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+          <Link href="/templates" className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-xl liquid-glass liquid-glass-noise p-5 transition-all duration-500 hover:scale-[1.02] hover:shadow-float active:scale-[0.98]">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/5 blur-2xl group-hover:bg-emerald-500/10 transition-colors" />
+            <Squares2X2Icon className="h-6 w-6 text-text-tertiary group-hover:text-accent transition-colors" />
             <div>
-              <h3 className="text-sm font-medium text-[var(--text-primary)]">Use Template</h3>
-              <p className="text-xs text-[var(--text-secondary)]">Structural defaults</p>
+              <h3 className="font-sans text-sm font-black uppercase tracking-tight text-text-primary">Use Template</h3>
+              <p className="font-sans text-xs font-medium text-text-secondary">Structural blueprints</p>
             </div>
           </Link>
 
-          <Link href="/toolkit" className="group relative flex h-28 flex-col justify-between overflow-hidden rounded-lg border border-white/10 bg-white/[0.02] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
-            <WrenchScrewdriverIcon className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
+          <Link href="/toolkit" className="group relative flex h-32 flex-col justify-between overflow-hidden rounded-xl liquid-glass liquid-glass-noise p-5 transition-all duration-500 hover:scale-[1.02] hover:shadow-float active:scale-[0.98]">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-purple-500/5 blur-2xl group-hover:bg-purple-500/10 transition-colors" />
+            <WrenchScrewdriverIcon className="h-6 w-6 text-text-tertiary group-hover:text-accent transition-colors" />
             <div>
-              <h3 className="text-sm font-medium text-[var(--text-primary)]">PDF Toolkit</h3>
-              <p className="text-xs text-[var(--text-secondary)]">Merge, split, redact</p>
+              <h3 className="font-sans text-sm font-black uppercase tracking-tight text-text-primary">PDF Toolkit</h3>
+              <p className="font-sans text-xs font-medium text-text-secondary">Low-level utilities</p>
             </div>
           </Link>
         </div>
 
         <div className="space-y-6">
-          <h2 className="text-base font-semibold tracking-tight text-[var(--text-primary)]">
-            {activeTab === "recent" ? "Recent Projects" : activeTab === "documents" ? "All Documents" : "All Books"}
-          </h2>
+          <div className="flex items-center justify-between border-b border-border-subtle pb-4">
+            <h2 className="font-sans text-lg font-black tracking-tight text-text-primary">
+              {activeTab === "recent" ? "Active Sessions" : activeTab === "documents" ? "Knowledge Base" : "Volume Collection"}
+            </h2>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary opacity-60">
+              Filtered: {filtered.length} objects
+            </div>
+          </div>
 
           {isLoading ? (
-            <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <div className="overflow-hidden rounded-xl liquid-glass">
               <SkeletonRow index={0} />
               <SkeletonRow index={1} />
               <SkeletonRow index={2} />
             </div>
           ) : displayProjects.length === 0 ? (
-            <div className="flex flex-col items-center gap-5 rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] px-6 py-12 text-center">
-              <DocumentTextIcon className="h-10 w-10 text-[var(--text-tertiary)] opacity-40" />
-              <div>
-                <p className="text-sm font-medium text-[var(--text-primary)]">No projects yet</p>
-                <p className="mt-1 text-xs text-[var(--text-secondary)]">Create a document, import a PDF, or pick a template to get started.</p>
+            <div className="flex flex-col items-center gap-6 rounded-2xl border-2 border-dashed border-border-strong bg-surface/20 px-6 py-20 text-center backdrop-blur-sm transition-all duration-500 hover:bg-surface/30">
+              <div className="relative h-20 w-20 flex items-center justify-center rounded-full bg-surface border border-border-subtle shadow-inner group cursor-default">
+                <DocumentTextIcon className="h-10 w-10 text-text-tertiary opacity-30 group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute inset-0 rounded-full bg-accent/5 animate-pulse" />
+              </div>
+              <div className="max-w-xs">
+                <p className="font-sans text-sm font-black uppercase tracking-tight text-text-primary">Silence in the library</p>
+                <p className="mt-1 font-sans text-xs font-medium text-text-secondary leading-relaxed">Your workspace is empty. Start your first semantic reconstruction below.</p>
               </div>
               <div className="flex flex-wrap justify-center gap-3">
-                <Link href="/editor/new" className="flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--text-on-accent)] hover:opacity-90 transition-opacity">
-                  <DocumentTextIcon className="h-3.5 w-3.5" /> Blank Document
+                <Link href="/editor/new" className="flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-sans text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-accent/20 transition-all hover:brightness-110 active:scale-[0.98]">
+                  <Plus className="h-4 w-4" /> Start Blank
                 </Link>
-                <button onClick={onImportClick} className="flex items-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-panel)] transition-colors">
-                  <Upload className="h-3.5 w-3.5" /> Import PDF
+                <button onClick={onImportClick} className="flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-5 py-2.5 font-sans text-xs font-black uppercase tracking-widest text-text-primary transition-all hover:bg-hover active:scale-[0.98]">
+                  <Upload className="h-4 w-4" /> Import PDF
                 </button>
-                <Link href="/templates" className="flex items-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-panel)] transition-colors">
-                  <Squares2X2Icon className="h-3.5 w-3.5" /> Use Template
-                </Link>
               </div>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <div className="overflow-hidden rounded-xl liquid-glass shadow-panel">
               {displayProjects.map((project, index) => {
                 const href = project.type === "Document" ? `/editor/${project.id}` : `/books/${project.id}`;
                 const Icon = project.type === "Document" ? FileText : BookOpen;
-                const updated = new Date(project.updated_at).toLocaleDateString();
+                const updated = new Date(project.updated_at).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                });
                 return (
                   <div
                     key={project.id}
@@ -414,18 +426,19 @@ export default function Dashboard() {
                     onKeyDown={(e) => {
                       if (e.key === "Enter") router.push(href);
                     }}
-                    className={`group flex items-center justify-between px-4 py-3 transition-colors hover:bg-[var(--bg-elevated)] ${
-                      index < displayProjects.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                    }`}
+                    className={cn(
+                      "group flex items-center justify-between px-6 py-4 transition-all duration-200 hover:bg-accent/5",
+                      index < displayProjects.length - 1 ? "border-b border-border-subtle" : ""
+                    )}
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded border border-[var(--border-strong)] bg-[var(--bg-elevated)]">
-                        <Icon className="h-4 w-4 text-[var(--text-tertiary)]" />
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-strong bg-background transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm">
+                        <Icon className="h-5 w-5 text-text-tertiary group-hover:text-accent transition-colors" />
                       </div>
                       <div className="min-w-0">
                         <InlineEditableText
                           value={project.title}
-                          className="truncate text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)]"
+                          className="truncate font-sans text-sm font-black text-text-primary group-hover:text-accent transition-colors"
                           onSave={async (next) => {
                             if (project.type !== "Document") return;
                             setTitleOverrides((prev) => ({ ...prev, [project.id]: next }));
@@ -443,58 +456,66 @@ export default function Dashboard() {
                             }
                           }}
                         />
-                        <p className="text-xs text-[var(--text-secondary)]">{project.type}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <span className="font-mono text-[9px] uppercase tracking-widest text-text-tertiary bg-surface border border-border-subtle px-1.5 py-0.5 rounded leading-none">{project.type}</span>
+                           <span className="font-mono text-[9px] text-text-tertiary opacity-60">ID: {project.id.slice(0, 8)}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
-                      <span className="group-hover:hidden">{updated}</span>
-                      <div
-                        className="relative hidden group-hover:flex items-center gap-1"
-                        onMouseEnter={() => setOpenMenuId(project.id)}
-                        onMouseLeave={() => setOpenMenuId(null)}
-                      >
+                    <div className="flex items-center gap-6">
+                      <div className="hidden sm:block text-right">
+                        <p className="font-mono text-[10px] text-text-tertiary opacity-40 uppercase tracking-tighter">Modified</p>
+                        <p className="font-sans text-[11px] font-bold text-text-secondary">{updated}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(href); }}
-                          className="rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                          className="hidden sm:flex h-8 items-center rounded-lg bg-surface border border-border-strong px-4 font-sans text-[10px] font-black uppercase tracking-widest text-text-primary transition-all hover:bg-accent hover:text-white hover:border-accent active:scale-95"
                         >
-                          Open
+                          Engineering
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          className="rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                        <div
+                          className="relative"
+                          onMouseEnter={() => setOpenMenuId(project.id)}
+                          onMouseLeave={() => setOpenMenuId(null)}
                         >
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </button>
-                        {openMenuId === project.id && (
-                          <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] py-1 shadow-xl">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
-                            >
-                              Rename
-                            </button>
-                            {project.type === "Document" && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent transition-all hover:bg-surface hover:border-border-strong text-text-tertiary hover:text-text-primary"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+                          {openMenuId === project.id && (
+                            <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl liquid-glass liquid-glass-noise border border-border-strong shadow-float animate-reveal py-1.5">
                               <button
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                                className="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-xs font-bold text-text-primary hover:bg-accent/10 transition-colors"
                               >
-                                Export PDF
+                                <Icon className="h-4 w-4 opacity-50" /> Rename Object
                               </button>
-                            )}
-                            <div className="my-1 border-t border-[var(--border-subtle)]" />
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); queueDelete(project); }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
+                              {project.type === "Document" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                  className="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-xs font-bold text-text-primary hover:bg-accent/10 transition-colors"
+                                >
+                                  <Upload className="h-4 w-4 opacity-50" /> Export Archive
+                                </button>
+                              )}
+                              <div className="my-1.5 border-t border-border-subtle" />
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); queueDelete(project); }}
+                                className="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors"
+                              >
+                                <AlertCircle className="h-4 w-4" /> Purge Resource
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

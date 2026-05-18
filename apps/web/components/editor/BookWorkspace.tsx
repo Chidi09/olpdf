@@ -192,17 +192,26 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
   }
 
   return (
-    <div className="h-screen w-full flex bg-[var(--bg-base)] overflow-hidden">
+    <div className="h-screen w-full flex bg-background overflow-hidden relative">
+      {/* Universal Depth Background */}
+      <div className="absolute -left-[10%] -top-[10%] h-[40%] w-[30%] rounded-full bg-accent/5 blur-[120px] pointer-events-none" />
+      <div className="absolute -right-[5%] -bottom-[5%] h-[30%] w-[25%] rounded-full bg-blue-500/5 blur-[100px] pointer-events-none" />
+
       {isCoverBuilderOpen && (
-        <CoverBuilder 
-          onClose={() => setIsCoverBuilderOpen(false)} 
+        <CoverBuilder
+          onClose={() => setIsCoverBuilderOpen(false)}
           onSave={(coverUrl) => {
             updateBookMetaMutation.mutate({ cover_url: coverUrl });
             setIsCoverBuilderOpen(false);
-          }} 
+          }}
         />
       )}
-      <div className={`transition-all duration-300 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] ${isSidebarOpen ? "w-64" : "w-0 overflow-hidden"}`}>
+
+      {/* Left Sidebar: Library */}
+      <div className={cn(
+        "transition-all duration-500 border-r liquid-glass liquid-glass-noise z-20",
+        isSidebarOpen ? "w-64" : "w-0 overflow-hidden"
+      )}>
         <BookSidebar
           book={safeBook}
           activeChapterId={activeMatterKey ? null : selectedDocumentId}
@@ -214,72 +223,88 @@ export default function BookWorkspace({ bookId, userName = "You", userColor = "#
         />
       </div>
 
-      <div className="flex-1 flex flex-col relative overflow-hidden">
-        <div className="h-12 border-b border-[var(--border-subtle)] flex items-center px-4 bg-[var(--bg-surface)]/50 backdrop-blur-sm">
-          <button onClick={toggleSidebar} className="p-1 hover:bg-white/5 rounded text-[var(--text-secondary)]" aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}>
-            {isSidebarOpen ? <XMarkIcon className="h-4 w-4" /> : <Bars3CenterLeftIcon className="h-4 w-4" />}
+      <div className="flex-1 flex flex-col relative overflow-hidden z-10">
+        {/* Workspace Header */}
+        <div className="h-14 border-b liquid-glass liquid-glass-noise flex items-center px-6 relative z-30">
+          <button onClick={toggleSidebar} className="p-2 hover:bg-accent/10 rounded-xl transition-all active:scale-95 text-text-tertiary hover:text-accent" aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}>
+            {isSidebarOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3CenterLeftIcon className="h-5 w-5" />}
           </button>
           <div className="ml-4 flex-1">
-            <h1 className="text-sm font-bold text-[var(--text-primary)]">
-              {book?.title} <span className="mx-2 text-[var(--text-tertiary)]">/</span> {activeChapter?.title || (activeMatterKey ? activeMatterKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "")}
+            <h1 className="font-sans text-sm font-black text-text-primary uppercase tracking-tight flex items-center gap-2">
+              <span className="opacity-40">{book?.title}</span>
+              <span className="h-1 w-1 rounded-full bg-border-strong" />
+              <span className="italic italic text-accent">{activeChapter?.title || (activeMatterKey ? activeMatterKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "ORCHESTRATOR")}</span>
             </h1>
           </div>
-          <div className="flex gap-2">
-            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-              activeChapter?.status === "final" ? "bg-green-500/10 text-green-400" :
-              activeChapter?.status === "review" ? "bg-amber-500/10 text-amber-400" :
-              "bg-white/5 text-[var(--text-secondary)]"
-            }`}>
-              {activeChapter?.status || "draft"}
-            </span>
+          <div className="flex items-center gap-4">
+            <div className={cn(
+              "text-[9px] font-black uppercase px-3 py-1 rounded-full border tracking-widest transition-colors",
+              activeChapter?.status === "final" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.1)]" :
+              activeChapter?.status === "review" ? "border-amber-500/20 bg-amber-500/10 text-amber-400" :
+              "border-border-strong bg-surface text-text-tertiary"
+            )}>
+              {activeChapter?.status || "draft_v1"}
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 flex justify-center bg-[var(--bg-base)]">
+        <div className="flex-1 overflow-y-auto p-10 lg:p-16 flex justify-center bg-background/50 relative">
+          {/* Subtle paper grid background */}
+          <div className="absolute inset-0 bg-[radial-gradient(var(--border-subtle)_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
+
           {selectedDocumentId ? (
-            <div className="w-full max-w-3xl bg-white shadow-2xl min-h-[1056px] rounded-sm overflow-hidden">
+            <div className="w-full max-w-4xl bg-white shadow-float min-h-[1100px] rounded-sm overflow-hidden transform transition-transform duration-700 animate-slideUp">
               <CollaborativeEditor documentId={selectedDocumentId} userName={userName} userColor={userColor} />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-[var(--text-tertiary)]">
-              <p>Select a chapter to start writing.</p>
+            <div className="flex flex-col items-center justify-center h-full text-text-tertiary gap-4 animate-reveal">
+              <div className="h-12 w-12 rounded-full border border-border-strong flex items-center justify-center bg-surface">
+                 <BookOpenIcon className="h-6 w-6 opacity-20" />
+              </div>
+              <p className="font-mono text-[10px] uppercase tracking-widest opacity-40">Awaiting chapter selection</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className={`border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] transition-all duration-300 flex flex-col ${isInspectorOpen ? "w-80" : "w-10 overflow-hidden"}`}>
+      {/* Right Sidebar: Inspector */}
+      <div className={cn(
+        "border-l liquid-glass transition-all duration-500 flex flex-col z-20",
+        isInspectorOpen ? "w-80" : "w-12 overflow-hidden"
+      )}>
         {!isInspectorOpen ? (
-          <button onClick={() => setIsInspectorOpen(true)} className="flex h-full w-10 items-start justify-center pt-4 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" aria-label="Open inspector">
-            <Bars3CenterLeftIcon className="h-4 w-4" />
+          <button onClick={() => setIsInspectorOpen(true)} className="flex h-full w-12 items-start justify-center pt-5 text-text-tertiary hover:text-accent transition-colors" aria-label="Open inspector">
+            <Bars3CenterLeftIcon className="h-5 w-5" />
           </button>
         ) : (
         <>
-        <div className="flex items-center justify-between h-10 px-3 border-b border-[var(--border-subtle)]">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-tertiary)]">Inspector</span>
-          <button onClick={() => setIsInspectorOpen(false)} className="p-1 hover:bg-white/5 rounded text-[var(--text-secondary)]" aria-label="Close inspector">
-            <XMarkIcon className="h-4 w-4" />
+        <div className="flex items-center justify-between h-14 px-4 border-b border-border-subtle bg-surface/30">
+          <span className="font-mono text-[10px] font-black tracking-widest uppercase text-text-tertiary opacity-60">Engine Inspector</span>
+          <button onClick={() => setIsInspectorOpen(false)} className="p-2 hover:bg-white/5 rounded-xl transition-all text-text-tertiary hover:text-red-400" aria-label="Close inspector">
+            <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
-        {aiError && (
-          <div className="mx-3 mt-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300 flex items-center justify-between">
-            <span>{aiError}</span>
-            <button onClick={() => setAiError(null)} className="ml-2 p-0.5 text-red-400 hover:text-red-200"><XMarkIcon className="h-3 w-3" /></button>
-          </div>
-        )}
-        <BookInspector
-          book={safeBook}
-          activeChapter={activeChapter}
-          onUpdateChapter={(chapterId, updates) => updateChapterMutation.mutate({ chapterId, updates })}
-          onExportBook={exportBook}
-          onCheckConsistency={checkConsistency}
-          onContinueNarrative={continueNarrative}
-          onSuggestChapterTitle={suggestChapterTitle}
-          isNarrativeRunning={isNarrativeRunning}
-          isTitleLoading={isTitleLoading}
-          exportStatus={exportStatus ?? undefined}
-          onUpdateBookMeta={(updates) => updateBookMetaMutation.mutate(updates)}
-        />
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {aiError && (
+            <div className="mx-4 mt-4 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400 flex items-start justify-between backdrop-blur-sm animate-reveal">
+              <span className="leading-relaxed font-medium">{aiError}</span>
+              <button onClick={() => setAiError(null)} className="ml-2 p-1 text-red-500 hover:text-red-300 transition-colors"><XMarkIcon className="h-4 w-4" /></button>
+            </div>
+          )}
+          <BookInspector
+            book={safeBook}
+            activeChapter={activeChapter}
+            onUpdateChapter={(chapterId, updates) => updateChapterMutation.mutate({ chapterId, updates })}
+            onExportBook={exportBook}
+            onCheckConsistency={checkConsistency}
+            onContinueNarrative={continueNarrative}
+            onSuggestChapterTitle={suggestChapterTitle}
+            isNarrativeRunning={isNarrativeRunning}
+            isTitleLoading={isTitleLoading}
+            exportStatus={exportStatus ?? undefined}
+            onUpdateBookMeta={(updates) => updateBookMetaMutation.mutate(updates)}
+          />
+        </div>
         </>
         )}
       </div>

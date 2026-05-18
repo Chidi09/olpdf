@@ -80,7 +80,7 @@ import { shouldPersistFabricObject } from "@/lib/canvas/fabricDocumentObject";
 import { shouldRenderInlineCanvasToolbar } from "@/components/editor/canvasToolbarPlacement";
 import { shouldEditFabricTextInPlace } from "@/components/editor/canvasTextEditing";
 import { getActiveToolAfterToolbarClick, shouldInsertToolImmediately } from "@/components/editor/canvasToolBehavior";
-import { applyCommand } from "@/lib/canvas/canvasCommands";
+import { applyCommand, type CanvasCommand } from "@/lib/canvas/canvasCommands";
 
 type FidelityCanvasProps = {
   documentId: string;
@@ -94,14 +94,17 @@ type FidelityCanvasProps = {
   exportRequest?: { requestId: string; format: "pdf" | "docx" } | null;
   onExportComplete?: (result: { requestId: string; url: string }) => void;
   onExportError?: (result: { requestId: string; message: string }) => void;
+  highlightBlockIds?: string[];
 };
 
 type ChangeRecord = {
   id: string;
   blockId: string;
-  field: "content" | "bounding_box" | "font_meta" | "alignment";
-  oldValue: unknown;
-  newValue: unknown;
+  field?: "content" | "bounding_box" | "font_meta" | "alignment";
+  oldValue?: unknown;
+  newValue?: unknown;
+  command?: CanvasCommand;
+  beforeModel?: DocumentModel;
   userId: string;
   userName: string;
   timestamp: number;
@@ -318,7 +321,7 @@ function applyCanvasInteractionState(canvas: Canvas, readOnly: boolean, activeTo
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function FidelityCanvas({ documentId, model, layoutDocument, toolbarHost, onModelChange, onNativeOperation, onAiLifecycleEvent, readOnly, exportRequest, onExportComplete, onExportError }: FidelityCanvasProps) {
+export default function FidelityCanvas({ documentId, model, layoutDocument, toolbarHost, onModelChange, onNativeOperation, onAiLifecycleEvent, readOnly, exportRequest, onExportComplete, onExportError, highlightBlockIds }: FidelityCanvasProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(900);
   const containerWidthRef = useRef(900);
@@ -354,6 +357,59 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
   useEffect(() => {
     suggestModeRef.current = suggestMode;
   }, [suggestMode]);
+
+  useEffect(() => {
+    // Apply or remove AI highlights whenever highlightBlockIds changes
+    fabricCanvasesRef.current.forEach((canvas) => {
+      // 1. Remove old AI highlights
+      const oldHighlights = canvas.getObjects().filter((o) => (o as FabricObjectWithMeta).data?.isAiHighlight);
+      for (const h of oldHighlights) canvas.remove(h);
+
+      if (!highlightBlockIds || highlightBlockIds.length === 0) {
+        canvas.renderAll();
+        return;
+      }
+
+      // 2. Add new AI highlights
+      let scrolled = false;
+      canvas.getObjects().forEach((obj) => {
+        const blockId = (obj as FabricObjectWithMeta).data?.blockId;
+        if (blockId && highlightBlockIds.includes(blockId)) {
+          const highlightRect = new Rect({
+            left: obj.left! - 4,
+            top: obj.top! - 4,
+            width: obj.width! * (obj.scaleX || 1) + 8,
+            height: obj.height! * (obj.scaleY || 1) + 8,
+            fill: "rgba(249, 115, 22, 0.05)",
+            stroke: "rgba(249, 115, 22, 0.8)",
+            strokeWidth: 2,
+            rx: 6,
+            ry: 6,
+            selectable: false,
+            evented: false,
+            strokeUniform: true,
+          });
+          (highlightRect as FabricObjectWithMeta).data = { isAiHighlight: true };
+          canvas.add(highlightRect);
+          canvas.bringObjectToFront(highlightRect);
+
+          // Scroll the first matched object into view
+          if (!scrolled) {
+            const container = rootRef.current?.parentElement;
+            if (container) {
+              const canvasParent = canvas.getElement().parentElement?.parentElement;
+              if (canvasParent) {
+                const absoluteTop = canvasParent.offsetTop + obj.top!;
+                container.scrollTo({ top: absoluteTop - 100, behavior: "smooth" });
+                scrolled = true;
+              }
+            }
+          }
+        }
+      });
+      canvas.renderAll();
+    });
+  }, [highlightBlockIds]);
 
   // ── Layout ───────────────────────────────────────────────────────────────
 
@@ -424,51 +480,82 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
 
   const acceptChange = (change: ChangeRecord) => {
     if (readOnly) return;
-    const blocks = (currentModelRef.current.blocks ?? []).map((b) => {
-      if (b.id !== change.blockId) return b;
-      return { ...b, [change.field]: change.newValue } as DocumentBlock;
-    });
-    const nextModel = { ...currentModelRef.current, blocks };
+    let nextModel: DocumentModel;
+
+    if (change.command && change.beforeModel) {
+      nextModel = applyCommand(change.beforeModel, change.command);
+    } else if (change.field && change.newValue !== undefined) {
+      const blocks = (currentModelRef.current.blocks ?? []).map((b) => {
+        if (b.id !== change.blockId) return b;
+        return { ...b, [change.field!]: change.newValue } as DocumentBlock;
+      });
+      nextModel = { ...currentModelRef.current, blocks };
+    } else {
+      return;
+    }
+
     pushToHistory(nextModel);
     saveDebounced.current(nextModel);
     currentModelRef.current = nextModel;
     onModelChange?.(nextModel);
     setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "accepted" } : c)));
 
-    for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
-      const pageBlocks = (nextModel.blocks ?? [])
-        .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
-        .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
-      reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
-        const btype = (block as any).type ?? "paragraph";
-        if (btype === "table") return createTableBlock(block, s);
-        if (btype === "field") return createFieldBlock(block, s);
-        if (btype === "shape") return createShapeBlock(block, s);
-        if (btype === "image") {
-          loadImageBlock(block, s, canvas);
-          return null;
-        }
-        return createTextBlock(block, s);
-      });
-    }
+    const reconcileBlocks = (model: DocumentModel) => {
+      for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
+        const pageBlocks = (model.blocks ?? [])
+          .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
+          .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
+        reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
+          const btype = (block as any).type ?? "paragraph";
+          if (btype === "table") return createTableBlock(block, s);
+          if (btype === "field") return createFieldBlock(block, s);
+          if (btype === "shape") return createShapeBlock(block, s);
+          if (btype === "image") {
+            loadImageBlock(block, s, canvas);
+            return null;
+          }
+          return createTextBlock(block, s);
+        });
+      }
+    };
+    reconcileBlocks(nextModel);
   };
 
   const rejectChange = (change: ChangeRecord) => {
-    // Restore the Fabric object to its pre-change value so the canvas
-    // visually reflects the rejection (model was never mutated in suggest mode).
-    for (const [, canvas] of fabricCanvasesRef.current.entries()) {
-      const obj = canvas.getObjects().find((o) => (o as FabricObjectWithMeta).data?.blockId === change.blockId);
-      if (!obj) continue;
-      if (change.field === "bounding_box" && Array.isArray(change.oldValue) && change.oldValue.length === 4) {
-        const [x0, y0] = change.oldValue as number[];
-        obj.set({ left: x0 * scale, top: y0 * scale });
-        obj.setCoords();
+    // Restore from beforeModel snapshot when available, otherwise restore
+    // individual Fabric object properties (legacy path).
+    if (change.beforeModel) {
+      for (const [pi, canvas] of fabricCanvasesRef.current.entries()) {
+        const pageBlocks = (change.beforeModel.blocks ?? [])
+          .filter((b) => (b as any).page_index === pi || (b as any).page_index === undefined)
+          .sort((a, b) => ((a as any).z_index ?? 0) - ((b as any).z_index ?? 0));
+        reconcileFabricCanvas(canvas, pi, pageBlocks, scale, (block, s) => {
+          const btype = (block as any).type ?? "paragraph";
+          if (btype === "table") return createTableBlock(block, s);
+          if (btype === "field") return createFieldBlock(block, s);
+          if (btype === "shape") return createShapeBlock(block, s);
+          if (btype === "image") {
+            loadImageBlock(block, s, canvas);
+            return null;
+          }
+          return createTextBlock(block, s);
+        });
       }
-      if (change.field === "content" && obj.type === "textbox") {
-        (obj as Textbox).set("text", String(change.oldValue ?? ""));
+    } else {
+      for (const [, canvas] of fabricCanvasesRef.current.entries()) {
+        const obj = canvas.getObjects().find((o) => (o as FabricObjectWithMeta).data?.blockId === change.blockId);
+        if (!obj) continue;
+        if (change.field === "bounding_box" && Array.isArray(change.oldValue) && (change.oldValue as unknown[]).length === 4) {
+          const [x0, y0] = change.oldValue as number[];
+          obj.set({ left: x0 * scale, top: y0 * scale });
+          obj.setCoords();
+        }
+        if (change.field === "content" && obj.type === "textbox") {
+          (obj as Textbox).set("text", String(change.oldValue ?? ""));
+        }
+        canvas.renderAll();
+        break;
       }
-      canvas.renderAll();
-      break;
     }
     setChanges((prev) => prev.map((c) => (c.id === change.id ? { ...c, status: "rejected" } : c)));
   };
@@ -990,17 +1077,26 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (suggestModeRef.current && e.target) {
         const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
         if (blockId) {
-          addPendingChange({
-            id: crypto.randomUUID(),
-            blockId,
-            field: "content",
-            oldValue: null,
-            newValue: "added",
-            userId: "local-user",
-            userName: "You",
-            timestamp: Date.now(),
-            status: "pending",
-          });
+          const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
+          if (existing) {
+            captureChange({
+              blockId,
+              command: { type: "insert_block", block: existing },
+              beforeModel: currentModelRef.current,
+            });
+          } else {
+            addPendingChange({
+              id: crypto.randomUUID(),
+              blockId,
+              field: "content",
+              oldValue: null,
+              newValue: "added",
+              userId: "local-user",
+              userName: "You",
+              timestamp: Date.now(),
+              status: "pending",
+            });
+          }
         }
         return;
       }
@@ -1035,23 +1131,29 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
           const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
           if (existing) {
             const obj = e.target;
+            const beforeModel = currentModelRef.current;
             const canvasBbox = rectFromCanvasObjectBounds(
               obj.left ?? 0, obj.top ?? 0,
               (obj.width ?? 0) * (obj.scaleX ?? 1), (obj.height ?? 0) * (obj.scaleY ?? 1),
               scale
             );
-            captureChange({
-              blockId,
-              field: "bounding_box",
-              oldValue: existing.bounding_box,
-              newValue: canvasBbox,
-            });
-            if (obj.type === "textbox") {
+            const oldBbox = existing.bounding_box;
+            const oldContent = existing.content ?? "";
+            const newContent = obj.type === "textbox" ? (obj as Textbox).text ?? "" : oldContent;
+            const bboxChanged = oldBbox?.toString() !== canvasBbox?.toString();
+            const contentChanged = obj.type === "textbox" && oldContent !== newContent;
+            if (bboxChanged) {
               captureChange({
                 blockId,
-                field: "content",
-                oldValue: existing.content ?? "",
-                newValue: (obj as Textbox).text ?? "",
+                command: { type: "move_resize", blockId, bbox: canvasBbox },
+                beforeModel,
+              });
+            }
+            if (contentChanged) {
+              captureChange({
+                blockId,
+                command: { type: "replace_text", blockId, text: newContent },
+                beforeModel,
               });
             }
           }
@@ -1119,17 +1221,27 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (suggestModeRef.current && e.target) {
         const blockId = (e.target as FabricObjectWithMeta).data?.blockId;
         if (blockId) {
-          addPendingChange({
-            id: crypto.randomUUID(),
-            blockId,
-            field: "content",
-            oldValue: "existing",
-            newValue: null,
-            userId: "local-user",
-            userName: "You",
-            timestamp: Date.now(),
-            status: "pending",
-          });
+          const existing = (currentModelRef.current.blocks ?? []).find((b) => b.id === blockId);
+          const beforeModel = currentModelRef.current;
+          if (existing) {
+            captureChange({
+              blockId,
+              command: { type: "delete_block", blockId },
+              beforeModel,
+            });
+          } else {
+            addPendingChange({
+              id: crypto.randomUUID(),
+              blockId,
+              field: "content",
+              oldValue: "existing",
+              newValue: null,
+              userId: "local-user",
+              userName: "You",
+              timestamp: Date.now(),
+              status: "pending",
+            });
+          }
         }
         return;
       }
@@ -1139,16 +1251,21 @@ export default function FidelityCanvas({ documentId, model, layoutDocument, tool
       if (suggestModeRef.current) {
         const pathBlockId = `blk_draw_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         (e.path as FabricObjectWithMeta).data = { ...((e.path as FabricObjectWithMeta).data ?? {}), blockId: pathBlockId, blockType: "shape" };
-        addPendingChange({
-          id: crypto.randomUUID(),
+        captureChange({
           blockId: pathBlockId,
-          field: "content",
-          oldValue: null,
-          newValue: "drawing",
-          userId: "local-user",
-          userName: "You",
-          timestamp: Date.now(),
-          status: "pending",
+          command: { type: "insert_block", block: {
+            id: pathBlockId,
+            type: "shape",
+            content: "",
+            bounding_box: [0, 0, 0, 0],
+            style_overrides: {},
+            z_index: 0,
+            page_index: pageIndex,
+            confidence_score: 0,
+            needs_review: false,
+            float: "none",
+          } as DocumentBlock },
+          beforeModel: currentModelRef.current,
         });
         return;
       }
