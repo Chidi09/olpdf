@@ -67,7 +67,7 @@ export function CommandPalette() {
 
   return (
     <div className="fixed inset-0 z-[120] bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)}>
-      <div className="mx-auto mt-24 w-full max-w-xl rounded-xl border border-white/15 bg-[var(--bg-glass)] p-2 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="mx-auto mt-24 w-full max-w-xl rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <input
           autoFocus
           value={query}

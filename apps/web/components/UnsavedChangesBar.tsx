@@ -34,7 +34,7 @@ export function UnsavedChangesBar({ onSave }: { onSave?: () => Promise<void> }) 
           <Button variant="ghost" size="sm" onClick={handleReset} className="h-8 text-xs">
             <ArrowUturnLeftIcon className="w-3.5 h-3.5 mr-1" /> Reset
           </Button>
-          <Button variant="default" size="sm" onClick={handleSave} isLoading={isSaving} className="h-8 text-xs bg-white text-black">
+          <Button variant="default" size="sm" onClick={handleSave} isLoading={isSaving} className="h-8 text-xs">
             Save Changes
           </Button>
         </div>

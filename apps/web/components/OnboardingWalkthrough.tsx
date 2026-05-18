@@ -45,9 +45,9 @@ export default function OnboardingWalkthrough({ onComplete }: { onComplete: () =
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-      <div className="bg-[#141419] border border-white/10 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
+      <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
         <div className="p-4 flex justify-end">
-          <button onClick={onComplete} className="text-[#918d93] hover:text-white transition-colors">
+          <button onClick={onComplete} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -57,17 +57,17 @@ export default function OnboardingWalkthrough({ onComplete }: { onComplete: () =
             {steps[currentStep].icon}
           </div>
 
-          <h2 className="text-2xl font-bold text-[#f0ede8] mb-4">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
             {steps[currentStep].title}
           </h2>
 
-          <p className="text-[#918d93] leading-relaxed mb-8">
+          <p className="text-[var(--text-secondary)] leading-relaxed mb-8">
             {steps[currentStep].description}
           </p>
 
           <div className="flex gap-4 w-full">
             {currentStep > 0 && (
-              <Button variant="ghost" onClick={prev} className="flex-1 text-[#f0ede8] border border-white/5">
+              <Button variant="ghost" onClick={prev} className="flex-1 border border-[var(--border-subtle)]">
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
@@ -83,7 +83,7 @@ export default function OnboardingWalkthrough({ onComplete }: { onComplete: () =
               <div
                 key={i}
                 className={`h-1 rounded-full transition-all duration-300 ${
-                  i === currentStep ? "w-8 bg-amber-500" : "w-2 bg-white/10"
+                  i === currentStep ? "w-8 bg-amber-500" : "w-2 bg-[var(--border-subtle)]"
                 }`}
               />
             ))}
