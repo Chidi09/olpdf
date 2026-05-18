@@ -21,3 +21,4 @@ brotli
 slowapi
 redis
 gunicorn
+pg8000
